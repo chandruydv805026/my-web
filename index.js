@@ -5,30 +5,25 @@ const bodyParser = require("body-parser");
 const otpGenerator = require("otp-generator");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
-const { Login } = require("./models/schema"); // Make sure schema.js exists
+const { Login } = require("./models/schema");
 require("dotenv").config();
 
-const app = express();
+const app = express(); // ✅ app pehle define karo
 
-// Serve static files from "public" folder
 app.use(express.static(path.join(__dirname, "public")));
 app.use(bodyParser.json());
 app.use(cors());
 
-// Serve login page on root
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-// Serve signup page
 app.get("/signup", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "signup.html"));
 });
 
-// Signup route
 app.post("/signup", (req, res) => {
   const { phone, email, password } = req.body;
-
   if (!/^\d{10}$/.test(phone)) {
     return res.status(400).send("Invalid phone number");
   }
@@ -40,10 +35,8 @@ app.post("/signup", (req, res) => {
     .catch((err) => res.status(500).send("Signup failed"));
 });
 
-// Login route
 app.post("/login", async (req, res) => {
   const { phone, password } = req.body;
-
   if (!/^\d{10}$/.test(phone)) {
     return res.status(400).send("Invalid phone number");
   }
@@ -61,7 +54,6 @@ app.post("/login", async (req, res) => {
   });
 });
 
-// Connect to MongoDB and start server
 mongoose.connect(process.env.DBurl).then(() => {
   console.log("Connected to mongoose");
   app.listen(process.env.PORT || 10000, () => {
