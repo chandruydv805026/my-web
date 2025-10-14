@@ -83,11 +83,12 @@ res.status(200).json({
 // })
 mongoose.connect(process.env.DBurl).then(() => {
     console.log("connected to mongoose");
-    app.listen(process.env.port ||3000, () => {
+    app.listen(process.env.port ||10000, () => {
         console.log("connect to port number" + process.env.port);
 
     });
 
 })
+
 
 
