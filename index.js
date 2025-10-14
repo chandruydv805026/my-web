@@ -8,7 +8,9 @@ const cors = require("cors");
 const { Login } = require("./models/schema");
 require("dotenv").config();
 
-const app = express(); // ✅ app pehle define karo
+const app = express();// ✅ app pehle define karo
+const port = process.env.PORT || 4000;
+
 
 app.use(express.static(path.join(__dirname, "public")));
 app.use(bodyParser.json());
@@ -49,9 +51,11 @@ app.post("/login", async (req, res) => {
 
 mongoose.connect(process.env.DBurl).then(() => {
   console.log("Connected to mongoose");
-  app.listen(process.env.PORT || 10000, () => {
-    console.log("Connected to port number " + (process.env.PORT || 10000));
-  });
+  app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`);
 });
+
+});
+
 
 
