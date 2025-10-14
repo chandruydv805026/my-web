@@ -14,13 +14,13 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(bodyParser.json());
 app.use(cors());
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "login.html"));
-});
+// app.get("/", (req, res) => {
+//   res.sendFile(path.join(__dirname, "public", "login.html"));
+// });
 
-app.get("/signup", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "signup.html"));
-});
+// app.get("/signup", (req, res) => {
+//   res.sendFile(path.join(__dirname, "public", "signup.html"));
+// });
 
 app.post("/signup", (req, res) => {
   const { phone, email, password } = req.body;
@@ -60,3 +60,4 @@ mongoose.connect(process.env.DBurl).then(() => {
     console.log("Connected to port number " + (process.env.PORT || 10000));
   });
 });
+
