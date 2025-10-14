@@ -49,7 +49,7 @@
 <form id="signupForm">
   <input type="text" name="phone" placeholder="Phone Number" required />
   <input type="email" name="email" placeholder="Email" required />
-  <input type="password" name="password" placeholder="Password" required />
+  <input type="password" name="password" placeholder="Password (min 8 characters)" required minlength="8" />
   <button type="submit">Register</button>
 </form>
 
@@ -61,6 +61,11 @@
     const phone = this.phone.value;
     const email = this.email.value;
     const password = this.password.value;
+
+    if (password.length < 8) {
+      document.getElementById("message").textContent = "Password must be at least 8 characters.";
+      return;
+    }
 
     try {
       const res = await fetch("https://my-web-xrr5.onrender.com/signup", {
