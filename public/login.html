@@ -57,12 +57,43 @@
       <input type="text" name="phone" placeholder="Phone Number" required>
       <input type="password" name="password" placeholder="Password" required>
       <button type="submit">Login</button>
-     
     </form>
-    
+    <div id="message"></div>
   </div>
-  <script src="cart.js"></script>
 
+  <script>
+    const BASE_URL = "https://my-web-xrr5.onrender.com"; // 🔁 Replace with your actual backend URL
+
+    document.getElementById("loginForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const phone = this.phone.value;
+      const password = this.password.value;
+
+      try {
+        const response = await fetch(`${BASE_URL}/login`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ phone, password })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          document.getElementById("message").textContent = "Login successful!";
+          // Optional: redirect or store user info
+          // window.location.href = "/dashboard.html";
+        } else {
+          document.getElementById("message").textContent = result.message || "Login failed";
+        }
+      } catch (err) {
+        document.getElementById("message").textContent = "Server error";
+        console.error(err);
+      }
+    });
+  </script>
 
 </body>
 </html>
