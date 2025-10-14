@@ -1,4 +1,8 @@
 let express = require("express");
+const path = require("path");
+app.use(express.static(path.join(__dirname, "public")));
+
+
 var mongoose = require("mongoose");
 const bodyParser = require('body-parser');
 const otpGenerator = require('otp-generator');
@@ -11,10 +15,15 @@ let app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-// ✅ Root route for Render health check
 app.get("/", (req, res) => {
-  res.send("Server is running");
+  res.sendFile(path.join(__dirname, "public", "login.html"));
 });
+
+app.get("/signup", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "signup.html"));
+});
+
+
 
 app.post("/signup", (req, res) => {
   let { phone, email, password } = req.body;
@@ -71,3 +80,4 @@ mongoose.connect(process.env.DBurl).then(() => {
     console.log("Connected to port number " + (process.env.PORT || 10000));
   });
 });
+
