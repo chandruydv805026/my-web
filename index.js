@@ -9,7 +9,7 @@ const { Login } = require("./models/schema");
 require("dotenv").config();
 
 const app = express();// ✅ app pehle define karo
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 10000;
 
 
 app.use(express.static(path.join(__dirname, "public")));
