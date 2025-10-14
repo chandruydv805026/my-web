@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Form with Phone, Email, OTP & Password</title>
+  <title>Signup with OTP</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -20,131 +20,104 @@
       margin-top: 10px;
       font-weight: bold;
     }
-    input[type="text"],
-    input[type="email"],
-    input[type="password"],
-    input[type="number"] {
+    input, button {
       width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 8px;
       border-radius: 4px;
+      border: 1px solid #ccc;
     }
     button {
-      margin-top: 15px;
-      padding: 10px 15px;
       background-color: #4CAF50;
       color: white;
       border: none;
-      border-radius: 4px;
-      cursor: pointer;
     }
     button:hover {
       background-color: #45a049;
+    }
+    #message {
+      margin-top: 10px;
+      text-align: center;
+      color: green;
     }
   </style>
 </head>
 <body>
 
 <h2>Generate OTP</h2>
-<form id="otp">
+<form id="otpForm">
   <input type="email" name="email" placeholder="Enter your email" required />
   <button type="submit">Send OTP</button>
 </form>
 
 <h2>Verify OTP</h2>
-<form id="otpverify">
+<form id="verifyForm">
   <input type="text" name="otp" placeholder="Enter OTP" required />
   <button type="submit">Verify OTP</button>
 </form>
-<p id="responseMsg"></p>
 
-<script>
-  let savedEmail = "";
-
-  document.getElementById("otp").addEventListener("submit", function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    savedEmail = formData.get("email");
-
-    fetch("http://localhost:4000/generate-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: savedEmail })
-    })
-    .then(res => res.text())
-    .then(msg => {
-      document.getElementById("responseMsg").textContent = msg;
-      this.reset();
-    });
-  });
-
-  document.getElementById("otpverify").addEventListener("submit", function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    const data = {
-      email: savedEmail,
-      otp: formData.get("otp")
-    };
-
-    fetch("http://localhost:4000/verify-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    })
-    .then(res => res.json())
-    .then(result => {
-      document.getElementById("responseMsg").textContent = result.message;
-      document.getElementById("email").value = savedEmail;
-      document.getElementById("loginForm").style.pointerEvents = "auto";
-      document.getElementById("loginForm").style.opacity = "1";
-      this.reset();
-    });
-  });
-</script>
-
-<h2>Registration Form</h2>
-<form id="loginForm" style="pointer-events: none; opacity: 0.5;">
-  <label for="phone">Phone Number:</label>
-  <input type="text" id="phone" name="phone" placeholder="Enter your phone number" required>
-
-  <label for="email">Email ID:</label>
-  <input type="email" id="email" name="email" placeholder="Enter your email" required readonly>
-
-  <label for="password">Password:</label>
-  <input type="password" id="password" name="password" placeholder="Enter password" required>
-
-  <button type="submit">Submit</button>
-  <div id="message"></div>
+<h2>Signup</h2>
+<form id="signupForm" style="pointer-events: none; opacity: 0.5;">
+  <input type="text" name="phone" placeholder="Phone Number" required />
+  <input type="email" name="email" placeholder="Email" required readonly />
+  <input type="password" name="password" placeholder="Password" required />
+  <button type="submit">Register</button>
 </form>
 
+<div id="message"></div>
+
 <script>
-  document.getElementById("loginForm").addEventListener("submit", function(e) {
+  const BASE_URL = "https://my-web-xrr5.onrender.com"; // Replace with your Render URL
+  let savedEmail = "";
+
+  document.getElementById("otpForm").addEventListener("submit", async function(e) {
     e.preventDefault();
+    const email = this.email.value;
+    savedEmail = email;
 
-    const formData = new FormData(this);
-    const phone = formData.get("phone");
-    const email = formData.get("email");
-    const password = formData.get("password");
+    const res = await fetch(`${BASE_URL}/generate-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    const msg = await res.text();
+    document.getElementById("message").textContent = msg;
+  });
 
-    if (!/^\d{10}$/.test(phone)) {
-      document.getElementById("message").textContent = "Invalid phone number";
-      return;
+  document.getElementById("verifyForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const otp = this.otp.value;
+
+    const res = await fetch(`${BASE_URL}/verify-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: savedEmail, otp })
+    });
+    const result = await res.json();
+
+    if (res.ok) {
+      document.getElementById("signupForm").style.pointerEvents = "auto";
+      document.getElementById("signupForm").style.opacity = "1";
+      document.querySelector('#signupForm input[name="email"]').value = savedEmail;
     }
 
-    fetch("http://localhost:4000/signup", {
+    document.getElementById("message").textContent = result.message;
+  });
+
+  document.getElementById("signupForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const phone = this.phone.value;
+    const email = this.email.value;
+    const password = this.password.value;
+
+    const res = await fetch(`${BASE_URL}/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone, email, password })
-    })
-    .then(res => res.text())
-    .then(data => {
-      document.getElementById("message").textContent = data;
-      this.reset();
-    })
-    .catch(err => {
-      document.getElementById("message").textContent = "Login failed";
     });
+    const msg = await res.text();
+    document.getElementById("message").textContent = msg;
+    this.reset();
   });
 </script>
 
