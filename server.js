@@ -12,10 +12,11 @@ app.use(cors());
 const path = require("path");
 
 // Serve static files
+// Serve static files
 app.use(express.static(path.join(__dirname, "public")));
 
-// Optional: fallback route
-app.get("/*", (req, res) => {
+// ✅ Catch-all fallback route
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
@@ -84,6 +85,7 @@ mongoose.connect(process.env.DBurl).then(() => {
 });
 
 });
+
 
 
 
