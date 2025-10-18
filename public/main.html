@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chandan Codes</title>
+  <!-- Font Awesome for social icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #fdfcfb, #e2d1c3);
+      color: #333;
+    }
+
+    nav {
+      background: linear-gradient(to right, #4e54c8, #8f94fb);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+      flex-wrap: wrap;
+    }
+
+    .brand-social {
+      display: flex;
+      align-items: center;
+      gap: 28px; /* Increased spacing between logo and icons */
+    }
+
+    nav h1 {
+      font-size: 24px;
+    }
+
+    .social-icons {
+      display: flex;
+      gap: 24px; /* Increased spacing between icons */
+    }
+
+    .social-icons a {
+      color: white;
+      font-size: 28px; /* Bigger, more realistic icons */
+      transition: transform 0.3s ease, color 0.3s ease;
+    }
+
+    .social-icons a:hover {
+      color: #ffd700;
+      transform: scale(1.2); /* Slight zoom on hover */
+    }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 20px;
+    }
+
+    nav ul li a {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 60px 20px 40px;
+    }
+
+    .hero h2 {
+      font-size: 32px;
+      margin-bottom: 20px;
+    }
+
+    .hero p {
+      font-size: 18px;
+      max-width: 700px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .quotes {
+      margin: 40px auto;
+      text-align: center;
+      font-style: italic;
+      font-size: 20px;
+      color: #555;
+    }
+
+    .fade-in {
+      animation: fadeIn 1.2s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    @media (max-width: 600px) {
+      nav {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      nav ul {
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .brand-social {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="brand-social">
+      <h1>Chandan Codes</h1>
+      <div class="social-icons">
+        <a href="https://www.instagram.com/chandan_yadav_829" target="_blank"><i class="fab fa-instagram"></i></a>
+        <a href="https://www.youtube.com/@Education-with-chandan-sir" target="_blank"><i class="fab fa-youtube"></i></a>
+      </div>
+    </div>
+    <ul>
+      <li><a href="login.html">Login</a></li>
+      <li><a href="signup.html">Signup</a></li>
+    </ul>
+  </nav>
+
+  <div class="hero">
+    <h2>Learn Website Development in Hindi</h2>
+    <p>
+      Welcome to my YouTube channel where I teach you how to build modern, responsive websites from scratch. Whether you're a beginner or want to polish your skills, you'll find tutorials on HTML, CSS, JavaScript, backend setup, and UI/UX design — all explained in simple Hindi-English mix. Let's build your digital future together!
+    </p>
+  </div>
+
+  <div class="quotes">
+    <p id="quote" class="fade-in">"Code karo, khud ki website banao."</p>
+  </div>
+
+  <footer>
+    &copy; 2025 Chandan Yadav. All rights reserved.
+  </footer>
+
+  <script>
+    const quotes = [
+      "Code karo, khud ki website banao.",
+      "Har developer ek din beginner hi hota hai.",
+      "Design is not decoration, it's communication.",
+      "Apni pehli website banana — sabse bada step hai."
+    ];
+
+    let i = 0;
+    const quoteEl = document.getElementById("quote");
+
+    function showQuote() {
+      quoteEl.classList.remove("fade-in");
+      void quoteEl.offsetWidth;
+      quoteEl.textContent = quotes[i];
+      quoteEl.classList.add("fade-in");
+      i = (i + 1) % quotes.length;
+    }
+
+    showQuote();
+    setInterval(showQuote, 6000);
+  </script>
+
+</body>
+</html>
