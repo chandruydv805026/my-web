@@ -80,10 +80,11 @@ app.post("/login", async (req, res) => {
 mongoose.connect(process.env.DBurl).then(() => {
     console.log("connected to mongoose");
     app.listen(process.env.PORT || 3000, () => {
-  console.log("✅ Server running on port " + (process.env.PORT || 3000));
+  console.log("✅ Server running on port " + (process.env.PORT || 10000));
 });
 
 });
+
 
 
 
