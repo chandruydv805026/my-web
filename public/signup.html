@@ -144,18 +144,28 @@
           body: JSON.stringify(data)
         });
 
-        const result = await res.json();
+        let result;
+        try {
+          result = await res.json();
+        } catch (jsonErr) {
+          const text = await res.text();
+          console.error("Non-JSON response:", text);
+          alert("Unexpected server response");
+          return;
+        }
+
         if (res.ok) {
           alert('Signup successful!');
           form.reset();
-           window.location.href = "main.html"; // ✅ Redirect
-
+          window.location.href = "main.html";
         } else {
           alert(result.error || 'Signup failed');
+          console.error("Server error:", result);
         }
+
       } catch (err) {
         alert('Server error');
-        console.error(err);
+        console.error("Network error:", err);
       } finally {
         button.classList.remove('loading');
         button.disabled = false;
@@ -164,4 +174,3 @@
   </script>
 </body>
 </html>
-
