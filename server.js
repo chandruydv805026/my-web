@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const path = require("path");
-const User = require("./models/User"); // ✅ Correct model import
+const User = require("./models/schema"); // ✅ Correct model import
 require("dotenv").config();
 
 const app = express();
@@ -86,3 +86,4 @@ mongoose
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);
   });
+
