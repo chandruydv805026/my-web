@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
@@ -43,9 +41,7 @@
       color: #fff;
       outline: none;
     }
-    .login-container input::placeholder {
-      color: #ddd;
-    }
+    .login-container input::placeholder { color: #ddd; }
     .login-container input:focus {
       border: 1px solid #fda085;
       background: rgba(255, 255, 255, 0.3);
@@ -68,8 +64,6 @@
       transform: scale(1.03);
       box-shadow: 0 4px 12px rgba(253, 160, 133, 0.4);
     }
-
-    /* Spinner */
     .spinner {
       width: 18px;
       height: 18px;
@@ -83,21 +77,10 @@
       transform: translateY(-50%);
       display: none;
     }
-
-    .loading .spinner {
-      display: inline-block;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
+    .loading .spinner { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
     @media (max-width: 480px) {
-      .login-container {
-        padding: 25px 20px;
-      }
+      .login-container { padding: 25px 20px; }
     }
   </style>
 </head>
@@ -136,8 +119,6 @@
       }
 
       const data = { phone, password };
-
-      // Show spinner
       button.classList.add('loading');
       button.disabled = true;
 
@@ -148,19 +129,27 @@
           body: JSON.stringify(data)
         });
 
-        const result = await res.json();
-       if (res.ok) {
-      localStorage.setItem("userData", JSON.stringify(result.user));
-      window.location.href = "profile.html"; // or profile.html
+        let result;
+        try {
+          result = await res.json();
+        } catch (jsonErr) {
+          const text = await res.text();
+          console.error("Non-JSON response:", text);
+          alert("Unexpected server response");
+          return;
+        }
 
-
-
+        if (res.ok) {
+          localStorage.setItem("userData", JSON.stringify(result.user));
+          window.location.href = "profile.html";
         } else {
           alert(result.error || 'Login failed');
+          console.error("Server error:", result);
         }
+
       } catch (err) {
         alert('Server error');
-        console.error(err);
+        console.error("Network error:", err);
       } finally {
         button.classList.remove('loading');
         button.disabled = false;
@@ -169,4 +158,3 @@
   </script>
 </body>
 </html>
-
