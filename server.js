@@ -17,7 +17,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // ✅ Catch-all fallback route
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, "public", "login.html"));
+  res.sendFile(path.join(__dirname, "public", "main.html"));
 });
 
 app.post("/signup", (req, res) => {
@@ -85,6 +85,7 @@ mongoose.connect(process.env.DBurl).then(() => {
 });
 
 });
+
 
 
 
