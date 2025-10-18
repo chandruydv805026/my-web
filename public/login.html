@@ -129,18 +129,20 @@
           body: JSON.stringify(data)
         });
 
+        const raw = await res.text();
+
         let result;
         try {
-          result = await res.json();
-        } catch (jsonErr) {
-          const text = await res.text();
-          console.error("Non-JSON response:", text);
+          result = JSON.parse(raw);
+        } catch (err) {
+          console.error("Non-JSON response:", raw);
           alert("Unexpected server response");
           return;
         }
 
         if (res.ok) {
           localStorage.setItem("userData", JSON.stringify(result.user));
+          alert("Login successful!");
           window.location.href = "profile.html";
         } else {
           alert(result.error || 'Login failed');
