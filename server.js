@@ -9,6 +9,15 @@ require('dotenv').config();
 let app = express();
 app.use(bodyParser.json());
 app.use(cors());
+const path = require("path");
+
+// Serve static files
+app.use(express.static(path.join(__dirname, "public")));
+
+// Optional: fallback route
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
 
 app.post("/signup", (req, res) => {
   const { phone, email, password } = req.body;
@@ -70,10 +79,10 @@ app.post("/login", async (req, res) => {
   
 mongoose.connect(process.env.DBurl).then(() => {
     console.log("connected to mongoose");
-    app.listen(process.env.port || 3000, () => {
-        console.log("connect to port number" + process.env.port);
-
-    });
+    app.listen(process.env.PORT || 3000, () => {
+  console.log("✅ Server running on port " + (process.env.PORT || 3000));
+});
 
 });
+
 
