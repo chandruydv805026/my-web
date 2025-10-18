@@ -3,32 +3,32 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const path = require("path");
-const Login = require("./models/schema");
+const User = require("./models/User"); // ✅ Correct model import
 require("dotenv").config();
 
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-// ✅ Serve static files
+// ✅ Serve static files from public/
 app.use(express.static(path.join(__dirname, "public")));
 
 // ✅ Signup route
 app.post("/signup", async (req, res) => {
   const { phone, email, password } = req.body;
 
-  if (!/^\d{10}$/.test(phone)) {
+  if (!/^[6-9]\d{9}$/.test(phone)) {
     return res.status(400).json({ error: "Invalid phone number" });
   }
 
   try {
-    const user = new Login({ phone, email, password });
+    const user = new User({ phone, email, password });
     await user.save();
-    console.log("✅ User signed up");
-    res.status(200).json({ message: "Thanks for signup" });
+    console.log("✅ User signed up:", user.phone);
+    res.status(200).json({ message: "Signup successful" });
   } catch (err) {
-    console.error("❌ Signup error:", err);
-    res.status(500).json({ error: "Signup failed" });
+    console.error("❌ Signup error:", err.message);
+    res.status(500).json({ error: err.message || "Signup failed" });
   }
 });
 
@@ -36,12 +36,12 @@ app.post("/signup", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { phone, password } = req.body;
 
-  if (!/^\d{10}$/.test(phone)) {
+  if (!/^[6-9]\d{9}$/.test(phone)) {
     return res.status(400).json({ error: "Invalid phone number" });
   }
 
   try {
-    const user = await Login.findOne({ phone });
+    const user = await User.findOne({ phone });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -59,12 +59,12 @@ app.post("/login", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("❌ Login error:", err);
+    console.error("❌ Login error:", err.message);
     res.status(500).json({ error: "Server error" });
   }
 });
 
-// ✅ Fallback only for GET requests
+// ✅ Fallback route only for GET requests
 app.use((req, res, next) => {
   if (req.method === "GET") {
     res.sendFile(path.join(__dirname, "public", "main.html"));
@@ -73,7 +73,7 @@ app.use((req, res, next) => {
   }
 });
 
-// ✅ MongoDB + Server start
+// ✅ MongoDB connection and server start
 mongoose
   .connect(process.env.DBurl)
   .then(() => {
@@ -84,5 +84,5 @@ mongoose
     });
   })
   .catch((err) => {
-    console.error("❌ MongoDB connection error:", err);
+    console.error("❌ MongoDB connection error:", err.message);
   });
