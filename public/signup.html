@@ -1,72 +1,91 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Signup</title>
+  <title>Signup – Ratu Fresh</title>
   <style>
     * {
       box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
     }
     body {
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #0f3443, #34e89e);
+      background: linear-gradient(to right, #e0eafc, #cfdef3);
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      color: #333;
     }
     .signup-container {
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(12px);
-      padding: 30px 25px;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(14px);
       border-radius: 16px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      padding: 40px 30px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
       width: 100%;
-      max-width: 380px;
-      color: #fff;
+      max-width: 420px;
+      animation: fadeIn 0.8s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .signup-container h2 {
       text-align: center;
-      margin-bottom: 20px;
-      color: #fff;
+      margin-bottom: 25px;
+      font-size: 26px;
+      color: #185a9d;
     }
-    .signup-container input {
+    .form-group {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .form-group input {
       width: 100%;
-      padding: 14px;
-      margin: 10px 0;
-      border: none;
+      padding: 14px 12px;
+      border: 1px solid #ccc;
       border-radius: 10px;
       font-size: 15px;
-      background: rgba(255, 255, 255, 0.2);
-      color: #fff;
+      background: rgba(255, 255, 255, 0.6);
+      color: #333;
       outline: none;
     }
-    .signup-container input::placeholder {
-      color: #ddd;
+    .form-group label {
+      position: absolute;
+      top: 50%;
+      left: 14px;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: #666;
+      pointer-events: none;
+      transition: 0.2s ease;
+      background: #e0eafc;
+      padding: 0 4px;
     }
-    .signup-container input:focus {
-      border: 1px solid #38ef7d;
-      background: rgba(255, 255, 255, 0.3);
+    .form-group input:focus + label,
+    .form-group input:not(:placeholder-shown) + label {
+      top: -10px;
+      font-size: 12px;
+      color: #185a9d;
     }
-    .signup-container button {
+    button {
       width: 100%;
       padding: 14px;
-      background: linear-gradient(to right, #11998e, #38ef7d);
-      color: #222;
+      background: linear-gradient(to right, #43cea2, #185a9d);
+      color: #fff;
       border: none;
       border-radius: 10px;
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
-      margin-top: 10px;
       position: relative;
       transition: transform 0.2s ease;
     }
-    .signup-container button:hover {
+    button:hover {
       transform: scale(1.03);
-      box-shadow: 0 4px 12px rgba(56, 239, 125, 0.4);
+      box-shadow: 0 4px 12px rgba(24, 90, 157, 0.4);
     }
     .spinner {
       width: 18px;
@@ -85,26 +104,49 @@
       display: inline-block;
     }
     @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
+      to { transform: rotate(360deg); }
     }
     @media (max-width: 480px) {
       .signup-container {
-        padding: 25px 20px;
+        padding: 30px 20px;
       }
     }
   </style>
 </head>
 <body>
   <div class="signup-container">
-    <h2>Create Account</h2>
+    <h2>📝 अपना खाता बनाएं</h2>
     <form id="signupForm">
-      <input type="text" name="phone" placeholder="Phone (10 digits)" maxlength="10" required />
-      <input type="email" name="email" placeholder="Email address" required />
-      <input type="password" name="password" placeholder="Password (min 8 characters)" minlength="8" required />
+      <div class="form-group">
+        <input type="text" name="name" required placeholder=" " />
+        <label>पूरा नाम</label>
+      </div>
+      <div class="form-group">
+        <input type="text" name="phone" required maxlength="10" placeholder=" " />
+        <label>फोन नंबर (10 अंक)</label>
+      </div>
+      <div class="form-group">
+        <input type="email" name="email" required placeholder=" " />
+        <label>ईमेल</label>
+      </div>
+      <div class="form-group">
+        <input type="password" name="password" required minlength="8" placeholder=" " />
+        <label>पासवर्ड (कम से कम 8 अक्षर)</label>
+      </div>
+      <div class="form-group">
+        <input type="text" name="address" required placeholder=" " />
+        <label>पूरा पता</label>
+      </div>
+      <div class="form-group">
+        <input type="text" name="pincode" required maxlength="6" placeholder=" " />
+        <label>पिनकोड</label>
+      </div>
+      <div class="form-group">
+        <input type="text" name="area" required placeholder=" " />
+        <label>नज़दीकी इलाका / लैंडमार्क</label>
+      </div>
       <button type="submit" id="signupBtn">
-        Sign Up
+        साइन अप करें
         <span class="spinner" id="spinner"></span>
       </button>
     </form>
@@ -118,55 +160,44 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(form);
-      const phone = formData.get('phone');
-      const email = formData.get('email');
-      const password = formData.get('password');
+      const data = Object.fromEntries(formData.entries());
 
-      if (!/^[6-9]\d{9}$/.test(phone)) {
-        alert('Please enter a valid 10-digit Indian phone number');
+      if (!/^[6-9]\d{9}$/.test(data.phone)) {
+        alert('कृपया सही 10-अंकों का भारतीय मोबाइल नंबर दर्ज करें');
         return;
       }
 
-      if (password.length < 8) {
-        alert('Password must be at least 8 characters');
+      if (data.password.length < 8) {
+        alert('पासवर्ड कम से कम 8 अक्षरों का होना चाहिए');
         return;
       }
 
-      const data = { phone, email, password };
+      if (!/^\d{6}$/.test(data.pincode)) {
+        alert('कृपया सही 6-अंकों का पिनकोड दर्ज करें');
+        return;
+      }
 
       button.classList.add('loading');
       button.disabled = true;
 
       try {
-        const res = await fetch('https://my-web-xrr5.onrender.com/signup', {
+        const res = await fetch('http://localhost:4000/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
 
-        const raw = await res.text();
-
-        let result;
-        try {
-             result = JSON.parse(raw);
-                     } catch (err) {
-                   console.error("Non-JSON response:", raw);
-              alert("Unexpected server response");
-                return;
-                 }  
-
+        const result = await res.json();
         if (res.ok) {
-          alert('Signup successful!');
+          alert('✅ साइनअप सफल हुआ!');
           form.reset();
           window.location.href = "main.html";
         } else {
-          alert(result.error || 'Signup failed');
-          console.error("Server error:", result);
+          alert("❌ " + (result.error || 'साइनअप विफल रहा'));
         }
-
       } catch (err) {
-        alert('Server error');
-        console.error("Network error:", err);
+        console.error("Signup error:", err);
+        alert('❌ सर्वर से कनेक्ट नहीं हो पाया');
       } finally {
         button.classList.remove('loading');
         button.disabled = false;
@@ -175,4 +206,3 @@
   </script>
 </body>
 </html>
-
