@@ -41,7 +41,9 @@
       color: #fff;
       outline: none;
     }
-    .login-container input::placeholder { color: #ddd; }
+    .login-container input::placeholder {
+      color: #ddd;
+    }
     .login-container input:focus {
       border: 1px solid #fda085;
       background: rgba(255, 255, 255, 0.3);
@@ -77,8 +79,12 @@
       transform: translateY(-50%);
       display: none;
     }
-    .loading .spinner { display: inline-block; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading .spinner {
+      display: inline-block;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     @media (max-width: 480px) {
       .login-container { padding: 25px 20px; }
     }
@@ -123,35 +129,24 @@
       button.disabled = true;
 
       try {
-        const res = await fetch('https://my-web-xrr5.onrender.com/login', {
+        const res = await fetch('http://localhost:4000/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
 
-        const raw = await res.text();
+        const result = await res.json();
 
-        let result;
-        try {
-          result = JSON.parse(raw);
-        } catch (err) {
-          console.error("Non-JSON response:", raw);
-          alert("Unexpected server response");
-          return;
-        }
-
-        if (res.ok) {
+        if (res.ok && result.user && result.user._id) {
           localStorage.setItem("userData", JSON.stringify(result.user));
-          alert("Login successful!");
           window.location.href = "profile.html";
         } else {
+          console.error("Login failed:", result);
           alert(result.error || 'Login failed');
-          console.error("Server error:", result);
         }
-
       } catch (err) {
+        console.error("Server error:", err);
         alert('Server error');
-        console.error("Network error:", err);
       } finally {
         button.classList.remove('loading');
         button.disabled = false;
