@@ -1,21 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chandan Codes</title>
-  <!-- Font Awesome for social icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <title>Ratu Fresh – सब्ज़ियाँ आपके दरवाज़े तक</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #fdfcfb, #e2d1c3);
+      background: linear-gradient(to right, #fffbe6, #fff);
       color: #333;
     }
-
     nav {
-      background: linear-gradient(to right, #4e54c8, #8f94fb);
+      background: linear-gradient(to right, #43cea2, #185a9d);
       padding: 16px 24px;
       display: flex;
       justify-content: space-between;
@@ -23,116 +20,110 @@
       color: white;
       flex-wrap: wrap;
     }
-
-    .brand-social {
+    .brand-tagline {
+      font-size: 22px;
+      font-weight: bold;
       display: flex;
       align-items: center;
-      gap: 28px; /* Increased spacing between logo and icons */
+      gap: 12px;
     }
-
-    nav h1 {
-      font-size: 24px;
-    }
-
-    .social-icons {
-      display: flex;
-      gap: 24px; /* Increased spacing between icons */
-    }
-
-    .social-icons a {
-      color: white;
-      font-size: 28px; /* Bigger, more realistic icons */
-      transition: transform 0.3s ease, color 0.3s ease;
-    }
-
-    .social-icons a:hover {
-      color: #ffd700;
-      transform: scale(1.2); /* Slight zoom on hover */
-    }
-
     nav ul {
       list-style: none;
       display: flex;
       gap: 20px;
     }
-
     nav ul li a {
       color: white;
       text-decoration: none;
       font-weight: 500;
     }
-
     .hero {
       text-align: center;
       padding: 60px 20px 40px;
     }
-
     .hero h2 {
       font-size: 32px;
       margin-bottom: 20px;
     }
-
     .hero p {
       font-size: 18px;
       max-width: 700px;
       margin: 0 auto;
       line-height: 1.6;
     }
-
-    .quotes {
-      margin: 40px auto;
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      padding: 2rem;
+    }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 1rem;
       text-align: center;
-      font-style: italic;
-      font-size: 20px;
-      color: #555;
     }
-
-    .fade-in {
-      animation: fadeIn 1.2s ease-in-out;
+    .card img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 8px;
     }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    .card h3 { margin: 0.5rem 0; }
+    .card p { color: #555; }
+    .card select {
+      margin: 10px 0;
+      padding: 6px;
+      font-size: 16px;
     }
-
+    .card button {
+      background-color: #f5c842;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+    }
     footer {
       text-align: center;
       padding: 20px;
       font-size: 14px;
       color: #666;
+      background-color: #eee;
     }
-
-    @media (max-width: 600px) {
-      nav {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      nav ul {
-        flex-direction: column;
-        gap: 10px;
-        margin-top: 10px;
-      }
-
-      .brand-social {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-      }
+    #loginModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
     }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+      margin: 100px auto;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .modal-content button {
+      margin-top: 10px;
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+    .modal-content .login-btn { background: #43cea2; color: white; }
+    .modal-content .cancel-btn { background: #ccc; }
   </style>
 </head>
 <body>
 
   <nav>
-    <div class="brand-social">
-      <h1>Chandan Codes</h1>
-      <div class="social-icons">
-        <a href="https://www.instagram.com/chandan_yadav_829" target="_blank"><i class="fab fa-instagram"></i></a>
-        <a href="https://www.youtube.com/@Education-with-chandan-sir" target="_blank"><i class="fab fa-youtube"></i></a>
-      </div>
-    </div>
+    <div class="brand-tagline">🥬 Ratu Fresh – ताज़गी हर सुबह</div>
     <ul>
       <li><a href="login.html">Login</a></li>
       <li><a href="signup.html">Signup</a></li>
@@ -140,42 +131,132 @@
   </nav>
 
   <div class="hero">
-    <h2>Learn Website Development in Hindi</h2>
-    <p>
-      Welcome to my YouTube channel where I teach you how to build modern, responsive websites from scratch. Whether you're a beginner or want to polish your skills, you'll find tutorials on HTML, CSS, JavaScript, backend setup, and UI/UX design — all explained in simple Hindi-English mix. Let's build your digital future together!
-    </p>
+    <h2>सब्ज़ियाँ आपके दरवाज़े तक</h2>
+    <p>हर सुबह की ताज़गी अब Ratu में! ऑर्डर करें और सब्ज़ियाँ सीधे घर पर पाएं।</p>
   </div>
 
-  <div class="quotes">
-    <p id="quote" class="fade-in">"Code karo, khud ki website banao."</p>
-  </div>
+  <section class="products">
+    <!-- आलू -->
+    <div class="card">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Patates.jpg" alt="ताज़ा आलू" />
+      <h3>आलू</h3>
+      <p>₹20 / किलो</p>
+      <select id="qty-aloo" onchange="updatePrice('aloo', 20)">
+        <option value="0.25">250g</option>
+        <option value="0.5">500g</option>
+        <option value="1" selected>1 किलो</option>
+        <option value="2">2 किलो</option>
+        <option value="3">3 किलो</option>
+        <option value="4">4 किलो</option>
+        <option value="5">5 किलो</option>
+      </select>
+      <p id="price-aloo">कुल कीमत: ₹20</p>
+      <button onclick="addToCart('आलू', 20, 'qty-aloo')">Add to Cart</button>
+    </div>
+
+    <!-- टमाटर -->
+    <div class="card">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Tomato_je.jpg" alt="ताज़ा टमाटर" />
+      <h3>टमाटर</h3>
+      <p>₹30 / किलो</p>
+      <select id="qty-tomato" onchange="updatePrice('tomato', 30)">
+        <option value="0.25">250g</option>
+        <option value="0.5">500g</option>
+        <option value="1" selected>1 किलो</option>
+        <option value="2">2 किलो</option>
+        <option value="3">3 किलो</option>
+        <option value="4">4 किलो</option>
+        <option value="5">5 किलो</option>
+      </select>
+      <p id="price-tomato">कुल कीमत: ₹30</p>
+      <button onclick="addToCart('टमाटर', 30, 'qty-tomato')">Add to Cart</button>
+    </div>
+
+    <!-- प्याज़ -->
+    <div class="card">
+      <img src="onion.png" alt="ताज़ा प्याज़" />
+      <h3>प्याज़</h3>
+      <p>₹25 / किलो</p>
+      <select id="qty-onion" onchange="updatePrice('onion', 25)">
+        <option value="0.25">250g</option>
+        <option value="0.5">500g</option>
+        <option value="1" selected>1 किलो</option>
+        <option value="2">2 किलो</option>
+        <option value="3">3 किलो</option>
+        <option value="4">4 किलो</option>
+        <option value="5">5 किलो</option>
+      </select>
+      <p id="price-onion">कुल कीमत: ₹25</p>
+      <button onclick="addToCart('प्याज़', 25, 'qty-onion')">Add to Cart</button>
+    </div>
+    
+  </section>
 
   <footer>
-    &copy; 2025 Chandan Yadav. All rights reserved.
+    © 2025 Chandan Yadav, Ratu Jharkhand. All rights reserved.
   </footer>
+    
+  <!-- ✅ Login Modal goes here -->
+  <div id="loginModal">
+    <div class="modal-content">
+      <p>कृपया पहले लॉगिन करें ताकि आप ऑर्डर कर सकें।</p>
+      <button class="login-btn" onclick="goToLogin()">Login करें</button>
+      <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
 
+  <!-- ✅ JavaScript goes here -->
   <script>
-    const quotes = [
-      "Code karo, khud ki website banao.",
-      "Har developer ek din beginner hi hota hai.",
-      "Design is not decoration, it's communication.",
-      "Apni pehli website banana — sabse bada step hai."
-    ];
-
-    let i = 0;
-    const quoteEl = document.getElementById("quote");
-
-    function showQuote() {
-      quoteEl.classList.remove("fade-in");
-      void quoteEl.offsetWidth;
-      quoteEl.textContent = quotes[i];
-      quoteEl.classList.add("fade-in");
-      i = (i + 1) % quotes.length;
-    }
-
-    showQuote();
-    setInterval(showQuote, 6000);
+    // your full script here...
   </script>
-
 </body>
 </html>
+
+  <!-- ✅ Login Modal -->
+  <div id="loginModal">
+    <div class="modal-content">
+      <p>कृपया पहले लॉगिन करें ताकि आप ऑर्डर कर सकें।</p>
+      <button class="login-btn" onclick="goToLogin()">Login करें</button>
+      <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+  // ✅ Simulated login status (बाद में इसे localStorage या session से जोड़ सकते हैं)
+  let isLoggedIn = false;
+
+  // ✅ Price update logic
+  function updatePrice(id, rate) {
+    const qty = parseFloat(document.getElementById("qty-" + id).value);
+    const total = Math.round(rate * qty);
+    document.getElementById("price-" + id).textContent = `कुल कीमत: ₹${total}`;
+  }
+
+  // ✅ Add to Cart logic with login check
+  function addToCart(itemName, rate, qtyId) {
+    if (!isLoggedIn) {
+      document.getElementById("loginModal").style.display = "block";
+      return;
+    }
+
+    const qty = parseFloat(document.getElementById(qtyId).value);
+    const total = Math.round(rate * qty);
+    alert(`${itemName} (${qty} किलो) को ₹${total} में कार्ट में जोड़ा गया!`);
+  }
+
+  // ✅ Modal control functions
+  function closeModal() {
+    document.getElementById("loginModal").style.display = "none";
+  }
+
+  function goToLogin() {
+    window.location.href = "login.html";
+  }
+
+  // ✅ Auto update prices on page load
+  window.onload = function () {
+    updatePrice("aloo", 20);
+    updatePrice("tomato", 30);
+    updatePrice("onion", 25);
+  };
+</script>
