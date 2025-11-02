@@ -12,6 +12,15 @@ const nodemailer = require("nodemailer");
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
+const path = require("path");
+
+// Static file serving
+app.use(express.static(path.join(__dirname, "public")));
+
+// Default route to serve main.html
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "main.html"));
+});
 
 // 🛒 Cart routes
 app.use("/cart", cartRoutes);
@@ -129,3 +138,4 @@ mongoose.connect(process.env.DBurl)
   .catch(err => {
     console.error("❌ MongoDB connection failed:", err);
   });
+
