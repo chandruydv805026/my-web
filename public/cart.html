@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ratu Fresh – आपका कार्ट</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fefefe;
+      padding: 20px;
+      color: #333;
+    }
+    #cartIcon {
+      text-align: right;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .cart-item {
+      border-bottom: 1px solid #ccc;
+      padding: 10px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cart-item span {
+      font-size: 16px;
+    }
+    .cart-item button {
+      background-color: #ff5c5c;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .total {
+      font-weight: bold;
+      font-size: 18px;
+      text-align: right;
+      margin-top: 20px;
+    }
+    .empty {
+      text-align: center;
+      font-size: 16px;
+      color: #777;
+      margin-top: 40px;
+    }
+    .actions {
+      margin-top: 30px;
+      text-align: right;
+    }
+    .actions button {
+      margin-left: 10px;
+      background-color: #43cea2;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+    .actions button.clear {
+      background-color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div id="cartIcon">🛒 <span id="cartCount">0</span></div>
+  <h2>🛒 आपका कार्ट</h2>
+  <div id="cartContainer"></div>
+  <div class="total" id="cartTotal"></div>
+  <div class="actions" id="cartActions" style="display:none;">
+    <button onclick="checkout()">ऑर्डर करें</button>
+    <button class="clear" onclick="clearCart()">कार्ट साफ़ करें</button>
+  </div>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem("userData"));
+    if (!user || !user._id) {
+      alert("कृपया पहले लॉगिन करें");
+      window.location.href = "login.html";
+    }
+
+    let cart = [];
+
+    async function fetchCartFromServer() {
+      try {
+        const res = await fetch(`http://localhost:4000/cart/${user._id}`);
+        const data = await res.json();
+        if (data && data.items) {
+          cart = data.items.map(item => ({
+            productId: item.productId,
+            name: item.name,
+            qty: item.quantity,
+            price: item.price,
+            total: item.quantity * item.price
+          }));
+          renderCart();
+        } else {
+          document.getElementById("cartContainer").innerHTML = "<div class='empty'>आपका कार्ट खाली है</div>";
+        }
+      } catch (err) {
+        console.error("Cart fetch error:", err);
+        alert("❌ Cart लोड करने में समस्या हुई");
+      }
+    }
+
+    function renderCart() {
+      const container = document.getElementById("cartContainer");
+      const totalBox = document.getElementById("cartTotal");
+      const actionsBox = document.getElementById("cartActions");
+      const cartCountBox = document.getElementById("cartCount");
+
+      container.innerHTML = "";
+      let total = 0;
+      let totalItems = 0;
+
+      if (cart.length === 0) {
+        container.innerHTML = "<div class='empty'>आपका कार्ट खाली है</div>";
+        totalBox.textContent = "";
+        actionsBox.style.display = "none";
+        cartCountBox.textContent = "0";
+        return;
+      }
+
+      cart.forEach((item, index) => {
+        const label = item.qty < 1 ? `${item.qty * 1000} ग्राम` : `${item.qty} किलो`;
+        const row = document.createElement("div");
+        row.className = "cart-item";
+        row.innerHTML = `
+          <span>${label} ${item.name}</span>
+          <span>₹${item.total}</span>
+          <button onclick="removeItem(${index})">हटाएं</button>
+        `;
+        container.appendChild(row);
+        total += item.total;
+        totalItems += item.qty;
+      });
+
+      totalBox.textContent = `कुल राशि: ₹${total}`;
+      cartCountBox.textContent = totalItems;
+      actionsBox.style.display = "block";
+    }
+
+    async function removeItem(index) {
+      const item = cart[index];
+      try {
+        const res = await fetch("http://localhost:4000/cart/remove", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user._id, productId: item.productId })
+        });
+        const data = await res.json();
+        if (data.cart) {
+          cart = data.cart.items.map(i => ({
+            productId: i.productId,
+            name: i.name,
+            qty: i.quantity,
+            price: i.price,
+            total: i.quantity * i.price
+          }));
+          renderCart();
+        } else {
+          alert("❌ हटाने में समस्या हुई");
+        }
+      } catch (err) {
+        console.error("Remove error:", err);
+        alert("❌ हटाने में समस्या हुई");
+      }
+    }
+
+    async function clearCart() {
+      if (!confirm("क्या आप पूरा कार्ट साफ़ करना चाहते हैं?")) return;
+      try {
+        const res = await fetch(`http://localhost:4000/cart/clear/${user._id}`, {
+          method: "DELETE"
+        });
+        const data = await res.json();
+        if (data.cart) {
+          cart = [];
+          renderCart();
+        } else {
+          alert("❌ Cart साफ़ करने में समस्या हुई");
+        }
+      } catch (err) {
+        console.error("Clear cart error:", err);
+        alert("❌ Cart साफ़ करने में समस्या हुई");
+      }
+    }
+
+    async function checkout() {
+      const totalAmount = cart.reduce((sum, item) => sum + item.total, 0);
+      if (totalAmount <= 50) {
+        alert("❌ कम से कम ₹50 की खरीदारी ज़रूरी है। कृपया और आइटम जोड़ें।");
+        return;
+      }
+
+      const orderData = {
+        products: cart.map(item => ({
+          name: item.name,
+          qty: item.qty
+        })),
+        totalPrice: totalAmount,
+        customerName: user.name,
+        address: `${user.address}, ${user.area}, ${user.pincode}`,
+        phone: user.phone
+      };
+
+      try {
+        const res = await fetch("http://localhost:4000/place-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(orderData)
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert("✅ आपका ऑर्डर सफलतापूर्वक लिया गया है!\n\n" + data.message);
+          clearCart();
+        } else {
+          alert("❌ ऑर्डर भेजने में समस्या हुई:\n" + data.error);
+        }
+      } catch (err) {
+        console.error("Order error:", err);
+        alert("❌ सर्वर से कनेक्ट नहीं हो पाया");
+      }
+    }
+
+    fetchCartFromServer();
+  </script>
+</body>
+</html>
