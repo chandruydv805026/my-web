@@ -1,199 +1,319 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard - Chandan Codes</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <title>Ratu Fresh – आपका प्रोफ़ाइल</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #f5f5f5;
-      display: flex;
-      min-height: 100vh;
-    }
-
-    .sidebar {
-      width: 220px;
-      background: linear-gradient(to bottom, #4e54c8, #8f94fb);
-      color: white;
-      padding: 20px;
-    }
-
-    .sidebar h2 {
-      font-size: 20px;
-      margin-bottom: 30px;
-    }
-
-    .sidebar ul {
-      list-style: none;
-    }
-
-    .sidebar ul li {
-      margin: 16px 0;
-    }
-
-    .sidebar ul li a {
-      color: white;
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
+      background: linear-gradient(to right, #fffbe6, #fff);
+      color: #333;
     }
 
     nav {
-      background: white;
+      background: linear-gradient(to right, #43cea2, #185a9d);
       padding: 16px 24px;
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #ddd;
-      position: relative;
+      color: white;
+      flex-wrap: wrap;
     }
 
-    .profile-icon {
-      font-size: 28px;
-      color: #4e54c8;
-      cursor: pointer;
-      transition: transform 0.3s ease;
-    }
-
-    .profile-icon:hover {
-      color: #ff4b2b;
-      transform: scale(1.2);
-    }
-
-    .dropdown {
-      position: absolute;
-      top: 60px;
-      right: 24px;
-      background: white;
-      color: #333;
-      padding: 16px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      display: none;
-      font-size: 15px;
-      z-index: 100;
-      min-width: 220px;
-    }
-
-    .dropdown p {
-      margin: 8px 0;
-    }
-
-    .dropdown button {
-      margin-top: 12px;
-      width: 100%;
-      padding: 10px;
-      background: linear-gradient(to right, #f6d365, #fda085);
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      color: #222;
-      transition: transform 0.2s ease;
-    }
-
-    .dropdown button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(253, 160, 133, 0.4);
-    }
-
-    .content {
-      padding: 40px 24px;
+    .brand-tagline {
+      font-size: 22px;
+      font-weight: bold;
       display: flex;
-      justify-content: center;
       align-items: center;
-      flex-direction: column;
+      gap: 12px;
+    }
+
+    nav .icons {
+      display: flex;
+      gap: 20px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 60px 20px 40px;
+    }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      padding: 2rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 1rem;
       text-align: center;
     }
 
-    .welcome {
-      font-size: 32px;
-      font-weight: bold;
-      color: #4e54c8;
-      animation: fadeBounce 1.5s ease-in-out;
+    .card img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 8px;
     }
 
-    @keyframes fadeBounce {
-      0% { opacity: 0; transform: translateY(-20px); }
-      50% { opacity: 1; transform: translateY(10px); }
-      100% { transform: translateY(0); }
+    .card select {
+      margin: 10px 0;
+      padding: 6px;
+      font-size: 16px;
     }
 
-    @media (max-width: 768px) {
-      .sidebar {
-        display: none;
-      }
-      .dropdown {
-        right: 16px;
-        font-size: 14px;
+    .card button {
+      background-color: #f5c842;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+    }
+
+    #profileBox {
+      display: none;
+      position: absolute;
+      top: 70px;
+      right: 20px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 999;
+      width: 250px;
+    }
+
+    #profileBox p {
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+      color: #666;
+      background-color: #eee;
+    }
+
+    @media (max-width: 600px) {
+      #profileBox {
+        right: 10px;
+        top: 60px;
+        width: 90%;
       }
     }
   </style>
 </head>
 <body>
 
-  <div class="sidebar">
-    <h2>Dashboard</h2>
-    <ul>
-      <li><a href="#">Overview</a></li>
-      <li><a href="#">My Tutorials</a></li>
-      <li><a href="#">Subscribers</a></li>
-      <li><a href="#">Settings</a></li>
-    </ul>
-  </div>
-
-  <div class="main">
-    <nav>
-      <i class="fas fa-user-circle profile-icon" onclick="toggleDropdown()"></i>
-      <div class="dropdown" id="profileDropdown">
-        <p><strong>📧 Email:</strong> <span id="userEmail">Loading...</span></p>
-        <p><strong>📞 Phone:</strong> <span id="userPhone">Loading...</span></p>
-        <button onclick="logout()">Logout</button>
-      </div>
-    </nav>
-
-    <div class="content">
-      <div class="welcome" id="welcomeMessage">Welcome to my chandan yadav youtube channel </div>
+  <nav>
+    <div class="brand-tagline">
+      🥬 Ratu Fresh – ताज़गी हर सुबह
     </div>
+    <div class="icons">
+      <span onclick="window.location.href='cart.html'">🛒</span>
+      <span onclick="toggleProfile()">👤</span>
+    </div>
+  </nav>
+<div id="profileBox">
+  <p><strong>नाम:</strong> <span id="profile-name"></span></p>
+  <p><strong>ईमेल:</strong> <span id="profile-email"></span></p>
+  <p><strong>मोबाइल:</strong> <span id="profile-phone"></span></p>
+  <p><strong>पता:</strong> <span id="profile-address"></span></p>
+<button onclick="logout()" style="margin-top:10px; background:#e74c3c; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">🚪 Logout</button>
+
+</div>
+
+  <div class="hero">
+    <h2>सब्ज़ियाँ आपके दरवाज़े तक</h2>
+    <p>हर सुबह की ताज़गी अब Ratu में! ऑर्डर करें और सब्ज़ियाँ सीधे घर पर पाएं।</p>
   </div>
 
-  <script>
-    const userData = JSON.parse(localStorage.getItem("userData"));
+  <section class="products">
+    <!-- आलू -->
+    <div class="card">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Patates.jpg" alt="आलू" />
+      <h3>आलू</h3>
+      <p>₹20 / किलो</p>
+      <select id="qty-aloo" onchange="updatePrice('aloo', 20)">
+        <option value="0.25">250g</option>
+        <option value="0.5">500g</option>
+        <option value="1" selected>1 किलो</option>
+        <option value="2">2 किलो</option>
+        <option value="3">3 किलो</option>
+        <option value="4">4 किलो</option>
+        <option value="5">5 किलो</option>
+        <option value="6">6 किलो</option>
+        <option value="7">7 किलो</option>
+        <option value="8">8 किलो</option>
+        <option value="9">9 किलो</option>
+        <option value="10">10 किलो</option>
+      </select>
+      <p id="price-aloo">कुल कीमत: ₹20</p>
+      <button onclick="addToCart('आलू', 20, 'qty-aloo')">Add to Cart</button>
+    </div>
 
-    if (userData) {
-      document.getElementById("userEmail").textContent = userData.email || "N/A";
-      document.getElementById("userPhone").textContent = userData.phone || "N/A";
-    } else {
-      document.getElementById("userEmail").textContent = "Not logged in";
-      document.getElementById("userPhone").textContent = "Not logged in";
+    <!-- टमाटर -->
+    <div class="card">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Tomato_je.jpg" alt="टमाटर" />
+      <h3>टमाटर</h3>
+      <p>₹30 / किलो</p>
+      <select id="qty-tomato" onchange="updatePrice('tomato', 30)">
+        <option value="0.25">250g</option>
+        <option value="0.5">500g</option>
+        <option value="1" selected>1 किलो</option>
+        <option value="2">2 किलो</option>
+        <option value="3">3 किलो</option>
+        <option value="4">4 किलो</option>
+        <option value="5">5 किलो</option>
+        <option value="6">6 किलो</option>
+        <option value="7">7 किलो</option>
+        <option value="8">8 किलो</option>
+        <option value="9">9 किलो</option>
+        <option value="10">10 किलो</option>
+      </select>
+      <p id="price-tomato">कुल कीमत: ₹30</p>
+      <button onclick="addToCart('टमाटर', 30, 'qty-tomato')">Add to Cart</button>
+    </div>
+
+    <!-- प्याज़ -->
+    <div class="card">
+      <img src="onion.png" alt="प्याज़" />
+      <h3>प्याज़</h3>
+      <p>₹25 / किलो</p>
+      <select id="qty-onion" onchange="updatePrice('onion', 25)">
+        <option value="0.25">250g</option>
+        <option value="0.5">500g</option>
+        <option value="1" selected>1 किलो</option>
+        <option value="2">2 किलो</option>
+        <option value="3">3 किलो</option>
+        <option value="4">4 किलो</option>
+        <option value="5">5 किलो</option>
+        <option value="6">6 किलो</option>
+        <option value="7">7 किलो</option>
+        <option value="8">8 किलो</option>
+        <option value="9">9 किलो</option>
+        <option value="10">10 किलो</option>
+      </select>
+      <p id="price-onion">कुल कीमत: ₹25</p>
+      <button onclick="addToCart('प्याज़', 25, 'qty-onion')">Add to Cart</button>
+    </div>
+  </section>
+
+  <footer>
+    © 2025 Chandan Yadav, Ratu Jharkhand. All rights reserved.
+  </footer>
+<script>
+  let cart = [];
+
+  function updatePrice(id, rate) {
+    const qty = parseFloat(document.getElementById("qty-" + id).value);
+    const total = Math.round(rate * qty);
+    document.getElementById("price-" + id).textContent = `कुल कीमत: ₹${total}`;
+  }
+
+  function addToCart(name, rate, selectId) {
+    const user = JSON.parse(localStorage.getItem("userData"));
+    if (!user || !user._id) {
+      alert("कृपया पहले लॉगिन करें");
+      window.location.href = "login.html";
+      return;
     }
 
-    function toggleDropdown() {
-      const dropdown = document.getElementById("profileDropdown");
-      dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-    }
+    const qty = parseFloat(document.getElementById(selectId).value);
+    const total = Math.round(rate * qty);
+    const label = qty < 1 ? `${qty * 1000} ग्राम` : `${qty} किलो`;
 
-    document.addEventListener("click", function(event) {
-      const icon = document.querySelector(".profile-icon");
-      const dropdown = document.getElementById("profileDropdown");
-      if (!icon.contains(event.target) && !dropdown.contains(event.target)) {
-        dropdown.style.display = "none";
+    fetch("http://localhost:4000/cart/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: user._id,
+        productId: name,
+        name: name,
+        quantity: qty,
+        price: rate
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.cart) {
+        cart = data.cart.items;
+        renderCart(cart, data.cart.totalPrice);
+        alert(`✅ ${label} ${name} जोड़ा गया। कुल ₹${total}`);
+      } else {
+        console.error("Backend error:", data);
+        alert("❌ कुछ गड़बड़ हो गई: " + (data.error || "Unknown error"));
       }
+    })
+    .catch(err => {
+      console.error("Cart error:", err);
+      alert("❌ Cart जोड़ने में समस्या हुई");
     });
+  }
 
-    function logout() {
-      localStorage.removeItem("userData");
-      window.location.href = "main.html";
+  function renderCart(items, total) {
+    const cartList = document.getElementById("cartItems");
+    const cartTotal = document.getElementById("cartTotal");
+
+    // ✅ अगर cart summary section मौजूद नहीं है तो skip करो
+    if (!cartList || !cartTotal) return;
+
+    cartList.innerHTML = "";
+    items.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = `${item.name} x ${item.quantity} = ₹${item.quantity * item.price}`;
+      cartList.appendChild(li);
+    });
+    cartTotal.textContent = total;
+  }
+
+  function toggleProfile() {
+    const box = document.getElementById("profileBox");
+    box.style.display = box.style.display === "block" ? "none" : "block";
+  }
+
+  function logout() {
+    localStorage.removeItem("userData");
+    alert("आप लॉगआउट हो गए हैं");
+    window.location.href = "main.html";
+  }
+
+  window.onload = function () {
+    updatePrice('aloo', 20);
+    updatePrice('tomato', 30);
+    updatePrice('onion', 25);
+
+    const user = JSON.parse(localStorage.getItem("userData"));
+    if (user && user._id) {
+      document.getElementById("profile-name").textContent = user.name || "नाम नहीं मिला";
+      document.getElementById("profile-email").textContent = user.email || "ईमेल नहीं मिला";
+      document.getElementById("profile-phone").textContent = user.phone || "फोन नहीं मिला";
+      document.getElementById("profile-address").textContent = user.address || "पता नहीं मिला";
+
+      fetch(`http://localhost:4000/cart/${user._id}`)
+        .then(res => res.json())
+        .then(data => {
+          cart = data.items || [];
+          renderCart(cart, data.totalPrice || 0);
+        })
+        .catch(err => {
+          console.error("Cart fetch error:", err);
+        });
+    } else {
+      alert("User data नहीं मिला, कृपया login करें");
+      window.location.href = "login.html";
     }
-  </script>
-
-</body>
-</html>
+  };
+</script>
