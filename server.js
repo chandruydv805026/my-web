@@ -2,88 +2,130 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const path = require("path");
-const User = require("./models/schema"); // ✅ Correct model import
 require("dotenv").config();
+
+const User = require("./models/schema");
+const Cart = require("./models/cart");
+const cartRoutes = require("./routes/cartRoutes");
+const nodemailer = require("nodemailer");
 
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-// ✅ Serve static files from public/
-app.use(express.static(path.join(__dirname, "public")));
+// 🛒 Cart routes
+app.use("/cart", cartRoutes);
 
-// ✅ Signup route
+// 📝 Signup route
 app.post("/signup", async (req, res) => {
-  const { phone, email, password } = req.body;
+  const { name, phone, email, password, address, pincode, area } = req.body;
 
-  if (!/^[6-9]\d{9}$/.test(phone)) {
-    return res.status(400).json({ error: "Invalid phone number" });
+  if (!name || !phone || !email || !password || !address || !pincode || !area) {
+    return res.status(400).json({ error: "सभी फ़ील्ड आवश्यक हैं" });
   }
 
   try {
-    const user = new User({ phone, email, password });
-    await user.save();
-    console.log("✅ User signed up:", user.phone);
-    res.status(200).json({ message: "Signup successful" });
+    const existingUser = await User.findOne({ $or: [{ phone }, { email }] });
+    if (existingUser) {
+      return res.status(409).json({ error: "User पहले से मौजूद है" });
+    }
+
+    const newUser = new User({ name, phone, email, password, address, pincode, area });
+    await newUser.save();
+
+    const newCart = new Cart({ user: newUser._id, items: [], totalPrice: 0 });
+    await newCart.save();
+
+    newUser.cart = newCart._id;
+    await newUser.save();
+
+    res.status(201).json({ message: "✅ Signup सफल हुआ", userId: newUser._id });
   } catch (err) {
-    console.error("❌ Signup error:", err.message);
-    res.status(500).json({ error: err.message || "Signup failed" });
+    console.error("Signup error:", err);
+    res.status(500).json({ error: "❌ Internal server error" });
   }
 });
 
-// ✅ Login route
+// 🔐 Login route
 app.post("/login", async (req, res) => {
   const { phone, password } = req.body;
 
-  if (!/^[6-9]\d{9}$/.test(phone)) {
-    return res.status(400).json({ error: "Invalid phone number" });
-  }
-
   try {
-    const user = await User.findOne({ phone });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    if (user.password !== password) {
-      return res.status(401).json({ error: "Incorrect password" });
-    }
+    const user = await User.findOne({ phone }).populate("cart");
+    if (!user) return res.status(404).json({ error: "❌ User not found" });
+    if (user.password !== password) return res.status(401).json({ error: "❌ Incorrect password" });
 
     res.status(200).json({
-      message: "Login successful",
+      message: "✅ Login successful",
       user: {
+        _id: user._id,
+        name: user.name,
         phone: user.phone,
         email: user.email,
+        address: user.address,
+        pincode: user.pincode,
+        area: user.area,
         createdAt: user.createdAt,
-      },
+        cart: user.cart
+      }
     });
   } catch (err) {
-    console.error("❌ Login error:", err.message);
-    res.status(500).json({ error: "Server error" });
+    console.error("Login error:", err);
+    res.status(500).json({ error: "❌ Server error" });
   }
 });
 
-// ✅ Fallback route only for GET requests
-app.use((req, res, next) => {
-  if (req.method === "GET") {
-    res.sendFile(path.join(__dirname, "public", "main.html"));
-  } else {
-    next();
-  }
-});
+app.post("/place-order", async (req, res) => {
+  const { products, totalPrice, customerName, address, phone } = req.body;
 
-// ✅ MongoDB connection and server start
-mongoose
-  .connect(process.env.DBurl)
-  .then(() => {
-    console.log("✅ Connected to MongoDB");
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      console.log("✅ Server running on port " + PORT);
-    });
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB connection error:", err.message);
+  if (!products || !totalPrice || !customerName || !address || !phone) {
+    return res.status(400).json({ error: "❌ सभी फ़ील्ड आवश्यक हैं" });
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.ADMIN_EMAIL,
+      pass: process.env.ADMIN_EMAIL_PASS
+    }
   });
 
+  const mailOptions = {
+    from: process.env.ADMIN_EMAIL,
+    to:"ck805026@gmail.com",
+    subject: "🛒 नया ऑर्डर प्राप्त हुआ - Ratu Fresh",
+    text: `
+नया ऑर्डर प्राप्त हुआ!
+
+ग्राहक: ${customerName}
+फोन: ${phone}
+पता: ${address}
+
+उत्पाद:
+${products.map(p => `- ${p.name} (${p.qty}kg)`).join("\n")}
+
+कुल कीमत: ₹${totalPrice}
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: "✅ ऑर्डर लिया गया और ईमेल भेजा गया" });
+  } catch (err) {
+    console.error("Email error:", err);
+    res.status(500).json({ error: "❌ ईमेल भेजने में समस्या हुई" });
+  }
+});
+
+// 🌐 MongoDB connection
+mongoose.connect(process.env.DBurl)
+  .then(() => {
+    console.log("✅ Connected to MongoDB");
+    const PORT = process.env.port || 4000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error("❌ MongoDB connection failed:", err);
+  });
