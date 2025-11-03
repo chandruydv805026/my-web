@@ -3,12 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <title>Ratu Fresh – आपका कार्ट</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
       background: #fefefe;
       padding: 20px;
       color: #333;
+      max-width: 800px;
+      margin: auto;
     }
     #cartIcon {
       text-align: right;
@@ -25,9 +28,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
     }
     .cart-item span {
       font-size: 16px;
+      display: block;
     }
     .cart-item button {
       background-color: #ff5c5c;
@@ -53,9 +58,12 @@
     .actions {
       margin-top: 30px;
       text-align: right;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
     }
     .actions button {
-      margin-left: 10px;
       background-color: #43cea2;
       color: white;
       border: none;
@@ -66,6 +74,42 @@
     }
     .actions button.clear {
       background-color: #999;
+    }
+
+    @media screen and (max-width: 600px) {
+      body {
+        padding: 12px;
+      }
+      h2 {
+        font-size: 22px;
+        margin-bottom: 16px;
+      }
+      .cart-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .cart-item span {
+        font-size: 15px;
+      }
+      .cart-item button {
+        font-size: 13px;
+        padding: 4px 10px;
+      }
+      .total {
+        font-size: 16px;
+        margin-top: 16px;
+      }
+      .actions {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+      }
+      .actions button {
+        width: 100%;
+        font-size: 14px;
+        padding: 10px;
+      }
     }
   </style>
 </head>
@@ -144,7 +188,7 @@
 
       totalBox.textContent = `कुल राशि: ₹${total}`;
       cartCountBox.textContent = totalItems;
-      actionsBox.style.display = "block";
+      actionsBox.style.display = "flex";
     }
 
     async function removeItem(index) {
@@ -234,5 +278,4 @@
     fetchCartFromServer();
   </script>
 </body>
-
 </html>
