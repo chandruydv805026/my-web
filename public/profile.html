@@ -235,7 +235,7 @@
     const total = Math.round(rate * qty);
     const label = qty < 1 ? `${qty * 1000} ग्राम` : `${qty} किलो`;
 
-    fetch("http://localhost:4000/cart/add", {
+    fetch("https://my-web-xrr5.onrender.com/cart/add", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -302,7 +302,7 @@
       document.getElementById("profile-phone").textContent = user.phone || "फोन नहीं मिला";
       document.getElementById("profile-address").textContent = user.address || "पता नहीं मिला";
 
-      fetch(`http://localhost:4000/cart/${user._id}`)
+      fetch(`https://my-web-xrr5.onrender.com/cart/${user._id}`)
         .then(res => res.json())
         .then(data => {
           cart = data.items || [];
@@ -317,3 +317,4 @@
     }
   };
 </script>
+
