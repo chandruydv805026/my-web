@@ -83,30 +83,14 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ error: "❌ Server error" });
   }
 });
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 app.post("/place-order", async (req, res) => {
   const { products, totalPrice, customerName, address, phone } = req.body;
 
-  if (!products || !totalPrice || !customerName || !address || !phone) {
-    return res.status(400).json({ error: "❌ सभी फ़ील्ड आवश्यक हैं" });
-  }
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.resend.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.RESEND_SENDER,       // यानी ck805026@gmail.com
-    pass: process.env.RESEND_API_KEY       // Resend से लिया हुआ API Key
-  }
-});
-
-  const mailOptions = {
-    from: process.env.ADMIN_EMAIL,
-    to:"ck805026@gmail.com",
-    subject: "🛒 नया ऑर्डर प्राप्त हुआ - Ratu Fresh",
-    text: `
-नया ऑर्डर प्राप्त हुआ!
+  const emailText = `
+🛒 नया ऑर्डर प्राप्त हुआ!
 
 ग्राहक: ${customerName}
 फोन: ${phone}
@@ -116,15 +100,20 @@ const transporter = nodemailer.createTransport({
 ${products.map(p => `- ${p.name} (${p.qty}kg)`).join("\n")}
 
 कुल कीमत: ₹${totalPrice}
-    `
-  };
+  `;
 
   try {
-    await transporter.sendMail(mailOptions);
-    res.status(200).json({ message: "✅ ऑर्डर लिया गया और ईमेल भेजा गया" });
+    await resend.emails.send({
+      from: 'Ratu Fresh <onboarding@resend.dev>',
+      to: 'ck805026@gmail.com',
+      subject: '🛒 नया ऑर्डर प्राप्त हुआ - Ratu Fresh',
+      text: emailText
+    });
+
+    res.status(200).json({ message: "✅ ऑर्डर लिया गया और ईमेल भेजा गया (Resend API)" });
   } catch (err) {
-    console.error("Email error:", err);
-    res.status(500).json({ error: "❌ ईमेल भेजने में समस्या हुई" });
+    console.error("Resend API error:", err);
+    res.status(500).json({ error: "❌ ईमेल भेजने में समस्या हुई (Resend API)" });
   }
 });
 
@@ -140,6 +129,7 @@ mongoose.connect(process.env.DBurl)
   .catch(err => {
     console.error("❌ MongoDB connection failed:", err);
   });
+
 
 
 
