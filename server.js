@@ -92,12 +92,14 @@ app.post("/place-order", async (req, res) => {
   }
 
   const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.ADMIN_EMAIL,
-      pass: process.env.ADMIN_EMAIL_PASS
-    }
-  });
+  host: "smtp.gmail.com",         // Gmail का SMTP सर्वर
+  port: 465,                      // SSL के लिए secure port
+  secure: true,                   // SSL/TLS enable
+  auth: {
+    user: process.env.ADMIN_EMAIL,       // यहाँ तुम्हारा Gmail email आएगा (जैसे ck805026@gmail.com)
+    pass: process.env.ADMIN_EMAIL_PASS   // यहाँ Gmail का App Password आएगा (16-character वाला)
+  }
+});
 
   const mailOptions = {
     from: process.env.ADMIN_EMAIL,
@@ -138,4 +140,5 @@ mongoose.connect(process.env.DBurl)
   .catch(err => {
     console.error("❌ MongoDB connection failed:", err);
   });
+
 
