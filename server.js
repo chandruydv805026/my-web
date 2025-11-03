@@ -91,13 +91,13 @@ app.post("/place-order", async (req, res) => {
     return res.status(400).json({ error: "❌ सभी फ़ील्ड आवश्यक हैं" });
   }
 
-  const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",         // Gmail का SMTP सर्वर
-  port: 465,                      // SSL के लिए secure port
-  secure: true,                   // SSL/TLS enable
+const transporter = nodemailer.createTransport({
+  host: "smtp.resend.com",
+  port: 587,
+  secure: false,
   auth: {
-    user: process.env.ADMIN_EMAIL,       // यहाँ तुम्हारा Gmail email आएगा (जैसे ck805026@gmail.com)
-    pass: process.env.ADMIN_EMAIL_PASS   // यहाँ Gmail का App Password आएगा (16-character वाला)
+    user: process.env.RESEND_SENDER,       // यानी ck805026@gmail.com
+    pass: process.env.RESEND_API_KEY       // Resend से लिया हुआ API Key
   }
 });
 
@@ -140,5 +140,6 @@ mongoose.connect(process.env.DBurl)
   .catch(err => {
     console.error("❌ MongoDB connection failed:", err);
   });
+
 
 
