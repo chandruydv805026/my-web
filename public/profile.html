@@ -100,17 +100,98 @@
         width: 90%;
       }
     }
+    .ratu-navbar {
+  background: linear-gradient(to right, #43cea2, #185a9d);
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  flex-wrap: wrap;
+}
+
+.ratu-navbar .brand-tagline {
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ratu-navbar .icons {
+  display: flex;
+  gap: 16px;
+}
+
+.nav-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.nav-icon:hover {
+  transform: scale(1.05);
+}
+
+.nav-icon img {
+  width: 22px;
+  height: 22px;
+  margin-bottom: 2px;
+}
+
+.nav-icon label {
+  font-size: 10px;
+  color: #f0f0f0;
+}
+
+@media (max-width: 600px) {
+  .ratu-navbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ratu-navbar .icons {
+    justify-content: space-around;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .nav-icon img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .nav-icon label {
+    font-size: 9px;
+  }
+}
   </style>
 </head>
 <body>
+<nav class="ratu-navbar">
+  <div class="brand-tagline">🥬 Ratu Fresh – ताज़गी हर सुबह</div>
+  <div class="icons">
+    <!-- Cart -->
+    <span onclick="window.location.href='cart.html'" class="nav-icon" title="Cart">
+      <img src="https://cdn-icons-png.flaticon.com/512/1170/1170678.png" alt="Cart" />
+      <label>Cart</label>
+    </span>
 
-  <nav>
-    <div class="brand-tagline">🥬 Ratu Fresh – ताज़गी हर सुबह</div>
-    <div class="icons">
-      <span onclick="window.location.href='cart.html'">🛒</span>
-      <span onclick="toggleProfile()">👤</span>
-    </div>
-  </nav>
+    <!-- Orders -->
+    <span onclick="window.location.href='orders.html'" class="nav-icon" title="Orders">
+      <img src="https://cdn-icons-png.flaticon.com/512/3500/3500833.png" alt="Orders" />
+      <label>Orders</label>
+    </span>
+
+    <!-- Profile -->
+    <span onclick="toggleProfile()" class="nav-icon" title="Profile">
+      <img src="https://cdn-icons-png.flaticon.com/512/9131/9131529.png" alt="Profile" />
+      <label>Profile</label>
+    </span>
+  </div>
+</nav>
 
   <div id="profileBox">
     <p><strong>नाम:</strong> <span id="profile-name"></span></p>
@@ -123,7 +204,7 @@
   <div class="hero">
     <h2>सब्ज़ियाँ आपके दरवाज़े तक</h2>
     <p>हर सुबह की ताज़गी अब Ratu में! ऑर्डर करें और सब्ज़ियाँ सीधे घर पर पाएं।</p>
-  </div>
+  </div>z
 
   <section class="products" id="productSection"></section>
 
@@ -155,14 +236,12 @@
   { id: 'chana', name: 'हरा चना', price: 32, img: 'https://media.istockphoto.com/id/899854420/photo/fresh-green-chickpeas-or-chick-peas-also-known-as-harbara-or-harbhara-in-hindi-and-cicer-is.webp?a=1&b=1&s=612x612&w=0&k=20&c=B_zR-xU5c5WDsJTvZKJAq2MkTJwJ--autmPGFPPoQ3w=' }
 ];
 
-  
-
   let cart = [];
 
   function renderProducts() {
     const section = document.getElementById("productSection");
     section.innerHTML = "";
-       products.forEach(prod => {
+    products.forEach(prod => {
       const card = document.createElement("div");
       card.className = "card";
       card.innerHTML = `
@@ -170,8 +249,8 @@
         <h3>${prod.name}</h3>
         <p>₹${prod.price} / किलो</p>
         <select id="qty-${prod.id}" onchange="updatePrice('${prod.id}', ${prod.price})">
-          ${[ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(q =>
-            `<option value="${q}" ${q === 1 ? 'selected' : ''}>${q < 1 ? q * 1000 + ' ग्राम' : q + ' किलो'}</option>`
+          ${[1,2,3,4,5,6,7,8,9,10].map(q =>
+            `<option value="${q}" ${q === 1 ? 'selected' : ''}>${q} किलो</option>`
           ).join('')}
         </select>
         <p id="price-${prod.id}">कुल कीमत: ₹${prod.price}</p>
@@ -189,7 +268,9 @@
 
   function addToCart(name, rate, selectId) {
     const user = JSON.parse(localStorage.getItem("userData"));
-    if (!user || !user._id) {
+    const token = localStorage.getItem("token");
+
+    if (!user || !user._id || !token) {
       alert("कृपया पहले लॉगिन करें");
       window.location.href = "login.html";
       return;
@@ -199,9 +280,12 @@
     const total = Math.round(rate * qty);
     const label = qty < 1 ? `${qty * 1000} ग्राम` : `${qty} किलो`;
 
-    fetch("https://my-web-xrr5.onrender.com/cart/add", {
+    fetch("http://localhost:4000/cart/add", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` // 🔐 Token भेजा गया
+      },
       body: JSON.stringify({
         userId: user._id,
         productId: name,
@@ -233,6 +317,7 @@
 
   function logout() {
     localStorage.removeItem("userData");
+    localStorage.removeItem("token"); // 🔐 Token भी हटाया गया
     alert("आप लॉगआउट हो गए हैं");
     window.location.href = "main.html";
   }
