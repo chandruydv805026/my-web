@@ -119,6 +119,9 @@
     .modal-content .login-btn { background: #43cea2; color: white; }
     .modal-content .cancel-btn { background: #ccc; }
   </style>
+
+  
+
 </head>
 <body>
 
@@ -152,9 +155,23 @@
 
   <!-- ✅ JavaScript -->
   <script>
-    let isLoggedIn = false;
-     const products = [
- { id: 'aloo', name: 'आलू', price: 20, img: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Patates.jpg' },
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("userData"));
+  const isLoggedIn = token && user && user._id;
+
+  // ✅ Redirect to profile if already logged in
+  window.onload = () => {
+    if (isLoggedIn) {
+      window.location.href = "profile.html"; // 🔁 Redirect to profile page
+      return;
+    }
+    renderProducts();
+    products.forEach(p => updatePrice(p.id, p.price));
+  };
+
+
+  const products = [
+     { id: 'aloo', name: 'आलू', price: 20, img: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Patates.jpg' },
   { id: 'tomato', name: 'टमाटर', price: 30, img: 'https://upload.wikimedia.org/wikipedia/commons/8/89/Tomato_je.jpg' },
   { id: 'onion', name: 'प्याज़', price: 25, img: 'https://media.istockphoto.com/id/1181631588/photo/onions-for-sale-in-the-weekly-market-malkapur-maharashtra.webp?a=1&b=1&s=612x612&w=0&k=20&c=dzL0b1DNEWUehYWVqYzY9qE-ZK88KJgO6eY-etuQYoc=' },
   { id: 'bhindi', name: 'भिंडी', price: 35, img: 'https://media.istockphoto.com/id/1503362390/photo/okra-over-wooden-table-background-cut-okra-and-whole-ladys-finger.jpg?s=1024x1024&w=is&k=20&c=xYk1xHhyPEMiZzYxaBu5IMyqXK3qdrlCVVFh8Yy4GgM=' },
@@ -175,60 +192,43 @@
   { id: 'arbi', name: 'अरबी', price: 27, img: 'https://media.istockphoto.com/id/1200642688/photo/eddoes.webp?a=1&b=1&s=612x612&w=0&k=20&c=HWw27eB0yUyGaP8SDrOktNkL8_Jj9kmBskf5wsZ9u8U=' },
   { id: 'chana', name: 'हरा चना', price: 32, img: 'https://media.istockphoto.com/id/899854420/photo/fresh-green-chickpeas-or-chick-peas-also-known-as-harbara-or-harbhara-in-hindi-and-cicer-is.webp?a=1&b=1&s=612x612&w=0&k=20&c=B_zR-xU5c5WDsJTvZKJAq2MkTJwJ--autmPGFPPoQ3w=' }
 ];
+function renderProducts() {
+    const container = document.getElementById("productContainer");
+    container.innerHTML = products.map(({ id, name, price, img }) => `
+      <div class="card">
+        <img src="${img}" alt="ताज़ा ${name}" />
+        <h3>${name}</h3>
+        <p>₹${price} / किलो</p>
+        <select id="qty-${id}" onchange="updatePrice('${id}', ${price})">
+          ${[0.25, 0.5, 1, 2, 3, 4, 5].map(q => `<option value="${q}" ${q === 1 ? 'selected' : ''}>${q < 1 ? q * 1000 + 'g' : q + ' किलो'}</option>`).join('')}
+        </select>
+        <p id="price-${id}">कुल कीमत: ₹${price}</p>
+        <button onclick="addToCart('${name}', ${price}, 'qty-${id}')">Add to Cart</button>
+      </div>
+    `).join('');
+  }
 
-         function renderProducts() {
-      const container = document.getElementById("productContainer");
-      products.forEach(({ id, name, price, img }) => {
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <img src="${img}" alt="ताज़ा ${name}" />
-          <h3>${name}</h3>
-          <p>₹${price} / किलो</p>
-          <select id="qty-${id}" onchange="updatePrice('${id}', ${price})">
-            <option value="0.25">250g</option>
-            <option value="0.5">500g</option>
-            <option value="1" selected>1 किलो</option>
-            <option value="2">2 किलो</option>
-            <option value="3">3 किलो</option>
-            <option value="4">4 किलो</option>
-            <option value="5">5 किलो</option>
-          </select>
-          <p id="price-${id}">कुल कीमत: ₹${price}</p>
-          <button onclick="addToCart('${name}', ${price}, 'qty-${id}')">Add to Cart</button>
-        `;
-        container.appendChild(card);
-      });
+  function updatePrice(id, rate) {
+    const qty = parseFloat(document.getElementById(`qty-${id}`).value);
+    document.getElementById(`price-${id}`).textContent = `कुल कीमत: ₹${Math.round(rate * qty)}`;
+  }
+
+  function addToCart(name, rate, qtyId) {
+    if (!isLoggedIn) {
+      document.getElementById("loginModal").style.display = "block";
+      return;
     }
+    const qty = parseFloat(document.getElementById(qtyId).value);
+    alert(`${name} (${qty} किलो) को ₹${Math.round(rate * qty)} में कार्ट में जोड़ा गया!`);
+  }
 
-    function updatePrice(id, rate) {
-      const qty = parseFloat(document.getElementById("qty-" + id).value);
-      const total = Math.round(rate * qty);
-      document.getElementById("price-" + id).textContent = `कुल कीमत: ₹${total}`;
-    }
+  function closeModal() {
+    document.getElementById("loginModal").style.display = "none";
+  }
 
-    function addToCart(itemName, rate, qtyId) {
-      if (!isLoggedIn) {
-        document.getElementById("loginModal").style.display = "block";
-        return;
-      }
-      const qty = parseFloat(document.getElementById(qtyId).value);
-      const total = Math.round(rate * qty);
-      alert(`${itemName} (${qty} किलो) को ₹${total} में कार्ट में जोड़ा गया!`);
-    }
-
-    function closeModal() {
-      document.getElementById("loginModal").style.display = "none";
-    }
-
-    function goToLogin() {
-      window.location.href = "login.html";
-    }
-
-    window.onload = function () {
-      renderProducts();
-      products.forEach(p => updatePrice(p.id, p.price));
-    };
-  </script>
+  function goToLogin() {
+    window.location.href = "login.html";
+  }
+</script>
 </body>
 </html>
