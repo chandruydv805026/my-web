@@ -1,5 +1,6 @@
 // 📦 Dependencies
 const express = require("express");
+const path = require("path");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -14,9 +15,14 @@ const Order = require("./models/order"); // ✅ Import Order model
 const cartRoutes = require("./routes/cartRoutes");
 
 const app = express();
+
 app.use(bodyParser.json());
 app.use(cors());
-
+app.use(express.static(path.join(__dirname, "public")));
+// 🌐 Route to serve main.html
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "main.html"));
+});
 // 🔐 JWT Middleware
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -193,3 +199,4 @@ mongoose.connect(process.env.DBurl)
   .catch(err => {
     console.error("❌ MongoDB connection failed:", err);
   });
+
