@@ -124,158 +124,173 @@
   </div>
 
   <script>
-    const user = JSON.parse(localStorage.getItem("userData"));
-    if (!user || !user._id) {
-      alert("कृपया पहले लॉगिन करें");
-      window.location.href = "login.html";
-    }
+  const user = JSON.parse(localStorage.getItem("userData"));
+  const token = localStorage.getItem("token");
 
-    let cart = [];
+  if (!user || !user._id || !token) {
+    alert("कृपया पहले लॉगिन करें");
+    window.location.href = "login.html";
+  }
 
-    async function fetchCartFromServer() {
-      try {
-        const res = await fetch(`https://my-web-xrr5.onrender.com/cart/${user._id}`);
-        const data = await res.json();
-        if (data && data.items) {
-          cart = data.items.map(item => ({
-            productId: item.productId,
-            name: item.name,
-            qty: item.quantity,
-            price: item.price,
-            total: item.quantity * item.price
-          }));
-          renderCart();
-        } else {
-          document.getElementById("cartContainer").innerHTML = "<div class='empty'>आपका कार्ट खाली है</div>";
+  let cart = [];
+
+  async function fetchCartFromServer() {
+    try {
+      const res = await fetch(`http://localhost:4000/cart/${user._id}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
         }
-      } catch (err) {
-        console.error("Cart fetch error:", err);
-        alert("❌ Cart लोड करने में समस्या हुई");
-      }
-    }
-
-    function renderCart() {
-      const container = document.getElementById("cartContainer");
-      const totalBox = document.getElementById("cartTotal");
-      const actionsBox = document.getElementById("cartActions");
-      const cartCountBox = document.getElementById("cartCount");
-
-      container.innerHTML = "";
-      let total = 0;
-      let totalItems = 0;
-
-      if (cart.length === 0) {
-        container.innerHTML = "<div class='empty'>आपका कार्ट खाली है</div>";
-        totalBox.textContent = "";
-        actionsBox.style.display = "none";
-        cartCountBox.textContent = "0";
-        return;
-      }
-
-      cart.forEach((item, index) => {
-        const label = item.qty < 1 ? `${item.qty * 1000} ग्राम` : `${item.qty} किलो`;
-        const row = document.createElement("div");
-        row.className = "cart-item";
-        row.innerHTML = `
-          <span>${label} ${item.name}</span>
-          <span>₹${item.total}</span>
-          <button onclick="removeItem(${index})">हटाएं</button>
-        `;
-        container.appendChild(row);
-        total += item.total;
-        totalItems += item.qty;
       });
+      const data = await res.json();
+      if (data && data.items) {
+        cart = data.items.map(item => ({
+          productId: item.productId,
+          name: item.name,
+          qty: item.quantity,
+          price: item.price,
+          total: item.quantity * item.price
+        }));
+        renderCart();
+      } else {
+        document.getElementById("cartContainer").innerHTML = "<div class='empty'>आपका कार्ट खाली है</div>";
+      }
+    } catch (err) {
+      console.error("Cart fetch error:", err);
+      alert("❌ Cart लोड करने में समस्या हुई");
+    }
+  }
 
-      totalBox.textContent = `कुल राशि: ₹${total}`;
-      cartCountBox.textContent = totalItems;
-      actionsBox.style.display = "flex";
+  function renderCart() {
+    const container = document.getElementById("cartContainer");
+    const totalBox = document.getElementById("cartTotal");
+    const actionsBox = document.getElementById("cartActions");
+    const cartCountBox = document.getElementById("cartCount");
+
+    container.innerHTML = "";
+    let total = 0;
+    let totalItems = 0;
+
+    if (cart.length === 0) {
+      container.innerHTML = "<div class='empty'>आपका कार्ट खाली है</div>";
+      totalBox.textContent = "";
+      actionsBox.style.display = "none";
+      cartCountBox.textContent = "0";
+      return;
     }
 
-    async function removeItem(index) {
-      const item = cart[index];
-      try {
-        const res = await fetch("https://my-web-xrr5.onrender.com/cart/remove", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: user._id, productId: item.productId })
-        });
-        const data = await res.json();
-        if (data.cart) {
-          cart = data.cart.items.map(i => ({
-            productId: i.productId,
-            name: i.name,
-            qty: i.quantity,
-            price: i.price,
-            total: i.quantity * i.price
-          }));
-          renderCart();
-        } else {
-          alert("❌ हटाने में समस्या हुई");
-        }
-      } catch (err) {
-        console.error("Remove error:", err);
+    cart.forEach((item, index) => {
+      const label = item.qty < 1 ? `${item.qty * 1000} ग्राम` : `${item.qty} किलो`;
+      const row = document.createElement("div");
+      row.className = "cart-item";
+      row.innerHTML = `
+        <span>${label} ${item.name}</span>
+        <span>₹${item.total}</span>
+        <button onclick="removeItem(${index})">हटाएं</button>
+      `;
+      container.appendChild(row);
+      total += item.total;
+      totalItems += item.qty;
+    });
+
+    totalBox.textContent = `कुल राशि: ₹${total}`;
+    cartCountBox.textContent = totalItems;
+    actionsBox.style.display = "flex";
+  }
+
+  async function removeItem(index) {
+    const item = cart[index];
+    try {
+      const res = await fetch("http://localhost:4000/cart/remove", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ userId: user._id, productId: item.productId })
+      });
+      const data = await res.json();
+      if (data.cart) {
+        cart = data.cart.items.map(i => ({
+          productId: i.productId,
+          name: i.name,
+          qty: i.quantity,
+          price: i.price,
+          total: i.quantity * i.price
+        }));
+        renderCart();
+      } else {
         alert("❌ हटाने में समस्या हुई");
       }
+    } catch (err) {
+      console.error("Remove error:", err);
+      alert("❌ हटाने में समस्या हुई");
     }
+  }
 
-    async function clearCart() {
-      if (!confirm("क्या आप पूरा कार्ट साफ़ करना चाहते हैं?")) return;
-      try {
-        const res = await fetch(`https://my-web-xrr5.onrender.com/cart/clear/${user._id}`, {
-          method: "DELETE"
-        });
-        const data = await res.json();
-        if (data.cart) {
-          cart = [];
-          renderCart();
-        } else {
-          alert("❌ Cart साफ़ करने में समस्या हुई");
+  async function clearCart() {
+    if (!confirm("क्या आप पूरा कार्ट साफ़ करना चाहते हैं?")) return;
+    try {
+      const res = await fetch(`http://localhost:4000/cart/clear/${user._id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
         }
-      } catch (err) {
-        console.error("Clear cart error:", err);
+      });
+      const data = await res.json();
+      if (data.cart) {
+        cart = [];
+        renderCart();
+      } else {
         alert("❌ Cart साफ़ करने में समस्या हुई");
       }
+    } catch (err) {
+      console.error("Clear cart error:", err);
+      alert("❌ Cart साफ़ करने में समस्या हुई");
     }
+  }
 
-    async function checkout() {
-      const totalAmount = cart.reduce((sum, item) => sum + item.total, 0);
-      if (totalAmount <= 50) {
-        alert("❌ कम से कम ₹50 की खरीदारी ज़रूरी है। कृपया और आइटम जोड़ें।");
-        return;
-      }
+  async function checkout() {
+  const totalAmount = cart.reduce((sum, item) => sum + item.total, 0);
+  if (totalAmount <= 50) {
+    alert("❌ कम से कम ₹50 की खरीदारी ज़रूरी है। कृपया और आइटम जोड़ें।");
+    return;
+  }
 
-      const orderData = {
-        products: cart.map(item => ({
-          name: item.name,
-          qty: item.qty
-        })),
-        totalPrice: totalAmount,
-        customerName: user.name,
-        address: `${user.address}, ${user.area}, ${user.pincode}`,
-        phone: user.phone
-      };
+  const orderData = {
+    products: cart.map(item => ({
+      name: item.name,
+      qty: item.qty
+    })),
+    totalPrice: totalAmount,
+    customerName: user.name,
+    address: `${user.address}, ${user.area}, ${user.pincode}`,
+    phone: user.phone
+  };
 
-      try {
-        const res = await fetch("https://my-web-xrr5.onrender.com/place-order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(orderData)
-        });
+  try {
+    const res = await fetch("http://localhost:4000/place-order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(orderData)
+    });
 
-        const data = await res.json();
-        if (res.ok) {
-          alert("✅ आपका ऑर्डर सफलतापूर्वक लिया गया है!\n\n" + data.message);
-          clearCart();
-        } else {
-          alert("❌ ऑर्डर भेजने में समस्या हुई:\n" + data.error);
-        }
-      } catch (err) {
-        console.error("Order error:", err);
-        alert("❌ सर्वर से कनेक्ट नहीं हो पाया");
-      }
+    const data = await res.json();
+    if (res.ok) {
+      alert("✅ आपका ऑर्डर सफलतापूर्वक लिया गया है!\n\n" + data.message);
+      clearCart();
+
+    } else {
+      alert("❌ ऑर्डर भेजने में समस्या हुई:\n" + data.error);
     }
-
-    fetchCartFromServer();
-  </script>
+  } catch (err) {
+    console.error("Order error:", err);
+    alert("❌ सर्वर से कनेक्ट नहीं हो पाया");
+  }
+}
+  fetchCartFromServer();
+</script>
 </body>
 </html>
