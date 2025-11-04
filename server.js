@@ -106,6 +106,10 @@ app.post("/login", async (req, res) => {
 });
 
 // 🛒 Protected Place Order route
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// 🛒 Protected Place Order route
 app.post("/place-order", authenticate, async (req, res) => {
   const { products, totalPrice, customerName, address, phone } = req.body;
 
@@ -131,21 +135,9 @@ app.post("/place-order", authenticate, async (req, res) => {
 
     await newOrder.save();
 
-    // ✅ Send email
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.ADMIN_EMAIL,
-        pass: process.env.ADMIN_EMAIL_PASS
-      }
-    });
-
-    const mailOptions = {
-      from: process.env.ADMIN_EMAIL,
-      to: "ck805026@gmail.com",
-      subject: "🛒 नया ऑर्डर प्राप्त हुआ - Ratu Fresh",
-      text: `
-नया ऑर्डर प्राप्त हुआ!
+    // ✅ Send email via Resend
+    const emailText = `
+🛒 नया ऑर्डर प्राप्त हुआ!
 
 ग्राहक: ${customerName}
 फोन: ${phone}
@@ -155,13 +147,17 @@ app.post("/place-order", authenticate, async (req, res) => {
 ${products.map(p => `- ${p.name} (${p.qty}kg)`).join("\n")}
 
 कुल कीमत: ₹${totalPrice}
-      `
-    };
+    `;
 
-    await transporter.sendMail(mailOptions);
+    await resend.emails.send({
+      from: "Ratu Fresh <onboarding@resend.dev>", // या तुम्हारा verified sender
+      to: "ck805026@gmail.com",
+      subject: "🛒 नया ऑर्डर प्राप्त हुआ - Ratu Fresh",
+      text: emailText
+    });
 
     res.status(200).json({
-      message: "✅ ऑर्डर सफलतापूर्वक लिया गया और ईमेल भेजा गया",
+      message: "✅ ऑर्डर सफलतापूर्वक लिया गया और ईमेल भेजा गया (Resend)",
       orderId: newOrder._id
     });
 
