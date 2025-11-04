@@ -136,7 +136,7 @@
 
   async function fetchCartFromServer() {
     try {
-      const res = await fetch(`http://localhost:4000/cart/${user._id}`, {
+      const res = await fetch(`https://my-web-xrr5.onrender.com/cart/${user._id}`, {
         headers: {
           "Authorization": `Bearer ${token}`
         }
@@ -200,7 +200,7 @@
   async function removeItem(index) {
     const item = cart[index];
     try {
-      const res = await fetch("http://localhost:4000/cart/remove", {
+      const res = await fetch("https://my-web-xrr5.onrender.com/cart/remove", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -230,7 +230,7 @@
   async function clearCart() {
     if (!confirm("क्या आप पूरा कार्ट साफ़ करना चाहते हैं?")) return;
     try {
-      const res = await fetch(`http://localhost:4000/cart/clear/${user._id}`, {
+      const res = await fetch(`https://my-web-xrr5.onrender.com/cart/clear/${user._id}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`
@@ -268,7 +268,7 @@
   };
 
   try {
-    const res = await fetch("http://localhost:4000/place-order", {
+    const res = await fetch("https://my-web-xrr5.onrender.com/place-order", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -294,3 +294,4 @@
 </script>
 </body>
 </html>
+
