@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+// Define the Order Schema
 const orderSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -53,5 +54,8 @@ const orderSchema = new mongoose.Schema({
     default: 'Cash on Delivery'
   }
 });
+
+// TTL Index: Automatically delete orders 2 hours after creation
+orderSchema.index({ orderDate: 1 }, { expireAfterSeconds: 7200 });
 
 module.exports = mongoose.model('Order', orderSchema);
