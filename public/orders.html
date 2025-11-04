@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ratu Fresh – आपके ऑर्डर</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom, #f0f4f7, #e0eafc);
+      color: #333;
+      min-height: 100vh;
+    }
+
+    nav {
+      background: linear-gradient(to right, #43cea2, #185a9d);
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
+      color: white;
+    }
+
+    .brand-tagline {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .order-section {
+      padding: 30px 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .order-section h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 26px;
+      color: #2c3e50;
+    }
+
+    .order-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .order-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+
+    .order-card h3 {
+      margin-bottom: 10px;
+      color: #00796b;
+      font-size: 18px;
+    }
+
+    .order-card p {
+      margin: 6px 0;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .order-card ul {
+      margin-top: 6px;
+      padding-left: 20px;
+    }
+
+    .order-card ul li {
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+
+    .empty-message {
+      text-align: center;
+      padding: 40px 20px;
+      font-size: 16px;
+      color: #777;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+      color: #666;
+      background-color: #f0f0f0;
+      border-top: 1px solid #ddd;
+    }
+
+    @media (max-width: 600px) {
+      .brand-tagline {
+        font-size: 20px;
+      }
+
+      .order-section h2 {
+        font-size: 22px;
+      }
+
+      .order-card {
+        padding: 16px;
+      }
+
+      .order-card p,
+      .order-card ul li {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="brand-tagline">📦 Ratu Fresh – आपके ऑर्डर</div>
+  </nav>
+
+  <section class="order-section">
+    <h2>आपके हाल के ऑर्डर</h2>
+    <div id="orderList">
+      <p style="text-align:center; font-size:15px; color:#555;">🔄 आपके ऑर्डर लोड हो रहे हैं...</p>
+    </div>
+  </section>
+
+  <footer>
+    © 2025 Chandan Yadav, Ratu Jharkhand. All rights reserved.
+  </footer>
+
+  <script>
+    async function fetchOrders() {
+      const user = JSON.parse(localStorage.getItem("userData"));
+      const token = localStorage.getItem("token");
+
+      if (!user || !token) {
+        alert("कृपया पहले लॉगिन करें");
+        window.location.href = "login.html";
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:4000/orders/${user._id}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        const data = await res.json();
+        const container = document.getElementById("orderList");
+        container.innerHTML = "";
+
+        if (!data.orders || data.orders.length === 0) {
+          container.innerHTML = `
+            <div class="empty-message">
+              🙁 अभी तक कोई ऑर्डर नहीं मिला<br>
+              <span style="font-size:14px;">खरीदारी करें और ताज़गी का अनुभव लें!</span>
+            </div>
+          `;
+          return;
+        }
+
+        data.orders.forEach(order => {
+          const card = document.createElement("div");
+          card.className = "order-card";
+          card.innerHTML = `
+            <h3>ऑर्डर नंबर: <span style="color:#333;">${order._id}</span></h3>
+            <p><strong>🧾 कुल भुगतान:</strong> ₹${order.totalAmount.toFixed(2)}</p>
+            <p><strong>📦 स्थिति:</strong> <span style="color:${order.status === 'Delivered' ? '#2ecc71' : '#e67e22'};">${order.status}</span></p>
+            <p><strong>📅 ऑर्डर की तारीख:</strong> ${new Date(order.orderDate).toLocaleDateString('hi-IN', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric'
+            })}</p>
+            <p><strong>⏰ समय:</strong> ${new Date(order.orderDate).toLocaleTimeString('hi-IN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            })}</p>
+            <p><strong>🛒 शामिल आइटम्स:</strong></p>
+            <ul>
+              ${order.items.map(p => `<li>${p.quantity} किलो ${p.name}</li>`).join("")}
+            </ul>
+            <p style="font-size:13px; color:#999;">⚠️ यह ऑर्डर 1 दिन बाद सिस्टम से हट जाएगा</p>
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error("Order fetch error:", err);
+        document.getElementById("orderList").innerHTML = "<p class='empty-message'>❌ ऑर्डर लोड करने में समस्या हुई</p>";
+      }
+    }
+
+    window.onload = fetchOrders;
+  </script>
+
+</body>
+</html>
