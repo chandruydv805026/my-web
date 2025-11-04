@@ -103,56 +103,58 @@
     </form>
   </div>
 
-  <script>
-    const form = document.getElementById('loginForm');
-    const button = document.getElementById('loginBtn');
-    const spinner = document.getElementById('spinner');
+  <!-- 🔐 Updated Login Script -->
+<script>
+  const form = document.getElementById('loginForm');
+  const button = document.getElementById('loginBtn');
+  const spinner = document.getElementById('spinner');
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-      const phone = formData.get('phone');
-      const password = formData.get('password');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const phone = formData.get('phone');
+    const password = formData.get('password');
 
-      if (!/^[6-9]\d{9}$/.test(phone)) {
-        alert('Please enter a valid 10-digit Indian phone number');
-        return;
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      alert('Please enter a valid 10-digit Indian phone number');
+      return;
+    }
+
+    if (password.length < 8) {
+      alert('Password must be at least 8 characters');
+      return;
+    }
+
+    const data = { phone, password };
+    button.classList.add('loading');
+    button.disabled = true;
+
+    try {
+      const res = await fetch('http://localhost:4000/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await res.json();
+
+      if (res.ok && result.token && result.user) {
+        // ✅ Store token and user data
+        localStorage.setItem("token", result.token);
+        localStorage.setItem("userData", JSON.stringify(result.user));
+
+        // ✅ Redirect to protected page
+        window.location.href = "profile.html";
+      } else {
+        console.error("Login failed:", result);
+        alert(result.error || 'Login failed');
       }
-
-      if (password.length < 8) {
-        alert('Password must be at least 8 characters');
-        return;
-      }
-
-      const data = { phone, password };
-      button.classList.add('loading');
-      button.disabled = true;
-
-      try {
-        const res = await fetch('https://my-web-xrr5.onrender.com/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-
-        const result = await res.json();
-
-        if (res.ok && result.user && result.user._id) {
-          localStorage.setItem("userData", JSON.stringify(result.user));
-          window.location.href = "profile.html";
-        } else {
-          console.error("Login failed:", result);
-          alert(result.error || 'Login failed');
-        }
-      } catch (err) {
-        console.error("Server error:", err);
-        alert('Server error');
-      } finally {
-        button.classList.remove('loading');
-        button.disabled = false;
-      }
-    });
-  </script>
-</body>
-</html>
-
+    } catch (err) {
+      console.error("Server error:", err);
+      alert('Server error');
+    } finally {
+      button.classList.remove('loading');
+      button.disabled = false;
+    }
+  });
+</script>
