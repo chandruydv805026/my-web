@@ -5,88 +5,96 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login</title>
   <style>
-    * { box-sizing: border-box; }
     body {
-      margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      background: linear-gradient(to right, #1f4037, #99f2c8);
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      margin: 0;
     }
     .login-container {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(12px);
-      padding: 30px 25px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(14px);
+      padding: 30px;
       border-radius: 16px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-      width: 100%;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
       max-width: 380px;
+      width: 100%;
       color: #fff;
+      position: relative;
     }
-    .login-container h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #fdfdfd;
-    }
-    .login-container input {
+    input, button {
       width: 100%;
       padding: 14px;
       margin: 10px 0;
-      border: none;
       border-radius: 10px;
+      border: none;
       font-size: 15px;
+    }
+    input {
       background: rgba(255, 255, 255, 0.2);
       color: #fff;
-      outline: none;
     }
-    .login-container input::placeholder {
-      color: #ddd;
-    }
-    .login-container input:focus {
-      border: 1px solid #fda085;
-      background: rgba(255, 255, 255, 0.3);
-    }
-    .login-container button {
-      width: 100%;
-      padding: 14px;
-      background: linear-gradient(to right, #f6d365, #fda085);
+    button {
+      background: linear-gradient(to right, #00c9a7, #92fe9d);
       color: #222;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
       font-weight: 600;
       cursor: pointer;
-      margin-top: 10px;
-      transition: transform 0.2s ease;
       position: relative;
     }
-    .login-container button:hover {
-      transform: scale(1.03);
-      box-shadow: 0 4px 12px rgba(253, 160, 133, 0.4);
+    .popup {
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #00c9a7;
+      color: #fff;
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0, 201, 167, 0.4);
+      opacity: 0;
+      transition: opacity 0.3s ease, top 0.3s ease;
+      z-index: 10;
+      text-align: center;
+      max-width: 90%;
+      word-wrap: break-word;
+    }
+    .popup.show {
+      top: -30px;
+      opacity: 1;
+    }
+    .popup.error {
+      background: #ff4d4d;
     }
     .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid #00c9a7;
+      border-radius: 50%;
       width: 18px;
       height: 18px;
-      border: 3px solid #fff;
-      border-top: 3px solid transparent;
-      border-radius: 50%;
       animation: spin 1s linear infinite;
       position: absolute;
-      right: 16px;
       top: 50%;
+      right: 16px;
       transform: translateY(-50%);
       display: none;
     }
-    .loading .spinner {
+    .spinner.show {
       display: inline-block;
     }
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      0% { transform: translateY(-50%) rotate(0deg); }
+      100% { transform: translateY(-50%) rotate(360deg); }
     }
     @media (max-width: 480px) {
-      .login-container { padding: 25px 20px; }
+      .popup {
+        font-size: 14px;
+        padding: 12px 20px;
+      }
     }
   </style>
 </head>
@@ -95,67 +103,64 @@
     <h2>Login</h2>
     <form id="loginForm">
       <input type="text" name="phone" placeholder="Phone (10 digits)" maxlength="10" required />
-      <input type="password" name="password" placeholder="Password" minlength="8" required />
-      <button type="submit" id="loginBtn">
-        Login
+      <button type="submit">
+        Send OTP
         <span class="spinner" id="spinner"></span>
       </button>
     </form>
+    <div id="popup" class="popup"></div>
   </div>
 
-  <!-- 🔐 Updated Login Script -->
-<script>
-  const form = document.getElementById('loginForm');
-  const button = document.getElementById('loginBtn');
-  const spinner = document.getElementById('spinner');
+  <script>
+    const form = document.getElementById('loginForm');
+    const popup = document.getElementById('popup');
+    const spinner = document.getElementById('spinner');
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(form);
-    const phone = formData.get('phone');
-    const password = formData.get('password');
-
-    if (!/^[6-9]\d{9}$/.test(phone)) {
-      alert('Please enter a valid 10-digit Indian phone number');
-      return;
+    function showPopup(message, isError = false) {
+      popup.textContent = message;
+      popup.classList.add('show');
+      popup.classList.toggle('error', isError);
+      setTimeout(() => {
+        popup.classList.remove('show');
+      }, 3000);
     }
 
-    if (password.length < 8) {
-      alert('Password must be at least 8 characters');
-      return;
-    }
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const phone = form.phone.value;
 
-    const data = { phone, password };
-    button.classList.add('loading');
-    button.disabled = true;
-
-    try {
-      const res = await fetch('https://my-web-xrr5.onrender.com/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-
-      const result = await res.json();
-
-      if (res.ok && result.token && result.user) {
-        // ✅ Store token and user data
-        localStorage.setItem("token", result.token);
-        localStorage.setItem("userData", JSON.stringify(result.user));
-
-        // ✅ Redirect to protected page
-        window.location.href = "profile.html";
-      } else {
-        console.error("Login failed:", result);
-        alert(result.error || 'Login failed');
+      if (!/^[6-9]\d{9}$/.test(phone)) {
+        showPopup('Enter valid Indian phone number', true);
+        return;
       }
-    } catch (err) {
-      console.error("Server error:", err);
-      alert('Server error');
-    } finally {
-      button.classList.remove('loading');
-      button.disabled = false;
-    }
-  });
-</script>
 
+      spinner.classList.add('show');
+      try {
+        const res = await fetch('http://localhost:4000/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone })
+        });
+
+        const result = await res.json();
+        spinner.classList.remove('show');
+
+        if (res.ok && result.success) {
+          localStorage.setItem("phone", phone);
+          localStorage.setItem("otpEmail", result.email); // ✅ Store email
+          showPopup('✅ OTP भेज दिया गया');
+          setTimeout(() => {
+            window.location.href = "otp.html";
+          }, 1500);
+        } else {
+          showPopup(result.error || "Login failed", true);
+        }
+      } catch (err) {
+        console.error("Login error:", err);
+        spinner.classList.remove('show');
+        showPopup("Server error", true);
+      }
+    });
+  </script>
+</body>
+</html>
