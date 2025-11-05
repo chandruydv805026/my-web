@@ -5,12 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Ratu Fresh – सब्ज़ियाँ आपके दरवाज़े तक</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(to right, #fffbe6, #fff);
       color: #333;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
     }
+
+    /* Navbar */
     nav {
       background: linear-gradient(to right, #43cea2, #185a9d);
       padding: 16px 24px;
@@ -21,7 +30,7 @@
       flex-wrap: wrap;
     }
     .brand-tagline {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: bold;
       display: flex;
       align-items: center;
@@ -36,21 +45,33 @@
       color: white;
       text-decoration: none;
       font-weight: 500;
+      transition: color 0.3s ease;
     }
+    nav ul li a:hover {
+      color: #f5c842;
+    }
+
+    /* Hero Section */
     .hero {
       text-align: center;
       padding: 60px 20px 40px;
+      background: linear-gradient(to right, #fdfbfb, #ebedee);
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
     .hero h2 {
-      font-size: 32px;
-      margin-bottom: 20px;
+      font-size: 28px;
+      margin-bottom: 16px;
+      color: #2c3e50;
     }
     .hero p {
-      font-size: 18px;
+      font-size: 16px;
       max-width: 700px;
       margin: 0 auto;
-      line-height: 1.6;
+      color: #555;
     }
+
+    /* Products Grid */
     .products {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -59,10 +80,14 @@
     }
     .card {
       background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
       padding: 1rem;
       text-align: center;
+      transition: transform 0.2s ease;
+    }
+    .card:hover {
+      transform: translateY(-4px);
     }
     .card img {
       width: 100%;
@@ -70,28 +95,45 @@
       object-fit: cover;
       border-radius: 8px;
     }
-    .card h3 { margin: 0.5rem 0; }
-    .card p { color: #555; }
+    .card h3 {
+      margin: 0.5rem 0;
+      font-size: 18px;
+    }
+    .card p {
+      color: #555;
+      font-size: 14px;
+    }
     .card select {
       margin: 10px 0;
       padding: 6px;
       font-size: 16px;
+      width: 100%;
     }
     .card button {
-      background-color: #f5c842;
+      background-color: #43cea2;
       border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
+      padding: 10px 16px;
+      border-radius: 6px;
       color: white;
-      cursor: pointer;
+      font-weight: 600;
+      font-size: 15px;
+      transition: background 0.3s ease;
     }
+    .card button:hover {
+      background-color: #2abf91;
+    }
+
+    /* Footer */
     footer {
       text-align: center;
-      padding: 20px;
-      font-size: 14px;
-      color: #666;
-      background-color: #eee;
+      padding: 16px 10px;
+      font-size: 13px;
+      color: #888;
+      background-color: #f9f9f9;
+      border-top: 1px solid #ddd;
     }
+
+    /* Login Modal */
     #loginModal {
       display: none;
       position: fixed;
@@ -104,7 +146,8 @@
       background: #fff;
       padding: 20px;
       border-radius: 10px;
-      width: 300px;
+      width: 90%;
+      max-width: 320px;
       margin: 100px auto;
       text-align: center;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
@@ -116,12 +159,36 @@
       border: none;
       cursor: pointer;
     }
-    .modal-content .login-btn { background: #43cea2; color: white; }
-    .modal-content .cancel-btn { background: #ccc; }
+    .modal-content .login-btn {
+      background: #43cea2;
+      color: white;
+    }
+    .modal-content .cancel-btn {
+      background: #ccc;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 600px) {
+      nav {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      nav ul {
+        width: 100%;
+        justify-content: space-around;
+        margin-top: 8px;
+      }
+      .hero h2 {
+        font-size: 22px;
+      }
+      .hero p {
+        font-size: 14px;
+      }
+      .card img {
+        height: 130px;
+      }
+    }
   </style>
-
-  
-
 </head>
 <body>
 
@@ -138,13 +205,15 @@
     <p>हर सुबह की ताज़गी अब Ratu में! ऑर्डर करें और सब्ज़ियाँ सीधे घर पर पाएं।</p>
   </div>
 
-  <section class="products" id="productContainer"></section>
+  <section class="products" id="productContainer">
+    <!-- Product cards will be inserted here -->
+  </section>
 
   <footer>
     © 2025 Chandan Yadav, Ratu Jharkhand. All rights reserved.
   </footer>
 
-  <!-- ✅ Login Modal -->
+<!-- ✅ Login Modal -->
   <div id="loginModal">
     <div class="modal-content">
       <p>कृपया पहले लॉगिन करें ताकि आप ऑर्डर कर सकें।</p>
