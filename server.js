@@ -32,6 +32,15 @@ const authenticate = (req, res, next) => {
     next();
   });
 };
+const path = require("path");
+
+// Static file serving
+app.use(express.static(path.join(__dirname, "public")));
+
+// Default route → serve main.html
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "main.html"));
+});
 
 // 🛒 Cart routes
 app.use("/cart", cartRoutes);
@@ -255,9 +264,11 @@ mongoose.connect(process.env.DBurl, {
 
   const PORT = process.env.PORT || 4000;
   app.listen(PORT, () => {
-    
+    console.log(`🚀 Server चालू है: https://my-web-xrr5.onrender.com:${PORT}`);
+
   });
 })
 .catch(err => {
   console.error("❌ MongoDB से कनेक्शन फेल:", err);
 });
+
