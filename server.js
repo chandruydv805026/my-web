@@ -281,13 +281,9 @@ mongoose.connect(process.env.DBurl, {
 .then(() => {
   console.log("✅ MongoDB से कनेक्शन सफल");
 
-  const PORT = process.env.PORT || 4000;
-  app.listen(PORT, () => {
-    console.log(`🚀 Server चालू है: http://localhost:${PORT}`);
-  });
-})
-.catch(err => {
-  console.error("❌ MongoDB से कनेक्शन फेल:", err);
+  const PORT = process.env.PORT || 10000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server चालू है: http://localhost:${PORT}`);
 });
 
 
