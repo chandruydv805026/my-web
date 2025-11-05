@@ -111,9 +111,77 @@
         padding: 10px;
       }
     }
+    .popup {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #00c9a7;
+  color: #fff;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 201, 167, 0.4);
+  opacity: 0;
+  transition: opacity 0.3s ease, bottom 0.3s ease;
+  z-index: 1000;
+  text-align: center;
+  max-width: 90%;
+  word-wrap: break-word;
+}
+.popup.show {
+  bottom: 50px;
+  opacity: 1;
+}
+.popup.error {
+  background: #ff4d4d;
+}
+.order-success {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  background: linear-gradient(to right, #43cea2, #185a9d);
+  color: #fff;
+  padding: 20px 30px;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+   z-index: 9999;
+  display: none;
+}
+
+/* ✅ Add this block */
+.order-success.animate {
+  display: block;
+  animation: popFade 2.5s ease forwards;
+}
+
+@keyframes popFade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+}
   </style>
 </head>
 <body>
+  <div id="popup" class="popup"></div>
+  <div id="orderSuccess" class="order-success">🎉 बधाई हो! आपका ऑर्डर सफलतापूर्वक लिया गया है!</div>
   <div id="cartIcon">🛒 <span id="cartCount">0</span></div>
   <h2>🛒 आपका कार्ट</h2>
   <div id="cartContainer"></div>
@@ -131,136 +199,139 @@
     alert("कृपया पहले लॉगिन करें");
     window.location.href = "login.html";
   }
+  function showPopup(message, isError = false) {
+  const popup = document.getElementById("popup");
+  popup.textContent = message;
+  popup.classList.add("show");
+  popup.classList.toggle("error", isError);
+  setTimeout(() => {
+    popup.classList.remove("show");
+  }, 3000);
+}
+let cart = [];
 
-  let cart = [];
-
-  async function fetchCartFromServer() {
-    try {
-      const res = await fetch(`https://my-web-xrr5.onrender.com/cart/${user._id}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      const data = await res.json();
-      if (data && data.items) {
-        cart = data.items.map(item => ({
-          productId: item.productId,
-          name: item.name,
-          qty: item.quantity,
-          price: item.price,
-          total: item.quantity * item.price
-        }));
-        renderCart();
-      } else {
-        document.getElementById("cartContainer").innerHTML = "<div class='empty'>आपका कार्ट खाली है</div>";
-      }
-    } catch (err) {
-      console.error("Cart fetch error:", err);
-      alert("❌ Cart लोड करने में समस्या हुई");
-    }
-  }
-
-  function renderCart() {
-    const container = document.getElementById("cartContainer");
-    const totalBox = document.getElementById("cartTotal");
-    const actionsBox = document.getElementById("cartActions");
-    const cartCountBox = document.getElementById("cartCount");
-
-    container.innerHTML = "";
-    let total = 0;
-    let totalItems = 0;
-
-    if (cart.length === 0) {
-      container.innerHTML = "<div class='empty'>आपका कार्ट खाली है</div>";
-      totalBox.textContent = "";
-      actionsBox.style.display = "none";
-      cartCountBox.textContent = "0";
-      return;
-    }
-
-    cart.forEach((item, index) => {
-      const label = item.qty < 1 ? `${item.qty * 1000} ग्राम` : `${item.qty} किलो`;
-      const row = document.createElement("div");
-      row.className = "cart-item";
-      row.innerHTML = `
-        <span>${label} ${item.name}</span>
-        <span>₹${item.total}</span>
-        <button onclick="removeItem(${index})">हटाएं</button>
-      `;
-      container.appendChild(row);
-      total += item.total;
-      totalItems += item.qty;
+async function fetchCartFromServer() {
+  try {
+    const res = await fetch(`http://localhost:4000/cart/${user._id}`, {
+      headers: { "Authorization": `Bearer ${token}` }
     });
-
-    totalBox.textContent = `कुल राशि: ₹${total}`;
-    cartCountBox.textContent = totalItems;
-    actionsBox.style.display = "flex";
-  }
-
-  async function removeItem(index) {
-    const item = cart[index];
-    try {
-      const res = await fetch("https://my-web-xrr5.onrender.com/cart/remove", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ userId: user._id, productId: item.productId })
-      });
-      const data = await res.json();
-      if (data.cart) {
-        cart = data.cart.items.map(i => ({
-          productId: i.productId,
-          name: i.name,
-          qty: i.quantity,
-          price: i.price,
-          total: i.quantity * i.price
-        }));
-        renderCart();
-      } else {
-        alert("❌ हटाने में समस्या हुई");
-      }
-    } catch (err) {
-      console.error("Remove error:", err);
-      alert("❌ हटाने में समस्या हुई");
+    const data = await res.json();
+    if (data && data.items) {
+      cart = data.items.map(item => ({
+        productId: item.productId,
+        name: item.name,
+        qty: item.quantity,
+        price: item.price,
+        total: item.quantity * item.price
+      }));
+      renderCart();
+    } else {
+      document.getElementById("cartContainer").innerHTML = "<div class='empty'>आपका कार्ट खाली है</div>";
     }
+  } catch (err) {
+    console.error("Cart fetch error:", err);
+    showPopup("❌ Cart लोड करने में समस्या हुई", true);
+  }
+}
+
+function renderCart() {
+  const container = document.getElementById("cartContainer");
+  const totalBox = document.getElementById("cartTotal");
+  const actionsBox = document.getElementById("cartActions");
+  const cartCountBox = document.getElementById("cartCount");
+
+  container.innerHTML = "";
+  let total = 0;
+  let totalItems = 0;
+
+  if (cart.length === 0) {
+    container.innerHTML = "<div class='empty'>आपका कार्ट खाली है</div>";
+    totalBox.textContent = "";
+    actionsBox.style.display = "none";
+    cartCountBox.textContent = "0";
+    return;
   }
 
-  async function clearCart() {
-    if (!confirm("क्या आप पूरा कार्ट साफ़ करना चाहते हैं?")) return;
-    try {
-      const res = await fetch(`https://my-web-xrr5.onrender.com/cart/clear/${user._id}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      const data = await res.json();
-      if (data.cart) {
-        cart = [];
-        renderCart();
-      } else {
-        alert("❌ Cart साफ़ करने में समस्या हुई");
-      }
-    } catch (err) {
-      console.error("Clear cart error:", err);
-      alert("❌ Cart साफ़ करने में समस्या हुई");
+  cart.forEach((item, index) => {
+    const label = item.qty < 1 ? `${item.qty * 1000} ग्राम` : `${item.qty} किलो`;
+    const row = document.createElement("div");
+    row.className = "cart-item";
+    row.innerHTML = `
+      <span>${label} ${item.name}</span>
+      <span>₹${item.total}</span>
+      <button onclick="removeItem(${index})">हटाएं</button>
+    `;
+    container.appendChild(row);
+    total += item.total;
+    totalItems += item.qty;
+  });
+
+  totalBox.textContent = `कुल राशि: ₹${total}`;
+  cartCountBox.textContent = totalItems;
+  actionsBox.style.display = "flex";
+}
+
+async function removeItem(index) {
+  const item = cart[index];
+  try {
+    const res = await fetch("http://localhost:4000/cart/remove", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ userId: user._id, productId: item.productId })
+    });
+    const data = await res.json();
+    if (data.cart) {
+      cart = data.cart.items.map(i => ({
+        productId: i.productId,
+        name: i.name,
+        qty: i.quantity,
+        price: i.price,
+        total: i.quantity * i.price
+      }));
+      renderCart();
+      showPopup("✅ आइटम हटाया गया");
+    } else {
+      showPopup("❌ हटाने में समस्या हुई", true);
     }
+  } catch (err) {
+    console.error("Remove error:", err);
+    showPopup("❌ हटाने में समस्या हुई", true);
   }
+}
 
-  async function checkout() {
+async function clearCart(skipConfirm = false) {
+  if (!skipConfirm && !confirm("क्या आप पूरा कार्ट साफ़ करना चाहते हैं?")) return;
+  try {
+    const res = await fetch(`http://localhost:4000/cart/clear/${user._id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      cart = [];
+      renderCart();
+      showPopup("✅ कार्ट साफ़ कर दिया गया");
+    } else {
+      showPopup("❌ Cart साफ़ करने में समस्या हुई", true);
+    }
+  } catch (err) {
+    console.error("Clear cart error:", err);
+    showPopup("❌ Cart साफ़ करने में समस्या हुई", true);
+  }
+}
+
+async function checkout() {
   const totalAmount = cart.reduce((sum, item) => sum + item.total, 0);
   if (totalAmount <= 50) {
-    alert("❌ कम से कम ₹50 की खरीदारी ज़रूरी है। कृपया और आइटम जोड़ें।");
+    showPopup("❌ कम से कम ₹50 की खरीदारी ज़रूरी है। कृपया और आइटम जोड़ें।", true);
     return;
   }
 
   const orderData = {
-    products: cart.map(item => ({
-      name: item.name,
-      qty: item.qty
-    })),
+    products: cart.map(item => ({ name: item.name, qty: item.qty })),
     totalPrice: totalAmount,
     customerName: user.name,
     address: `${user.address}, ${user.area}, ${user.pincode}`,
@@ -268,7 +339,7 @@
   };
 
   try {
-    const res = await fetch("https://my-web-xrr5.onrender.com/place-order", {
+    const res = await fetch("http://localhost:4000/place-order", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -279,19 +350,37 @@
 
     const data = await res.json();
     if (res.ok) {
-      alert("✅ आपका ऑर्डर सफलतापूर्वक लिया गया है!\n\n" + data.message);
-      clearCart();
+      showPopup("✅ आपका ऑर्डर सफलतापूर्वक लिया गया है!");
 
+      const successBox = document.getElementById("orderSuccess");
+      console.log("🎉 Animation triggered");
+      console.log("Success box:", successBox);
+
+      successBox.style.display = "block";
+
+      setTimeout(() => {
+        successBox.classList.add("animate");
+      }, 50);
+
+      
+      setTimeout(() => {
+        successBox.style.display = "none";
+        successBox.classList.remove("animate");
+      }, 2500);
+
+      clearCart(true); // ✅ बिना confirm popup के
     } else {
-      alert("❌ ऑर्डर भेजने में समस्या हुई:\n" + data.error);
+      showPopup("❌ ऑर्डर भेजने में समस्या हुई: " + data.error, true);
     }
   } catch (err) {
     console.error("Order error:", err);
-    alert("❌ सर्वर से कनेक्ट नहीं हो पाया");
+    showPopup("❌ सर्वर से कनेक्ट नहीं हो पाया", true);
   }
 }
-  fetchCartFromServer();
+
+fetchCartFromServer();
+
+  
 </script>
 </body>
 </html>
-
