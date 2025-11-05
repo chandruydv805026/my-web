@@ -124,7 +124,7 @@ app.post("/resend-otp", async (req, res) => {
     otpStore[phone] = { otp, expires: Date.now() + 2 * 60 * 1000 };
 
     const { error } = await resend.emails.send({
-      from: "Ratu Fresh <noreply@ratufresh.in>",
+     from: "Ratu Fresh <onboarding@resend.dev>",
       to: user.email,
       subject: "🔁 नया OTP - Ratu Fresh",
       text: `आपका नया OTP है: ${otp}\nयह 2 मिनट तक मान्य रहेगा।`
@@ -210,7 +210,7 @@ app.post("/place-order", authenticate, async (req, res) => {
     await newOrder.save();
 
     await resend.emails.send({
-      from: "Ratu Fresh <noreply@ratufresh.in>",
+      from: "Ratu Fresh <onboarding@resend.dev>",
       to: "ck805026@gmail.com",
       subject: "🛒 नया ऑर्डर प्राप्त हुआ - Ratu Fresh",
       text: `
@@ -271,4 +271,5 @@ mongoose.connect(process.env.DBurl, {
 .catch(err => {
   console.error("❌ MongoDB से कनेक्शन फेल:", err);
 });
+
 
