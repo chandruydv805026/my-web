@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Verify OTP</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .otp-container {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(14px);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      max-width: 380px;
+      width: 100%;
+      color: #fff;
+    }
+    .otp-container h2 {
+      text-align: center;
+      margin-bottom: 10px;
+      font-weight: 600;
+      color: #fdfdfd;
+    }
+    .otp-container p {
+      text-align: center;
+      font-size: 14px;
+      color: #ccc;
+      margin-bottom: 20px;
+    }
+    .otp-container input {
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      outline: none;
+    }
+    .otp-container input::placeholder {
+      color: #ddd;
+    }
+    .otp-container input:focus {
+      border: 1px solid #00c9a7;
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .otp-container button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(to right, #00c9a7, #92fe9d);
+      color: #222;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: transform 0.2s ease;
+    }
+    .otp-container button:hover {
+      transform: scale(1.03);
+      box-shadow: 0 4px 12px rgba(0, 201, 167, 0.4);
+    }
+    .resend-btn {
+      background: none;
+      border: none;
+      color: #00c9a7;
+      font-size: 13px;
+      padding: 6px 10px;
+      margin-top: 8px;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.3s ease, color 0.3s ease;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .resend-btn:disabled {
+      color: #888;
+      cursor: not-allowed;
+    }
+    .resend-btn:hover:enabled {
+      background: rgba(255, 255, 255, 0.1);
+      color: #92fe9d;
+    }
+    @media (max-width: 480px) {
+      .otp-container { padding: 25px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="otp-container">
+    <h2>Enter OTP</h2>
+    <p id="emailInfo">📩 OTP भेजा गया है...</p>
+    <form id="otpForm">
+      <input type="text" name="otp" placeholder="Enter OTP" maxlength="6" required />
+      <button type="submit">Verify</button>
+    </form>
+    <button class="resend-btn" id="resendBtn" disabled>🔁 Resend OTP (30s)</button>
+  </div>
+
+  <script>
+    function maskEmail(email) {
+      const [local, domain] = email.split("@");
+      if (local.length <= 2) {
+        return local[0] + "*@" + domain;
+      }
+      const first = local.slice(0, 2);
+      const last = local.slice(-1);
+      const masked = "*".repeat(local.length - 3);
+      return `${first}${masked}${last}@${domain}`;
+    }
+
+    const form = document.getElementById('otpForm');
+    const resendBtn = document.getElementById('resendBtn');
+    const emailInfo = document.getElementById('emailInfo');
+
+    const phone = localStorage.getItem("phone");
+    const email = localStorage.getItem("otpEmail");
+
+    if (email) {
+      emailInfo.textContent = `📩 OTP भेजा गया है: ${maskEmail(email)}`;
+    } else {
+      emailInfo.textContent = `📩 OTP भेजा गया है आपके रजिस्टर ईमेल पर`;
+    }
+
+    let countdown = 30;
+
+    const updateResendButton = () => {
+      resendBtn.textContent = `🔁 Resend OTP (${countdown}s)`;
+      resendBtn.disabled = true;
+      const timer = setInterval(() => {
+        countdown--;
+        resendBtn.textContent = countdown > 0
+          ? `🔁 Resend OTP (${countdown}s)`
+          : "🔁 Resend OTP";
+        if (countdown <= 0) {
+          resendBtn.disabled = false;
+          clearInterval(timer);
+        }
+      }, 1000);
+    };
+
+    updateResendButton(); // Start timer on page load
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const otp = form.otp.value;
+
+      const res = await fetch('http://localhost:4000/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, otp })
+      });
+
+      const result = await res.json();
+      if (res.ok && result.success) {
+        localStorage.setItem("token", result.token);
+        localStorage.setItem("userData", JSON.stringify(result.user));
+        window.location.href = "profile.html";
+      } else {
+        alert(result.error || "Invalid OTP");
+      }
+    });
+
+    resendBtn.addEventListener('click', async () => {
+      const res = await fetch('http://localhost:4000/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      });
+
+      const result = await res.json();
+      if (res.ok && result.success) {
+        alert("✅ नया OTP भेज दिया गया");
+        countdown = 30;
+        updateResendButton();
+      } else {
+        alert(result.error || "❌ OTP भेजने में समस्या हुई");
+      }
+    });
+  </script>
+</body>
+</html>
