@@ -83,9 +83,11 @@ app.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ phone });
     if (!user) return res.status(404).json({ error: "❌ User not found" });
-
+        // 👇 यह लाइन यहीं डालो
+    console.log("Sending OTP to:", user.email);
     const otp = Math.floor(100000 + Math.random() * 900000);
     otpStore[phone] = { otp, expires: Date.now() + 2 * 60 * 1000 };
+    
 
     const { error } = await resend.emails.send({
       from: "Ratu Fresh <onboarding@resend.dev>",
@@ -268,3 +270,4 @@ mongoose.connect(process.env.DBurl, {
 .catch(err => {
   console.error("❌ MongoDB से कनेक्शन फेल:", err);
 });
+
