@@ -2,139 +2,163 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login | Ratu Fresh</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login</title>
   <style>
-    :root {
-      --primary: #00796b;
-      --accent: #004d40;
-      --bg: #f1f8e9;
-      --error: #d32f2f;
-      --success: #388e3c;
-    }
     body {
-      margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: var(--bg);
+      background: linear-gradient(to right, #1f4037, #99f2c8);
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      margin: 0;
     }
-    .login-box {
-      background: white;
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    .login-container {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(14px);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+      max-width: 380px;
       width: 100%;
-      max-width: 400px;
-      animation: fadeIn 0.6s ease-in-out;
+      color: #fff;
+      position: relative;
     }
-    h2 {
-      text-align: center;
-      margin-bottom: 1.5rem;
-      color: var(--primary);
+    input, button {
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      border-radius: 10px;
+      border: none;
+      font-size: 15px;
     }
     input {
-      width: 100%;
-      padding: 0.8rem;
-      margin-bottom: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 1rem;
-      transition: border 0.3s ease;
-    }
-    input:focus {
-      border-color: var(--primary);
-      outline: none;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
     }
     button {
-      width: 100%;
-      padding: 0.8rem;
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
+      background: linear-gradient(to right, #00c9a7, #92fe9d);
+      color: #222;
+      font-weight: 600;
       cursor: pointer;
-      transition: background 0.3s ease;
+      position: relative;
     }
-    button:hover {
-      background-color: var(--accent);
-    }
-    .message {
+    .popup {
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #00c9a7;
+      color: #fff;
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0, 201, 167, 0.4);
+      opacity: 0;
+      transition: opacity 0.3s ease, top 0.3s ease;
+      z-index: 10;
       text-align: center;
-      margin-top: 1rem;
-      font-weight: bold;
+      max-width: 90%;
+      word-wrap: break-word;
     }
-    .message.error {
-      color: var(--error);
+    .popup.show {
+      top: -30px;
+      opacity: 1;
     }
-    .message.success {
-      color: var(--success);
+    .popup.error {
+      background: #ff4d4d;
     }
-    .privacy-note {
-      font-size: 0.85rem;
-      color: #666;
-      text-align: center;
-      margin-top: 0.5rem;
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid #00c9a7;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      animation: spin 1s linear infinite;
+      position: absolute;
+      top: 50%;
+      right: 16px;
+      transform: translateY(-50%);
+      display: none;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+    .spinner.show {
+      display: inline-block;
+    }
+    @keyframes spin {
+      0% { transform: translateY(-50%) rotate(0deg); }
+      100% { transform: translateY(-50%) rotate(360deg); }
+    }
+    @media (max-width: 480px) {
+      .popup {
+        font-size: 14px;
+        padding: 12px 20px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="login-box">
-    <h2>Login to Ratu Fresh</h2>
+  <div class="login-container">
+    <h2>Login</h2>
     <form id="loginForm">
-      <input type="email" id="email" placeholder="Email address" required />
-      <input type="password" id="password" placeholder="Password" required />
-      <button type="submit">Login</button>
-      <div class="message" id="message"></div>
-      <div class="privacy-note">Your email is never shared. We respect your privacy.</div>
+      <input type="text" name="phone" placeholder="Phone (10 digits)" maxlength="10" required />
+      <button type="submit">
+        Send OTP
+        <span class="spinner" id="spinner"></span>
+      </button>
     </form>
+    <div id="popup" class="popup"></div>
   </div>
 
   <script>
     const form = document.getElementById('loginForm');
-    const message = document.getElementById('message');
+    const popup = document.getElementById('popup');
+    const spinner = document.getElementById('spinner');
+
+    function showPopup(message, isError = false) {
+      popup.textContent = message;
+      popup.classList.add('show');
+      popup.classList.toggle('error', isError);
+      setTimeout(() => {
+        popup.classList.remove('show');
+      }, 3000);
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      message.textContent = '';
-      message.className = 'message';
+      const phone = form.phone.value;
 
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-
-      if (!email || !password) {
-        message.textContent = 'Please fill in all fields';
-        message.classList.add('error');
+      if (!/^[6-9]\d{9}$/.test(phone)) {
+        showPopup('Enter valid Indian phone number', true);
         return;
       }
 
+      spinner.classList.add('show');
       try {
-        const res = await fetch('/api/auth/login', {
+        const res = await fetch('https://my-web-xrr5.onrender.com/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ phone })
         });
 
-        const data = await res.json();
-        if (res.ok) {
-          localStorage.setItem('token', data.token);
-          message.textContent = 'Login successful!';
-          message.classList.add('success');
-          setTimeout(() => window.location.href = '/main.html', 1000);
+        const result = await res.json();
+        spinner.classList.remove('show');
+
+        if (res.ok && result.success) {
+          localStorage.setItem("phone", phone);
+          localStorage.setItem("otpEmail", result.email); // ✅ Store email
+          showPopup('✅ OTP भेज दिया गया');
+          setTimeout(() => {
+            window.location.href = "otp.html";
+          }, 1500);
         } else {
-          message.textContent = data.message || 'Login failed';
-          message.classList.add('error');
+          showPopup(result.error || "Login failed", true);
         }
       } catch (err) {
-        message.textContent = 'Server error. Please try again.';
-        message.classList.add('error');
+        console.error("Login error:", err);
+        spinner.classList.remove('show');
+        showPopup("Server error", true);
       }
     });
   </script>
