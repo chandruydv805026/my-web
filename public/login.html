@@ -1,3 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #1f4037, #99f2c8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .login-container {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(14px);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+      max-width: 380px;
+      width: 100%;
+      color: #fff;
+      position: relative;
+    }
+    input, button {
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      border-radius: 10px;
+      border: none;
+      font-size: 15px;
+    }
+    input {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+    button {
+      background: linear-gradient(to right, #00c9a7, #92fe9d);
+      color: #222;
+      font-weight: 600;
+      cursor: pointer;
+      position: relative;
+    }
+    .popup {
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #00c9a7;
+      color: #fff;
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0, 201, 167, 0.4);
+      opacity: 0;
+      transition: opacity 0.3s ease, top 0.3s ease;
+      z-index: 10;
+      text-align: center;
+      max-width: 90%;
+      word-wrap: break-word;
+    }
+    .popup.show {
+      top: -30px;
+      opacity: 1;
+    }
+    .popup.error {
+      background: #ff4d4d;
+    }
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid #00c9a7;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      animation: spin 1s linear infinite;
+      position: absolute;
+      top: 50%;
+      right: 16px;
+      transform: translateY(-50%);
+      display: none;
+    }
+    .spinner.show {
+      display: inline-block;
+    }
+    @keyframes spin {
+      0% { transform: translateY(-50%) rotate(0deg); }
+      100% { transform: translateY(-50%) rotate(360deg); }
+    }
+    @media (max-width: 480px) {
+      .popup {
+        font-size: 14px;
+        padding: 12px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2>Login</h2>
+    <form id="loginForm">
+      <input type="text" name="phone" placeholder="Phone (10 digits)" maxlength="10" required />
+      <button type="submit">
+        Send OTP
+        <span class="spinner" id="spinner"></span>
+      </button>
+    </form>
+    <div id="popup" class="popup"></div>
+  </div>
+
 <script>
   const form = document.getElementById('loginForm');
   const popup = document.getElementById('popup');
@@ -56,3 +169,4 @@
     }
   });
 </script>
+
