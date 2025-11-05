@@ -206,11 +206,6 @@
         return;
       }
 
-      if (data.password.length < 8) {
-        showPopup('पासवर्ड कम से कम 8 अक्षरों का होना चाहिए', true);
-        return;
-      }
-
       if (!/^\d{6}$/.test(data.pincode)) {
         showPopup('कृपया सही 6-अंकों का पिनकोड दर्ज करें', true);
         return;
@@ -247,4 +242,5 @@
   </script>
 </body>
 </html>
+
 
