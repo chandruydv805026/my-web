@@ -89,8 +89,10 @@ app.post("/login", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000);
     otpStore[phone] = { otp, expires: Date.now() + 2 * 60 * 1000 };
 
-    const { error } = await resend.emails.send({
-      from: "Ratu Fresh <noreply@ratufresh.in>",
+    await resend.emails.send({
+  from: "Ratu Fresh <onboarding@resend.dev>",
+  ...
+});
       to: user.email,
       subject: "🔐 आपका OTP - Ratu Fresh",
       text: `आपका OTP है: ${otp}\nयह 2 मिनट तक मान्य रहेगा।`
@@ -123,8 +125,10 @@ app.post("/resend-otp", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000);
     otpStore[phone] = { otp, expires: Date.now() + 2 * 60 * 1000 };
 
-    const { error } = await resend.emails.send({
-     from: "Ratu Fresh <onboarding@resend.dev>",
+    await resend.emails.send({
+  from: "Ratu Fresh <onboarding@resend.dev>",
+  ...
+});
       to: user.email,
       subject: "🔁 नया OTP - Ratu Fresh",
       text: `आपका नया OTP है: ${otp}\nयह 2 मिनट तक मान्य रहेगा।`
