@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const path = require("path");
 require("dotenv").config();
 
 // 📩 Resend SDK
@@ -32,18 +33,18 @@ const authenticate = (req, res, next) => {
     next();
   });
 };
-const path = require("path");
 
-// Static file serving
+// 🌐 Static file serving
 app.use(express.static(path.join(__dirname, "public")));
-
-// Default route → serve main.html
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "main.html"));
 });
 
 // 🛒 Cart routes
 app.use("/cart", cartRoutes);
+
+// 🔐 OTP Store (in-memory)
+const otpStore = {}; // { phone: { otp, expires } }
 
 // 📝 Signup route
 app.post("/signup", async (req, res) => {
@@ -75,10 +76,7 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-// 🔐 OTP Store (in-memory)
-const otpStore = {}; // { phone: { otp, expires } }
-
-// 📩 Login → Send OTP via Resend
+// 📩 Login → Send OTP
 app.post("/login", async (req, res) => {
   const { phone } = req.body;
 
@@ -89,10 +87,8 @@ app.post("/login", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000);
     otpStore[phone] = { otp, expires: Date.now() + 2 * 60 * 1000 };
 
-    await resend.emails.send({
-  from: "Ratu Fresh <onboarding@resend.dev>",
-  ...
-});
+    const { error } = await resend.emails.send({
+      from: "Ratu Fresh <onboarding@resend.dev>",
       to: user.email,
       subject: "🔐 आपका OTP - Ratu Fresh",
       text: `आपका OTP है: ${otp}\nयह 2 मिनट तक मान्य रहेगा।`
@@ -114,7 +110,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// 🔁 Resend OTP via Resend
+// 🔁 Resend OTP
 app.post("/resend-otp", async (req, res) => {
   const { phone } = req.body;
 
@@ -125,10 +121,8 @@ app.post("/resend-otp", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000);
     otpStore[phone] = { otp, expires: Date.now() + 2 * 60 * 1000 };
 
-    await resend.emails.send({
-  from: "Ratu Fresh <onboarding@resend.dev>",
-  ...
-});
+    const { error } = await resend.emails.send({
+      from: "Ratu Fresh <onboarding@resend.dev>",
       to: user.email,
       subject: "🔁 नया OTP - Ratu Fresh",
       text: `आपका नया OTP है: ${otp}\nयह 2 मिनट तक मान्य रहेगा।`
@@ -243,6 +237,7 @@ ${products.map(p => `- ${p.name} (${p.qty}kg)`).join("\n")}
 });
 
 // 📦 Get Orders
+// 📦 Get Orders
 app.get("/orders/:userId", authenticate, async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.params.userId }).sort({ orderDate: -1 });
@@ -257,7 +252,6 @@ app.get("/orders/:userId", authenticate, async (req, res) => {
     res.status(500).json({ error: "❌ ऑर्डर लोड करने में समस्या हुई" });
   }
 });
-
 // 🌐 MongoDB Connection & Server Start
 mongoose.connect(process.env.DBurl, {
   useNewUrlParser: true,
@@ -268,12 +262,9 @@ mongoose.connect(process.env.DBurl, {
 
   const PORT = process.env.PORT || 4000;
   app.listen(PORT, () => {
-    console.log(`🚀 Server चालू है: https://my-web-xrr5.onrender.com:${PORT}`);
-
+    console.log(`🚀 Server चालू है: http://localhost:${PORT}`);
   });
 })
 .catch(err => {
   console.error("❌ MongoDB से कनेक्शन फेल:", err);
 });
-
-
