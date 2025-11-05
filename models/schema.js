@@ -21,11 +21,7 @@ const userSchema = new Schema({
     lowercase: true,
     trim: true
   },
-  password: {
-    type: String,
-    required: true,
-    minlength: 8
-  },
+  
   address: {
     type: String,
     required: true,
