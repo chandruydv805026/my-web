@@ -113,9 +113,10 @@ router.delete('/clear/:userId', async (req, res) => {
     if (!cart) return res.status(404).json({ error: 'Cart not found' });
 
     cart.items = [];
-    cart.totalPrice = 0;
+    calculateTotal(cart);
     await cart.save();
-    res.json({ message: 'Cart cleared', cart });
+
+    res.status(200).json({ success: true, message: 'Cart cleared', cart });
   } catch (err) {
     console.error("DELETE /cart/clear error:", err);
     res.status(500).json({ error: 'Server error' });
