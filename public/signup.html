@@ -27,6 +27,7 @@
       width: 100%;
       max-width: 420px;
       animation: fadeIn 0.8s ease;
+      position: relative;
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
@@ -106,9 +107,39 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+    .popup {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #00c9a7;
+      color: #fff;
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0, 201, 167, 0.4);
+      opacity: 0;
+      transition: opacity 0.3s ease, bottom 0.3s ease;
+      z-index: 1000;
+      text-align: center;
+      max-width: 90%;
+      word-wrap: break-word;
+    }
+    .popup.show {
+      bottom: 50px;
+      opacity: 1;
+    }
+    .popup.error {
+      background: #ff4d4d;
+    }
     @media (max-width: 480px) {
       .signup-container {
         padding: 30px 20px;
+      }
+      .popup {
+        font-size: 14px;
+        padding: 12px 20px;
       }
     }
   </style>
@@ -129,11 +160,7 @@
         <input type="email" name="email" required placeholder=" " />
         <label>ईमेल</label>
       </div>
-      <div class="form-group">
-        <input type="password" name="password" required minlength="8" placeholder=" " />
-        <label>पासवर्ड (कम से कम 8 अक्षर)</label>
-      </div>
-      <div class="form-group">
+       <div class="form-group">
         <input type="text" name="address" required placeholder=" " />
         <label>पूरा पता</label>
       </div>
@@ -152,10 +179,22 @@
     </form>
   </div>
 
+  <div id="popup" class="popup"></div>
+
   <script>
     const form = document.getElementById('signupForm');
     const button = document.getElementById('signupBtn');
     const spinner = document.getElementById('spinner');
+
+    function showPopup(message, isError = false) {
+      const popup = document.getElementById("popup");
+      popup.textContent = message;
+      popup.classList.add("show");
+      popup.classList.toggle("error", isError);
+      setTimeout(() => {
+        popup.classList.remove("show");
+      }, 3000);
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -163,17 +202,17 @@
       const data = Object.fromEntries(formData.entries());
 
       if (!/^[6-9]\d{9}$/.test(data.phone)) {
-        alert('कृपया सही 10-अंकों का भारतीय मोबाइल नंबर दर्ज करें');
+        showPopup('कृपया सही 10-अंकों का भारतीय मोबाइल नंबर दर्ज करें', true);
         return;
       }
 
       if (data.password.length < 8) {
-        alert('पासवर्ड कम से कम 8 अक्षरों का होना चाहिए');
+        showPopup('पासवर्ड कम से कम 8 अक्षरों का होना चाहिए', true);
         return;
       }
 
       if (!/^\d{6}$/.test(data.pincode)) {
-        alert('कृपया सही 6-अंकों का पिनकोड दर्ज करें');
+        showPopup('कृपया सही 6-अंकों का पिनकोड दर्ज करें', true);
         return;
       }
 
@@ -181,7 +220,7 @@
       button.disabled = true;
 
       try {
-        const res = await fetch('https://my-web-xrr5.onrender.com/signup', {
+        const res = await fetch('http://localhost:4000/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
@@ -189,15 +228,17 @@
 
         const result = await res.json();
         if (res.ok) {
-          alert('✅ साइनअप सफल हुआ!');
+          showPopup('✅ साइनअप सफल हुआ!');
           form.reset();
-          window.location.href = "main.html";
+          setTimeout(() => {
+            window.location.href = "main.html";
+          }, 1500);
         } else {
-          alert("❌ " + (result.error || 'साइनअप विफल रहा'));
+          showPopup("❌ " + (result.error || 'साइनअप विफल रहा'), true);
         }
       } catch (err) {
         console.error("Signup error:", err);
-        alert('❌ सर्वर से कनेक्ट नहीं हो पाया');
+        showPopup('❌ सर्वर से कनेक्ट नहीं हो पाया', true);
       } finally {
         button.classList.remove('loading');
         button.disabled = false;
@@ -206,4 +247,3 @@
   </script>
 </body>
 </html>
-
