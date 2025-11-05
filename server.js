@@ -83,35 +83,44 @@ app.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ phone });
     if (!user) return res.status(404).json({ error: "❌ User not found" });
-        // 👇 यह लाइन यहीं डालो
-    console.log("Sending OTP to:", user.email);
-    const otp = Math.floor(100000 + Math.random() * 900000);
-    otpStore[phone] = { otp, expires: Date.now() + 2 * 60 * 1000 };
-    
 
-    const { error } = await resend.emails.send({
-      from: "Ratu Fresh <onboarding@resend.dev>",
-      to: user.email,
-      subject: "🔐 आपका OTP - Ratu Fresh",
-      text: `आपका OTP है: ${otp}\nयह 2 मिनट तक मान्य रहेगा।`
-    });
-
-    if (error) {
-      console.error("Resend error:", error);
-      return res.status(500).json({ error: "❌ OTP भेजने में समस्या हुई" });
+    if (!user.email || !user.email.includes("@")) {
+      return res.status(400).json({ error: "❌ Invalid email address" });
     }
 
-    res.status(200).json({
-      success: true,
-      message: "✅ OTP भेज दिया गया",
-      email: user.email
-    });
+    console.log("📩 Sending OTP to:", user.email);
+
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    otpStore[phone] = { otp, expires: Date.now() + 2 * 60 * 1000 };
+
+    try {
+      const response = await resend.emails.send({
+        from: "Ratu Fresh <onboarding@resend.dev>",
+        to: user.email,
+        subject: "🔐 आपका OTP - Ratu Fresh",
+        text: `आपका OTP है: ${otp}\nयह 2 मिनट तक मान्य रहेगा।`
+      });
+
+      if (response.error) {
+        console.error("📨 Resend error:", response.error);
+        return res.status(500).json({ error: "❌ OTP भेजने में समस्या हुई" });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "✅ OTP भेज दिया गया",
+        email: user.email
+      });
+    } catch (emailErr) {
+      console.error("📨 Email send failed:", emailErr);
+      return res.status(500).json({ error: "❌ Email भेजने में समस्या हुई" });
+    }
+
   } catch (err) {
     console.error("Login OTP error:", err);
-    res.status(500).json({ error: "❌ OTP जनरेट करने में समस्या हुई" });
+    res.status(500).json({ error: "❌ Server error" });
   }
 });
-
 // 🔁 Resend OTP
 app.post("/resend-otp", async (req, res) => {
   const { phone } = req.body;
@@ -120,22 +129,32 @@ app.post("/resend-otp", async (req, res) => {
     const user = await User.findOne({ phone });
     if (!user) return res.status(404).json({ error: "❌ User not found" });
 
+    if (!user.email || !user.email.includes("@")) {
+      return res.status(400).json({ error: "❌ Invalid email address" });
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000);
     otpStore[phone] = { otp, expires: Date.now() + 2 * 60 * 1000 };
 
-    const { error } = await resend.emails.send({
-      from: "Ratu Fresh <onboarding@resend.dev>",
-      to: user.email,
-      subject: "🔁 नया OTP - Ratu Fresh",
-      text: `आपका नया OTP है: ${otp}\nयह 2 मिनट तक मान्य रहेगा।`
-    });
+    try {
+      const response = await resend.emails.send({
+        from: "Ratu Fresh <onboarding@resend.dev>",
+        to: user.email,
+        subject: "🔁 नया OTP - Ratu Fresh",
+        text: `आपका नया OTP है: ${otp}\nयह 2 मिनट तक मान्य रहेगा।`
+      });
 
-    if (error) {
-      console.error("Resend error:", error);
-      return res.status(500).json({ error: "❌ OTP भेजने में समस्या हुई" });
+      if (response.error) {
+        console.error("📨 Resend error:", response.error);
+        return res.status(500).json({ error: "❌ OTP भेजने में समस्या हुई" });
+      }
+
+      res.status(200).json({ success: true, message: "✅ नया OTP भेज दिया गया" });
+    } catch (emailErr) {
+      console.error("📨 Email send failed:", emailErr);
+      return res.status(500).json({ error: "❌ Email भेजने में समस्या हुई" });
     }
 
-    res.status(200).json({ success: true, message: "✅ नया OTP भेज दिया गया" });
   } catch (err) {
     console.error("Resend OTP error:", err);
     res.status(500).json({ error: "❌ Server error" });
@@ -270,4 +289,5 @@ mongoose.connect(process.env.DBurl, {
 .catch(err => {
   console.error("❌ MongoDB से कनेक्शन फेल:", err);
 });
+
 
