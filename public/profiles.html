@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ratu Fresh – आपका प्रोफ़ाइल</title>
+  <link rel="stylesheet" href="profile.css">
+</head>
+<body>
+
+<nav class="ratu-navbar">
+  <div class="brand-tagline">🥬 Ratu Fresh – ताज़गी हर सुबह</div>
+</nav>
+
+<div id="popup" class="popup"></div>
+
+<div id="profileBox">
+  <p><strong>नाम:</strong> <span id="profile-name"></span></p>
+  <p><strong>ईमेल:</strong> <span id="profile-email"></span></p>
+  <p><strong>मोबाइल:</strong> <span id="profile-phone"></span></p>
+  <p><strong>पता:</strong> <span id="profile-address"></span></p>
+  <button onclick="logout()">🚪 Logout</button>
+</div>
+
+<div class="offer-slider">
+  <div class="offer-track">
+    <div class="offer">🔥 आज की डील: आलू ₹10/kg से शुरू!</div>
+    <div class="offer">🚚 फ्री होम डिलीवरी Ratu में</div>
+    <div class="offer">🥦 ताज़ा सब्ज़ियाँ हर सुबह</div>
+    <div class="offer">💰 ₹199 से ऊपर ऑर्डर पर 5% छूट</div>
+  </div>
+</div>
+
+<div class="hero">
+  <h2>सब्ज़ियाँ आपके दरवाज़े तक</h2>
+  <p>हर सुबह की ताज़गी अब Ratu में! ऑर्डर करें और सब्ज़ियाँ सीधे घर पर पाएं।</p>
+</div>
+
+<section class="products" id="productSection">
+  <!-- Product cards dynamically inserted here -->
+</section>
+
+<div class="bottom-nav">
+  <span onclick="window.location.href='cart.html'" class="nav-icon">
+    <img src="https://cdn-icons-png.flaticon.com/512/1170/1170678.png" alt="Cart" />
+    <label>Cart</label>
+  </span>
+  <span onclick="window.location.href='orders.html'" class="nav-icon">
+    <img src="https://cdn-icons-png.flaticon.com/512/3500/3500833.png" alt="Orders" />
+    <label>Orders</label>
+  </span>
+  <span id="profileToggle" class="nav-icon">
+    <img src="https://cdn-icons-png.flaticon.com/512/9131/9131529.png" alt="Profile" />
+    <label>Profile</label>
+  </span>
+</div>
+
+<footer>
+  © 2025 Chandan Yadav, Ratu Jharkhand. All rights reserved.
+</footer>
+
+<script src="profille.js"></script>
+</body>
+</html>
