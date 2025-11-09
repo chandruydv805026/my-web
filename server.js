@@ -39,6 +39,15 @@ app.use(express.static(path.join(__dirname, "public")));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "main.html"));
 });
+app.get("/user/:id", authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).populate("cart");
+    if (!user) return res.status(404).json({ success: false, message: "User नहीं मिला" });
+    res.status(200).json({ success: true, user });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "❌ Server error" });
+  }
+});
 
 // 🛒 Cart routes
 app.use("/cart", cartRoutes);
@@ -312,6 +321,7 @@ mongoose.connect(process.env.DBurl, {
 .catch(err => {
   console.error("❌ MongoDB से कनेक्शन फेल:", err);
 });
+
 
 
 
