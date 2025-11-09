@@ -84,41 +84,12 @@
   <div class="container">
     <h2>मेरा प्रोफ़ाइल</h2>
 
-    <div class="info">
-      <div class="label">नाम:</div>
-      <div class="value" id="profile-name"></div>
-      <input type="text" class="edit-input" id="edit-name" style="display:none;" />
-    </div>
-
-    <div class="info">
-      <div class="label">ईमेल:</div>
-      <div class="value" id="profile-email"></div>
-      <input type="email" class="edit-input" id="edit-email" style="display:none;" />
-    </div>
-
-    <div class="info">
-      <div class="label">फोन नंबर:</div>
-      <div class="value" id="profile-phone"></div>
-      <input type="text" class="edit-input" id="edit-phone" style="display:none;" />
-    </div>
-
-    <div class="info">
-      <div class="label">पूरा पता:</div>
-      <div class="value" id="profile-address"></div>
-      <input type="text" class="edit-input" id="edit-address" style="display:none;" />
-    </div>
-
-    <div class="info">
-      <div class="label">पिनकोड:</div>
-      <div class="value" id="profile-pincode"></div>
-      <input type="text" class="edit-input" id="edit-pincode" style="display:none;" />
-    </div>
-
-    <div class="info">
-      <div class="label">नजदीकी एरिया:</div>
-      <div class="value" id="profile-area"></div>
-      <input type="text" class="edit-input" id="edit-area" style="display:none;" />
-    </div>
+    <div class="info"><div class="label">नाम:</div><div class="value" id="profile-name"></div><input type="text" class="edit-input" id="edit-name" style="display:none;" /></div>
+    <div class="info"><div class="label">ईमेल:</div><div class="value" id="profile-email"></div><input type="email" class="edit-input" id="edit-email" style="display:none;" /></div>
+    <div class="info"><div class="label">फोन नंबर:</div><div class="value" id="profile-phone"></div><input type="text" class="edit-input" id="edit-phone" style="display:none;" /></div>
+    <div class="info"><div class="label">पूरा पता:</div><div class="value" id="profile-address"></div><input type="text" class="edit-input" id="edit-address" style="display:none;" /></div>
+    <div class="info"><div class="label">पिनकोड:</div><div class="value" id="profile-pincode"></div><input type="text" class="edit-input" id="edit-pincode" style="display:none;" /></div>
+    <div class="info"><div class="label">नजदीकी एरिया:</div><div class="value" id="profile-area"></div><input type="text" class="edit-input" id="edit-area" style="display:none;" /></div>
 
     <div class="btn-group">
       <button class="btn" id="editBtn">✏️ Edit Profile</button>
@@ -134,7 +105,7 @@
   <div id="popup"></div>
 
   <script>
-    let user = JSON.parse(localStorage.getItem("userData"));
+    let user = null;
 
     function showPopup(message, isError = false) {
       const popup = document.getElementById("popup");
@@ -147,29 +118,37 @@
     }
 
     function loadProfile() {
-      if (user && user._id) {
-        document.getElementById("profile-name").textContent = user.name || "नाम नहीं मिला";
-        document.getElementById("profile-email").textContent = user.email || "ईमेल नहीं मिला";
-        document.getElementById("profile-phone").textContent = user.phone || "फोन नहीं मिला";
-        document.getElementById("profile-address").textContent = user.address || "पता नहीं मिला";
-        document.getElementById("profile-pincode").textContent = user.pincode || "पिनकोड नहीं मिला";
-        document.getElementById("profile-area").textContent = user.area || "नजदीकी एरिया नहीं मिला";
-
-        document.getElementById("edit-name").value = user.name || "";
-        document.getElementById("edit-email").value = user.email || "";
-        document.getElementById("edit-phone").value = user.phone || "";
-        document.getElementById("edit-address").value = user.address || "";
-        document.getElementById("edit-pincode").value = user.pincode || "";
-        document.getElementById("edit-area").value = user.area || "";
-      } else {
+      const token = localStorage.getItem("token");
+      const localUser = JSON.parse(localStorage.getItem("userData"));
+      if (!token || !localUser || !localUser._id) {
         showPopup("कृपया पहले लॉगिन करें", true);
         window.location.href = "login.html";
+        return;
       }
+
+      fetch(`https://my-web-xrr5.onrender.com/user/${localUser._id}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.user) {
+          user = data.user;
+          localStorage.setItem("userData", JSON.stringify(user));
+          ["name","email","phone","address","pincode","area"].forEach(id => {
+            document.getElementById("profile-" + id).textContent = user[id] || `${id} नहीं मिला`;
+            document.getElementById("edit-" + id).value = user[id] || "";
+          });
+        } else {
+          showPopup("❌ यूज़र डेटा नहीं मिला", true);
+        }
+      })
+      .catch(() => {
+        showPopup("❌ सर्वर से कनेक्ट नहीं हो पाया", true);
+      });
     }
 
     function toggleEdit(enable) {
-      const fields = ["name", "email", "phone", "address", "pincode", "area"];
-      fields.forEach(id => {
+      ["name","email","phone","address","pincode","area"].forEach(id => {
         document.getElementById("profile-" + id).style.display = enable ? "none" : "block";
         document.getElementById("edit-" + id).style.display = enable ? "block" : "none";
       });
@@ -178,12 +157,9 @@
     }
 
     function saveProfile() {
-      user.name = document.getElementById("edit-name").value;
-      user.email = document.getElementById("edit-email").value;
-      user.phone = document.getElementById("edit-phone").value;
-      user.address = document.getElementById("edit-address").value;
-      user.pincode = document.getElementById("edit-pincode").value;
-      user.area = document.getElementById("edit-area").value;
+      ["name","email","phone","address","pincode","area"].forEach(id => {
+        user[id] = document.getElementById("edit-" + id).value;
+      });
 
       const token = localStorage.getItem("token");
 
@@ -221,12 +197,8 @@
       showPopup("✅ आप लॉगआउट हो गए हैं");
       window.location.href = "main.html";
     }
+document.getElementById("editBtn").addEventListener("click", () => {
+  toggleEdit(true);
+});
 
-    document.getElementById("editBtn").addEventListener("click", () => {
-      toggleEdit(true);
-    });
-
-    loadProfile();
-  </script>
-</body>
-</html>
+loadProfile();
