@@ -273,6 +273,30 @@ app.get("/orders/:userId", authenticate, async (req, res) => {
     res.status(500).json({ error: "❌ ऑर्डर लोड करने में समस्या हुई" });
   }
 });
+// 🧾 ✅ Profile Update API
+app.put("/user/update", authenticate, async (req, res) => {
+  const { _id, name, email, phone, address, pincode, area } = req.body;
+
+  if (!_id || ![name, email, phone, address, pincode, area].every(Boolean)) {
+    return res.status(400).json({ success: false, message: "सभी फ़ील्ड आवश्यक हैं" });
+  }
+
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      _id,
+      { name, email, phone, address, pincode, area },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: "User नहीं मिला" });
+    }
+
+    res.status(200).json({ success: true, user: updatedUser });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Update में समस्या है", error: err.message });
+  }
+});
 // 🌐 MongoDB Connection & Server Start
 mongoose.connect(process.env.DBurl, {
   useNewUrlParser: true,
@@ -288,6 +312,7 @@ mongoose.connect(process.env.DBurl, {
 .catch(err => {
   console.error("❌ MongoDB से कनेक्शन फेल:", err);
 });
+
 
 
 
