@@ -124,11 +124,10 @@
         const localUser = JSON.parse(localStorage.getItem("userData"));
         const loginTime = parseInt(localStorage.getItem("loginTime"));
 
-        // Optional expiry: 24 hours
-        if (!token || !localUser || !localUser._id || Date.now() - loginTime > 24 * 60 * 60 * 1000) {
-          throw new Error("Session expired or invalid");
-        }
-
+        // Optional expiry
+        if (!token || !localUser || !localUser._id) {
+  throw new Error("Session invalid");
+}
         fetch(`https://my-web-xrr5.onrender.com/user/${localUser._id}`, {
           headers: { "Authorization": `Bearer ${token}` }
         })
@@ -216,3 +215,4 @@
   </script>
 </body>
 </html>
+
