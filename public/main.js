@@ -24,7 +24,7 @@ const products = [
 ]; 
 
 window.onload = () => isLoggedIn
-  ? location.href = "profile.html"
+  ? location.href = "profiles.html"
   : (renderProducts(), products.forEach(p => updatePrice(p.id, p.price)));
 
 const el = id => document.getElementById(id);
@@ -67,4 +67,5 @@ const filterProducts = () => {
 };
 
 const closeModal = () => el("loginModal").style.display = "none";
+
 const goToLogin = () => location.href = "login.html";
