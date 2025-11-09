@@ -114,12 +114,11 @@ function loadUserProfile() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  // ✅ Session expiry check
+  // ✅ Session check only (no expiry)
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("userData"));
-  const loginTime = parseInt(localStorage.getItem("loginTime"));
 
-  if (!token || !user || !user._id || Date.now() - loginTime > 24 * 60 * 60 * 1000) {
+  if (!token || !user || !user._id) {
     localStorage.clear();
     window.location.replace("login.html");
     return;
