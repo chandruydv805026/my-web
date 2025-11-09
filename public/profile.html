@@ -63,6 +63,21 @@
     .btn:hover {
       background: #1b5e20;
     }
+    #popup {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2e7d32;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 16px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      display: none;
+      z-index: 999;
+      transition: all 0.3s ease;
+    }
   </style>
 </head>
 <body>
@@ -116,8 +131,20 @@
     </div>
   </div>
 
+  <div id="popup"></div>
+
   <script>
     let user = JSON.parse(localStorage.getItem("userData"));
+
+    function showPopup(message, isError = false) {
+      const popup = document.getElementById("popup");
+      popup.textContent = message;
+      popup.style.background = isError ? "#c62828" : "#2e7d32";
+      popup.style.display = "block";
+      setTimeout(() => {
+        popup.style.display = "none";
+      }, 3000);
+    }
 
     function loadProfile() {
       if (user && user._id) {
@@ -135,7 +162,7 @@
         document.getElementById("edit-pincode").value = user.pincode || "";
         document.getElementById("edit-area").value = user.area || "";
       } else {
-        alert("कृपया पहले लॉगिन करें");
+        showPopup("कृपया पहले लॉगिन करें", true);
         window.location.href = "login.html";
       }
     }
@@ -160,7 +187,7 @@
 
       const token = localStorage.getItem("token");
 
-      fetch("http://localhost:4000/user/update", {
+      fetch("https://my-web-xrr5.onrender.com/user/update", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -174,13 +201,13 @@
           localStorage.setItem("userData", JSON.stringify(user));
           toggleEdit(false);
           loadProfile();
-          alert("✅ प्रोफ़ाइल MongoDB में सफलतापूर्वक अपडेट हो गई");
+          showPopup("✅ प्रोफ़ाइल MongoDB में सफलतापूर्वक अपडेट हो गई");
         } else {
-          alert("❌ अपडेट में समस्या है: " + (data.message || "Unknown error"));
+          showPopup("❌ अपडेट में समस्या है: " + (data.message || "Unknown error"), true);
         }
       })
       .catch(() => {
-        alert("❌ सर्वर से कनेक्ट नहीं हो पाया");
+        showPopup("❌ सर्वर से कनेक्ट नहीं हो पाया", true);
       });
     }
 
@@ -191,7 +218,7 @@
     function logout() {
       localStorage.removeItem("userData");
       localStorage.removeItem("token");
-      alert("✅ आप लॉगआउट हो गए हैं");
+      showPopup("✅ आप लॉगआउट हो गए हैं");
       window.location.href = "main.html";
     }
 
