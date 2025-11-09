@@ -167,7 +167,7 @@
       if (res.ok && result.success) {
         localStorage.setItem("token", result.token);
         localStorage.setItem("userData", JSON.stringify(result.user));
-        window.location.href = "profile.html";
+        window.location.href = "profiles.html";
       } else {
         alert(result.error || "Invalid OTP");
       }
@@ -193,3 +193,4 @@
 </body>
 
 </html>
+
