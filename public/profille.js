@@ -100,13 +100,6 @@ function addToCart(name, rate, selectId) {
   });
 }
 
-function logout() {
-  localStorage.removeItem("userData");
-  localStorage.removeItem("token");
-  showPopup("✅ आप लॉगआउट हो गए हैं");
-  setTimeout(() => window.location.href = "main.html", 1500);
-}
-
 function loadUserProfile() {
   const user = JSON.parse(localStorage.getItem("userData"));
   if (user && user._id) {
@@ -121,13 +114,23 @@ function loadUserProfile() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+  // ✅ Session expiry check
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("userData"));
+  const loginTime = parseInt(localStorage.getItem("loginTime"));
+
+  if (!token || !user || !user._id || Date.now() - loginTime > 24 * 60 * 60 * 1000) {
+    localStorage.clear();
+    window.location.replace("login.html");
+    return;
+  }
+
   renderProducts();
   products.forEach(p => updatePrice(p.id, p.price));
+  loadUserProfile();
 
   const profileToggle = document.getElementById("profileToggle");
-
   profileToggle.addEventListener("click", () => {
     window.location.href = "profile.html";
   });
-
 });
