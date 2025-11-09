@@ -104,101 +104,106 @@
 
   <div id="popup"></div>
 
-  <script>
-    let user = null;
+ <script>
+  let user = null;
 
-    function showPopup(message, isError = false) {
-      const popup = document.getElementById("popup");
-      popup.textContent = message;
-      popup.style.background = isError ? "#c62828" : "#2e7d32";
-      popup.style.display = "block";
-      setTimeout(() => {
-        popup.style.display = "none";
-      }, 3000);
+  function showPopup(message, isError = false) {
+    const popup = document.getElementById("popup");
+    popup.textContent = message;
+    popup.style.background = isError ? "#c62828" : "#2e7d32";
+    popup.style.display = "block";
+    setTimeout(() => {
+      popup.style.display = "none";
+    }, 3000);
+  }
+
+  function loadProfile() {
+    const token = localStorage.getItem("token");
+    const localUser = JSON.parse(localStorage.getItem("userData"));
+    if (!token || !localUser || !localUser._id) {
+      showPopup("कृपया पहले लॉगिन करें", true);
+      window.location.href = "login.html";
+      return;
     }
 
-    function loadProfile() {
-      const token = localStorage.getItem("token");
-      const localUser = JSON.parse(localStorage.getItem("userData"));
-      if (!token || !localUser || !localUser._id) {
-        showPopup("कृपया पहले लॉगिन करें", true);
-        window.location.href = "login.html";
-        return;
+    fetch(`https://my-web-xrr5.onrender.com/user/${localUser._id}`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.user) {
+        user = data.user;
+        localStorage.setItem("userData", JSON.stringify(user));
+        ["name","email","phone","address","pincode","area"].forEach(id => {
+          document.getElementById("profile-" + id).textContent = user[id] || `${id} नहीं मिला`;
+          document.getElementById("edit-" + id).value = user[id] || "";
+        });
+      } else {
+        showPopup("❌ यूज़र डेटा नहीं मिला", true);
       }
+    })
+    .catch(() => {
+      showPopup("❌ सर्वर से कनेक्ट नहीं हो पाया", true);
+    });
+  }
 
-      fetch(`https://my-web-xrr5.onrender.com/user/${localUser._id}`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.user) {
-          user = data.user;
-          localStorage.setItem("userData", JSON.stringify(user));
-          ["name","email","phone","address","pincode","area"].forEach(id => {
-            document.getElementById("profile-" + id).textContent = user[id] || `${id} नहीं मिला`;
-            document.getElementById("edit-" + id).value = user[id] || "";
-          });
-        } else {
-          showPopup("❌ यूज़र डेटा नहीं मिला", true);
-        }
-      })
-      .catch(() => {
-        showPopup("❌ सर्वर से कनेक्ट नहीं हो पाया", true);
-      });
-    }
+  function toggleEdit(enable) {
+    ["name","email","phone","address","pincode","area"].forEach(id => {
+      document.getElementById("profile-" + id).style.display = enable ? "none" : "block";
+      document.getElementById("edit-" + id).style.display = enable ? "block" : "none";
+    });
+    document.getElementById("editBtn").style.display = enable ? "none" : "inline-block";
+    document.getElementById("saveCancelGroup").style.display = enable ? "flex" : "none";
+  }
 
-    function toggleEdit(enable) {
-      ["name","email","phone","address","pincode","area"].forEach(id => {
-        document.getElementById("profile-" + id).style.display = enable ? "none" : "block";
-        document.getElementById("edit-" + id).style.display = enable ? "block" : "none";
-      });
-      document.getElementById("editBtn").style.display = enable ? "none" : "inline-block";
-      document.getElementById("saveCancelGroup").style.display = enable ? "flex" : "none";
-    }
+  function saveProfile() {
+    ["name","email","phone","address","pincode","area"].forEach(id => {
+      user[id] = document.getElementById("edit-" + id).value;
+    });
 
-    function saveProfile() {
-      ["name","email","phone","address","pincode","area"].forEach(id => {
-        user[id] = document.getElementById("edit-" + id).value;
-      });
+    const token = localStorage.getItem("token");
 
-      const token = localStorage.getItem("token");
+    fetch("https://my-web-xrr5.onrender.com/user/update", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(user)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        localStorage.setItem("userData", JSON.stringify(user));
+        toggleEdit(false);
+        loadProfile();
+        showPopup("✅ प्रोफ़ाइल MongoDB में सफलतापूर्वक अपडेट हो गई");
+      } else {
+        showPopup("❌ अपडेट में समस्या है: " + (data.message || "Unknown error"), true);
+      }
+    })
+    .catch(() => {
+      showPopup("❌ सर्वर से कनेक्ट नहीं हो पाया", true);
+    });
+  }
 
-      fetch("https://my-web-xrr5.onrender.com/user/update", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(user)
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          localStorage.setItem("userData", JSON.stringify(user));
-          toggleEdit(false);
-          loadProfile();
-          showPopup("✅ प्रोफ़ाइल MongoDB में सफलतापूर्वक अपडेट हो गई");
-        } else {
-          showPopup("❌ अपडेट में समस्या है: " + (data.message || "Unknown error"), true);
-        }
-      })
-      .catch(() => {
-        showPopup("❌ सर्वर से कनेक्ट नहीं हो पाया", true);
-      });
-    }
+  function cancelEdit() {
+    toggleEdit(false);
+  }
 
-    function cancelEdit() {
-      toggleEdit(false);
-    }
+  function logout() {
+    localStorage.removeItem("userData");
+    localStorage.removeItem("token");
+    showPopup("✅ आप लॉगआउट हो गए हैं");
+    window.location.href = "main.html";
+  }
 
-    function logout() {
-      localStorage.removeItem("userData");
-      localStorage.removeItem("token");
-      showPopup("✅ आप लॉगआउट हो गए हैं");
-      window.location.href = "main.html";
-    }
-document.getElementById("editBtn").addEventListener("click", () => {
-  toggleEdit(true);
-});
+  // ✅ DOM पूरी तरह लोड होने के बाद ही event listeners attach करें
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("editBtn").addEventListener("click", () => {
+      toggleEdit(true);
+    });
 
-loadProfile();
+    loadProfile();
+  });
+</script>
