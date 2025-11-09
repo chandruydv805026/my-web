@@ -73,7 +73,7 @@ function addToCart(name, rate, selectId) {
   const total = Math.round(rate * qty);
   const label = qty < 1 ? `${qty * 1000} ग्राम` : `${qty} किलो`;
 
-  fetch("http://localhost:4000/cart/add", {
+  fetch("https://my-web-xrr5.onrender.com/cart/add", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -129,4 +129,5 @@ window.addEventListener("DOMContentLoaded", () => {
   profileToggle.addEventListener("click", () => {
     window.location.href = "profile.html";
   });
+
 });
