@@ -132,33 +132,40 @@
       background: #f39c12;
     }
 
-    /* ============= PROFILE CARD ============= */
-    #profileBox {
-      max-width: 600px;
-      margin: 25px auto;
-      background: #fff;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      animation: slideIn 0.5s ease-out;
-      position: relative;
-      overflow: hidden;
-    }
-
-    #profileBox::before {
-      content: '';
-      position: absolute;
+    /* ============= PROFILE MODAL (HIDDEN BY DEFAULT) ============= */
+    .profile-modal {
+      position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      height: 5px;
-      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      z-index: 500;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 20px;
+      overflow-y: auto;
     }
 
-    @keyframes slideIn {
+    .profile-modal.show {
+      display: flex;
+    }
+
+    .profile-modal-content {
+      background: #fff;
+      width: 90%;
+      max-width: 600px;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: var(--shadow-hover);
+      animation: slideUp 0.4s ease-out;
+    }
+
+    @keyframes slideUp {
       from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(50px);
       }
       to {
         opacity: 1;
@@ -166,13 +173,38 @@
       }
     }
 
-    #profileBox h2 {
-      color: var(--text-dark);
-      margin-bottom: 25px;
-      font-size: 24px;
-      text-align: center;
+    .profile-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 15px;
     }
 
+    .profile-modal-header h2 {
+      color: var(--text-dark);
+      font-size: 24px;
+    }
+
+    .close-btn {
+      background: var(--border-color);
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+    }
+
+    .close-btn:hover {
+      background: var(--tertiary);
+      color: white;
+      transform: scale(1.1);
+    }
+
+    /* ============= PROFILE SECTIONS ============= */
     .profile-section {
       margin-bottom: 20px;
     }
@@ -186,7 +218,7 @@
       font-weight: 700;
     }
 
-    #profileBox p {
+    .profile-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -195,17 +227,17 @@
       font-size: 15px;
     }
 
-    #profileBox p:last-child {
+    .profile-item:last-child {
       border-bottom: none;
     }
 
-    #profileBox strong {
+    .profile-item strong {
       color: var(--text-dark);
       font-weight: 600;
-      flex: 0 0 35%;
+      flex: 0 0 40%;
     }
 
-    #profileBox span {
+    .profile-item span {
       color: var(--text-light);
       text-align: right;
       flex: 1;
@@ -215,6 +247,41 @@
       border-radius: 6px;
     }
 
+    /* ============= STATS IN PROFILE ============= */
+    .profile-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: var(--bg-light);
+      border-radius: 12px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .stat-number {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ============= PROFILE ACTIONS ============= */
     .profile-actions {
       display: flex;
       gap: 10px;
@@ -233,69 +300,23 @@
     }
 
     .btn-edit {
-      background: linear-gradient(135deg, var(--secondary) 0%, #2980b9 100%);
+      background: var(--secondary);
       color: #fff;
     }
 
     .btn-edit:hover {
+      background: #2980b9;
       transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
     }
 
     .btn-logout {
-      background: linear-gradient(135deg, var(--tertiary) 0%, #c0392b 100%);
+      background: var(--tertiary);
       color: #fff;
     }
 
     .btn-logout:hover {
+      background: #c0392b;
       transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3);
-    }
-
-    /* ============= STATS ============= */
-    .stats-section {
-      max-width: 600px;
-      margin: 30px auto;
-      padding: 0 15px;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 15px;
-    }
-
-    .stat-card {
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      text-align: center;
-      box-shadow: var(--shadow);
-      transition: all 0.3s ease;
-    }
-
-    .stat-card:hover {
-      transform: translateY(-5px);
-      box-shadow: var(--shadow-hover);
-    }
-
-    .stat-icon {
-      font-size: 32px;
-      margin-bottom: 10px;
-    }
-
-    .stat-number {
-      font-size: 22px;
-      font-weight: 800;
-      color: var(--primary);
-      margin-bottom: 5px;
-    }
-
-    .stat-label {
-      font-size: 12px;
-      color: var(--text-light);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
 
     /* ============= OFFERS ============= */
@@ -440,7 +461,7 @@
       gap: 18px;
     }
 
-    /* ============= CARD ============= */
+    /* ============= PRODUCT CARD ============= */
     .card {
       background: #fff;
       border-radius: 14px;
@@ -452,8 +473,14 @@
     }
 
     @keyframes scaleIn {
-      from { opacity: 0; transform: scale(0.9); }
-      to { opacity: 1; transform: scale(1); }
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
 
     .card:hover {
@@ -565,7 +592,7 @@
       box-shadow: 0 6px 15px rgba(46, 204, 113, 0.3);
     }
 
-    /* ============= BOTTOM NAV ============= */
+    /* ============= BOTTOM NAVIGATION ============= */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -636,9 +663,15 @@
         font-size: 26px;
       }
 
-      #profileBox {
-        margin: 20px 15px;
+      .profile-modal-content {
+        width: 95%;
         padding: 20px;
+      }
+
+      .profile-stats {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        padding: 12px;
       }
     }
 
@@ -667,21 +700,10 @@
 
       .card h3 {
         font-size: 13px;
-        padding: 8px;
       }
 
       .card-content {
         padding: 10px;
-      }
-
-      .card > p {
-        font-size: 12px;
-      }
-
-      .card select,
-      .card button {
-        width: 100%;
-        font-size: 12px;
       }
 
       .hero {
@@ -697,10 +719,6 @@
         font-size: 14px;
       }
 
-      #profileBox p {
-        font-size: 13px;
-      }
-
       .bottom-nav {
         padding: 5px 0;
       }
@@ -714,8 +732,29 @@
         font-size: 10px;
       }
 
-      .stats-grid {
+      .profile-modal-content {
+        width: 100%;
+        border-radius: 0;
+        max-width: 100%;
+      }
+
+      .profile-stats {
         grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        padding: 10px;
+      }
+
+      .stat-icon {
+        font-size: 24px;
+        margin-bottom: 4px;
+      }
+
+      .stat-number {
+        font-size: 16px;
+      }
+
+      .stat-label {
+        font-size: 10px;
       }
     }
   </style>
@@ -734,70 +773,76 @@
   <!-- Popup -->
   <div id="popup" class="popup"></div>
 
-  <!-- Profile Section -->
-  <div id="profileBox">
-    <h2>👤 मेरा खाता</h2>
-    
-    <div class="profile-section">
-      <h3>व्यक्तिगत जानकारी</h3>
-      <p>
-        <strong>🧑 नाम:</strong>
-        <span id="profile-name">लोड हो रहा है...</span>
-      </p>
-      <p>
-        <strong>📧 ईमेल:</strong>
-        <span id="profile-email">लोड हो रहा है...</span>
-      </p>
-      <p>
-        <strong>📱 मोबाइल:</strong>
-        <span id="profile-phone">लोड हो रहा है...</span>
-      </p>
-    </div>
+  <!-- Profile Modal (Hidden by default) -->
+  <div id="profileModal" class="profile-modal">
+    <div class="profile-modal-content">
+      <div class="profile-modal-header">
+        <h2>👤 मेरा खाता</h2>
+        <button class="close-btn" onclick="closeProfile()">✕</button>
+      </div>
 
-    <div class="profile-section">
-      <h3>डिलीवरी जानकारी</h3>
-      <p>
-        <strong>📍 पता:</strong>
-        <span id="profile-address">लोड हो रहा है...</span>
-      </p>
-      <p>
-        <strong>📮 पिनकोड:</strong>
-        <span id="profile-pincode">लोड हो रहा है...</span>
-      </p>
-      <p>
-        <strong>🏘️ इलाका:</strong>
-        <span id="profile-area">लोड हो रहा है...</span>
-      </p>
-    </div>
+      <!-- Stats -->
+      <div class="profile-stats">
+        <div class="stat-item">
+          <div class="stat-icon">🛒</div>
+          <div class="stat-number" id="ordersCount">5</div>
+          <div class="stat-label">कुल ऑर्डर</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">💰</div>
+          <div class="stat-number" id="totalSpent">₹2,450</div>
+          <div class="stat-label">कुल खर्च</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-number">4.8</div>
+          <div class="stat-label">रेटिंग</div>
+        </div>
+      </div>
 
-    <div class="profile-actions">
-      <button class="btn-edit" onclick="editProfile()">✏️ Edit Profile</button>
-      <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+      <!-- Personal Info -->
+      <div class="profile-section">
+        <h3>व्यक्तिगत जानकारी</h3>
+        <div class="profile-item">
+          <strong>🧑 नाम:</strong>
+          <span id="profile-name">लोड हो रहा है...</span>
+        </div>
+        <div class="profile-item">
+          <strong>📧 ईमेल:</strong>
+          <span id="profile-email">लोड हो रहा है...</span>
+        </div>
+        <div class="profile-item">
+          <strong>📱 मोबाइल:</strong>
+          <span id="profile-phone">लोड हो रहा है...</span>
+        </div>
+      </div>
+
+      <!-- Delivery Info -->
+      <div class="profile-section">
+        <h3>डिलीवरी जानकारी</h3>
+        <div class="profile-item">
+          <strong>📍 पता:</strong>
+          <span id="profile-address">लोड हो रहा है...</span>
+        </div>
+        <div class="profile-item">
+          <strong>📮 पिनकोड:</strong>
+          <span id="profile-pincode">लोड हो रहा है...</span>
+        </div>
+        <div class="profile-item">
+          <strong>🏘️ इलाका:</strong>
+          <span id="profile-area">लोड हो रहा है...</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="profile-actions">
+        <button class="btn-edit" onclick="editProfile()">✏️ Edit Profile</button>
+        <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+      </div>
     </div>
   </div>
 
-  <!-- Stats -->
-  <div class="stats-section">
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">🛒</div>
-        <div class="stat-number" id="ordersCount">5</div>
-        <div class="stat-label">कुल ऑर्डर</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">💰</div>
-        <div class="stat-number" id="totalSpent">₹2,450</div>
-        <div class="stat-label">कुल खर्च</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">⭐</div>
-        <div class="stat-number">4.8</div>
-        <div class="stat-label">रेटिंग</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Offers -->
+  <!-- Offers Slider -->
   <div class="offer-slider">
     <div class="offer-track">
       <div class="offer">🔥 आज की डील: आलू ₹10/kg से शुरू!</div>
@@ -808,7 +853,7 @@
     </div>
   </div>
 
-  <!-- Hero -->
+  <!-- Hero Section -->
   <div class="hero">
     <h2>🛒 ताज़ी सब्ज़ियाँ आपके लिए</h2>
     <p>सीधे खेत से आपके रसोई तक - हर दिन नई डील और ऑफर!</p>
@@ -831,11 +876,11 @@
       <img src="https://cdn-icons-png.flaticon.com/512/1170/1170678.png" alt="Shop" />
       <label>खरीदें</label>
     </span>
-    <span class="nav-icon" onclick="goToCart()">
-      <img src="https://cdn-icons-png.flaticon.com/512/893/893257.png" alt="Cart" />
-      <label>कार्ट</label>
+    <span class="nav-icon" onclick="goToOrders()">
+      <img src="https://cdn-icons-png.flaticon.com/512/3500/3500833.png" alt="Orders" />
+      <label>ऑर्डर</label>
     </span>
-    <span class="nav-icon" onclick="scrollToSection('profileBox')">
+    <span class="nav-icon" onclick="openProfile()">
       <img src="https://cdn-icons-png.flaticon.com/512/9131/9131529.png" alt="Profile" />
       <label>प्रोफाइल</label>
     </span>
@@ -886,6 +931,18 @@
 
     function el(id) {
       return document.getElementById(id);
+    }
+
+    // ============= PROFILE MODAL FUNCTIONS =============
+    function openProfile() {
+      el("profileModal").classList.add("show");
+      loadUserProfile();
+      console.log("👤 Profile opened");
+    }
+
+    function closeProfile() {
+      el("profileModal").classList.remove("show");
+      console.log("👤 Profile closed");
     }
 
     // ============= RENDER PRODUCTS =============
@@ -988,18 +1045,13 @@
           el("profile-address").textContent = user.address || "नहीं मिला";
           el("profile-pincode").textContent = user.pincode || "नहीं मिला";
           el("profile-area").textContent = user.area || "नहीं मिला";
+          
           console.log("✅ Profile loaded");
         } else {
           showPopup("❌ User data नहीं मिला", 'error');
-          setTimeout(() => {
-            localStorage.clear();
-            window.location.replace("login.html");
-          }, 2000);
         }
       } catch (err) {
         console.error("❌ Error:", err);
-        localStorage.clear();
-        window.location.replace("login.html");
       }
     }
 
@@ -1035,7 +1087,7 @@
 
     // ============= SHOW NOTIFICATION =============
     function showNotification() {
-      showPopup("📬 आपको 3 नई डील की जानकारी है!", 'success');
+      showPopup("📬 आपको 3 नई डील की जानकारी है!");
     }
 
     // ============= SCROLL TO SECTION =============
@@ -1046,11 +1098,11 @@
       }
     }
 
-    // ============= GO TO CART =============
-    function goToCart() {
+    // ============= GO TO ORDERS =============
+    function goToOrders() {
       const token = localStorage.getItem("token");
       if (token) {
-        window.location.href = "cart.html";
+        window.location.href = "order.html";
       } else {
         showPopup("❌ कृपया पहले लॉगिन करें", 'error');
         window.location.href = "login.html";
@@ -1071,7 +1123,6 @@
         return;
       }
 
-      loadUserProfile();
       renderProducts();
       console.log("✅ Page initialized");
     });
