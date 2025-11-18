@@ -3,51 +3,97 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ratu Fresh – सब्ज़ियाँ आपके दरवाज़े तक</title>
-
+  <meta name="theme-color" content="#2ecc71">
+  <meta name="description" content="Ratu Fresh - ताजी सब्जियों की तेज़ डिलीवरी आपके दरवाज़े तक">
+  <title>Ratu Fresh – ताज़ी सब्जियाँ 🥬</title>
   <link rel="stylesheet" href="main.css">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#4CAF50">
+  <style>
+    /* Loading animation */
+    .page-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      animation: fadeOut 0.5s ease-out 2s forwards;
+    }
+
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        pointer-events: none;
+      }
+    }
+  </style>
 </head>
 
 <body>
+  <!-- Loading Screen -->
+  <div class="page-loader"></div>
+
+  <!-- Navigation -->
   <nav>
     <div class="nav-left">
       <div class="brand-tagline">🥬 Ratu Fresh – ताज़गी हर सुबह</div>
     </div>
     <div class="nav-right">
-      <ul>
-        <li><a href="login.html">Login</a></li>
-        <li><a href="signup.html">Signup</a></li>
+      <ul id="navLinks">
+        <li><a href="login.html">🔐 Login</a></li>
+        <li><a href="signup.html">✍️ Signup</a></li>
       </ul>
     </div>
   </nav>
 
+  <!-- Hero Section -->
   <div class="hero">
-    <h2>सब्ज़ियाँ आपके दरवाज़े तक</h2>
-    <p>हर सुबह की ताज़गी अब Ratu में! ऑर्डर करें और सब्ज़ियाँ सीधे घर पर पाएं।</p>
+    <h2>🏠 सब्जियाँ आपके दरवाज़े तक</h2>
+    <p>हर सुबह की ताज़गी अब Ratu Fresh में! सीधे खेत से आपके रसोई तक। ऑर्डर करें और घर बैठे पाएं।</p>
   </div>
 
-  <section class="products" id="productContainer"></section>
-
-  <footer>
-    © 2025 Chandan Yadav, Ratu Jharkhand. All rights reserved.
-  </footer>
-
-  <div id="loginModal" style="display:none;">
-    <div class="modal-content">
-      <p>कृपया पहले लॉगिन करें ताकि आप ऑर्डर कर सकें।</p>
-      <button class="login-btn" onclick="goToLogin()">Login करें</button>
-      <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+  <!-- Search Section -->
+  <div class="search-section">
+    <div class="search-box">
+      <input 
+        type="text" 
+        id="searchInput" 
+        placeholder="🔍 सब्जी खोजें..." 
+        onkeyup="filterProducts()"
+      >
+      <button class="search-btn" onclick="filterProducts()">🔍</button>
     </div>
   </div>
 
+  <!-- Products Grid -->
+  <section class="products" id="productContainer"></section>
+
+  <!-- Login Modal -->
+  <div id="loginModal">
+    <div class="modal-content">
+      <h2 style="margin-bottom: 15px;">🔐 Login Required</h2>
+      <p>कृपया पहले लॉगिन करें ताकि आप ऑर्डर कर सकें।</p>
+      <button class="login-btn" onclick="goToLogin()">✨ Login करें</button>
+      <button class="cancel-btn" onclick="closeModal()">❌ Cancel</button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>© 2025 Chandan Yadav, Ratu Jharkhand. सभी अधिकार सुरक्षित। | 📞 Support: 24/7 Available</p>
+  </footer>
+
   <script src="main.js"></script>
   <script>
+    // PWA Service Worker
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/firebase-messaging-sw.js")
-        .then(reg => console.log("✅ Service Worker registered for PWA:", reg))
-        .catch(err => console.error("❌ Service Worker registration failed:", err));
+        .then(reg => console.log("✅ PWA Ready"))
+        .catch(err => console.error("❌ SW Error:", err));
     }
   </script>
 </body>
