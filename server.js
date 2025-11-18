@@ -51,6 +51,12 @@ app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 app.use(cors());
 app.use(express.static("public"));
 
+// ✅ Default route - main.html को serve करो
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'main.html'));
+});
+
+
 // ============= ERROR HANDLING MIDDLEWARE =============
 // Request logging middleware
 app.use((req, res, next) => {
@@ -728,3 +734,4 @@ process.on('uncaughtException', (error) => {
 startServer();
 
 module.exports = app;
+
