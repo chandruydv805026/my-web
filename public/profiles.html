@@ -132,7 +132,7 @@
       background: #f39c12;
     }
 
-    /* ============= PROFILE MODAL (HIDDEN BY DEFAULT) ============= */
+    /* ============= PROFILE MODAL ============= */
     .profile-modal {
       position: fixed;
       top: 0;
@@ -773,7 +773,7 @@
   <!-- Popup -->
   <div id="popup" class="popup"></div>
 
-  <!-- Profile Modal (Hidden by default) -->
+  <!-- Profile Modal -->
   <div id="profileModal" class="profile-modal">
     <div class="profile-modal-content">
       <div class="profile-modal-header">
@@ -836,7 +836,7 @@
 
       <!-- Actions -->
       <div class="profile-actions">
-        <button class="btn-edit" onclick="editProfile()">✏️ Edit Profile</button>
+        <button class="btn-edit" onclick="editProfile()">✏️ Edit</button>
         <button class="btn-logout" onclick="logout()">🚪 Logout</button>
       </div>
     </div>
@@ -870,12 +870,8 @@
   <!-- Products -->
   <section class="products" id="productSection"></section>
 
-  <!-- Bottom Navigation -->
+  <!-- Bottom Navigation (सिर्फ 3 icons) -->
   <div class="bottom-nav">
-    <span class="nav-icon" onclick="scrollToSection('productSection')">
-      <img src="https://cdn-icons-png.flaticon.com/512/1170/1170678.png" alt="Shop" />
-      <label>खरीदें</label>
-    </span>
     <span class="nav-icon" onclick="goToCart()">
       <img src="https://cdn-icons-png.flaticon.com/512/893/893257.png" alt="Cart" />
       <label>कार्ट</label>
@@ -896,11 +892,9 @@
   </footer>
 
   <script>
-    // ============= CONSTANTS =============
     const API_BASE_URL = 'https://my-web-xrr5.onrender.com';
     const REQUEST_TIMEOUT = 10000;
 
-    // ============= PRODUCTS DATA =============
     const products = [
       { id: 'aloo', name: 'आलू', price: 20, emoji: '🥔', img: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Patates.jpg' },
       { id: 'tomato', name: 'टमाटर', price: 30, emoji: '🍅', img: 'https://upload.wikimedia.org/wikipedia/commons/8/89/Tomato_je.jpg' },
@@ -924,32 +918,26 @@
       { id: 'chana', name: 'हरा चना', price: 32, emoji: '🌾', img: 'https://media.istockphoto.com/id/899854420/photo/fresh-green-chickpeas-or-chick-peas-also-known-as-harbara-or-harbhara-in-hindi-and-cicer-is.webp?a=1&b=1&s=612x612&w=0&k=20&c=B_zR-xU5c5WDsJTvZKJAq2MkTJwJ--autmPGFPPoQ3w=' }
     ];
 
-    // ============= UTILITY FUNCTIONS =============
     function showPopup(message, type = 'success') {
       const popup = document.getElementById("popup");
       popup.textContent = message;
       popup.className = `popup show ${type}`;
       setTimeout(() => popup.classList.remove('show'), 3000);
-      console.log(type === 'success' ? '✅' : '❌', message);
     }
 
     function el(id) {
       return document.getElementById(id);
     }
 
-    // ============= PROFILE MODAL FUNCTIONS =============
     function openProfile() {
       el("profileModal").classList.add("show");
       loadUserProfile();
-      console.log("👤 Profile opened");
     }
 
     function closeProfile() {
       el("profileModal").classList.remove("show");
-      console.log("👤 Profile closed");
     }
 
-    // ============= RENDER PRODUCTS =============
     function renderProducts() {
       const section = el("productSection");
       
@@ -977,18 +965,14 @@
           </div>
         `;
       }).join('');
-
-      console.log("✅ Products rendered:", products.length);
     }
 
-    // ============= UPDATE PRICE =============
     function updatePrice(id, rate) {
       const qty = parseFloat(el(`qty-${id}`).value);
       const total = Math.round(rate * qty);
       el(`price-${id}`).textContent = `₹${total}`;
     }
 
-    // ============= ADD TO CART =============
     async function addToCart(name, emoji, rate, selectId) {
       try {
         const user = JSON.parse(localStorage.getItem("userData"));
@@ -1001,9 +985,6 @@
         }
 
         const qty = parseFloat(el(selectId).value);
-        const total = Math.round(rate * qty);
-
-        console.log("🔄 Adding to cart:", { name, qty, total });
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
@@ -1032,12 +1013,10 @@
           throw new Error(data.error || "कार्ट में जोड़ने में समस्या");
         }
       } catch (err) {
-        console.error("❌ Error:", err);
         showPopup("❌ कार्ट में जोड़ने में समस्या", 'error');
       }
     }
 
-    // ============= LOAD PROFILE =============
     function loadUserProfile() {
       try {
         const user = JSON.parse(localStorage.getItem("userData"));
@@ -1049,104 +1028,70 @@
           el("profile-address").textContent = user.address || "नहीं मिला";
           el("profile-pincode").textContent = user.pincode || "नहीं मिला";
           el("profile-area").textContent = user.area || "नहीं मिला";
-          
-          console.log("✅ Profile loaded");
-        } else {
-          showPopup("❌ User data नहीं मिला", 'error');
         }
       } catch (err) {
-        console.error("❌ Error:", err);
+        showPopup("❌ Error", 'error');
       }
     }
 
-    // ============= FILTER PRODUCTS =============
     function filterProducts() {
       const input = el("searchInput").value.toLowerCase();
       const cards = document.querySelectorAll(".card");
 
-      let visibleCount = 0;
       cards.forEach(card => {
         const name = card.querySelector("h3").textContent.toLowerCase();
         const isVisible = name.includes(input) || input === '';
         card.style.display = isVisible ? "block" : "none";
-        if (isVisible) visibleCount++;
       });
-
-      console.log(`🔍 Found: ${visibleCount} products`);
     }
 
-    // ============= LOGOUT =============
     function logout() {
-      if (confirm("क्या आप सुनिश्चित हैं कि आप logout करना चाहते हैं?")) {
+      if (confirm("क्या आप logout करना चाहते हैं?")) {
         localStorage.clear();
         showPopup("✅ आप logout हो गए हैं");
         setTimeout(() => window.location.href = "login.html", 1500);
       }
     }
 
-    // ============= EDIT PROFILE =============
     function editProfile() {
-      showPopup("📝 प्रोफाइल एडिट करने का फीचर जल्द आ रहा है!", 'warning');
+      showPopup("📝 Edit feature जल्द आ रहा है!", 'warning');
     }
 
-    // ============= SHOW NOTIFICATION =============
     function showNotification() {
       showPopup("📬 आपको 3 नई डील की जानकारी है!");
     }
 
-    // ============= SCROLL TO SECTION =============
-    function scrollToSection(sectionId) {
-      const section = el(sectionId);
-      if (section) {
-        section.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-
-    // ============= GO TO CART =============
     function goToCart() {
       const token = localStorage.getItem("token");
       if (token) {
         window.location.href = "cart.html";
-        console.log("🛒 Going to cart");
       } else {
-        showPopup("❌ कृपया पहले लॉगिन करें", 'error');
+        showPopup("❌ पहले लॉगिन करें", 'error');
         window.location.href = "login.html";
       }
     }
 
-    // ============= GO TO ORDERS =============
     function goToOrders() {
       const token = localStorage.getItem("token");
       if (token) {
         window.location.href = "order.html";
-        console.log("📦 Going to orders");
       } else {
-        showPopup("❌ कृपया पहले लॉगिन करें", 'error');
+        showPopup("❌ पहले लॉगिन करें", 'error');
         window.location.href = "login.html";
       }
     }
 
-    // ============= PAGE LOAD =============
     window.addEventListener('DOMContentLoaded', () => {
-      console.log("✅ Profile page loaded");
-
       const token = localStorage.getItem("token");
       const user = JSON.parse(localStorage.getItem("userData"));
 
       if (!token || !user || !user._id) {
-        console.warn("❌ No valid session");
         localStorage.clear();
         window.location.replace("login.html");
         return;
       }
 
       renderProducts();
-      console.log("✅ Page initialized");
-    });
-
-    // ============= ERROR HANDLING =============
-    window.addEventListener('error', (event) => {
-      console.error('❌ Global error:', event.error);
     });
   </script>
 </body>
