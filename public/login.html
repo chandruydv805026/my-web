@@ -1,290 +1,547 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login - Ratu Fresh</title>
+  <meta name="theme-color" content="#2ecc71">
+  <title>Ratu Fresh – Login 🔐</title>
+  
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    body { 
-      font-family: 'Segoe UI', sans-serif; 
-      background: linear-gradient(to right, #1f4037, #99f2c8); 
-      display: flex; 
-      justify-content: center; 
-      align-items: center; 
-      height: 100vh; 
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #2ecc71;
+      --primary-dark: #27ae60;
+      --secondary: #3498db;
+      --tertiary: #e74c3c;
+      --text-dark: #2c3e50;
+      --text-light: #7f8c8d;
+      --border-color: #ecf0f1;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
       min-height: 100vh;
-    }
-    
-    .login-container { 
-      background: rgba(255,255,255,0.15); 
-      backdrop-filter: blur(14px); 
-      padding: 30px; 
-      border-radius: 16px; 
-      box-shadow: 0 8px 30px rgba(0,0,0,0.25); 
-      max-width: 380px; 
-      width: 90%;
-      color: #fff; 
-      position: relative; 
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
     }
 
-    h2 {
+    /* ============= POPUP ============= */
+    .popup {
+      position: fixed;
+      bottom: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--primary);
+      color: #fff;
+      padding: 16px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 1000;
       text-align: center;
-      margin-bottom: 10px;
-      font-size: 24px;
-      font-weight: 600;
+      max-width: 90%;
     }
 
-    .subtitle {
+    .popup.show {
+      bottom: 30px;
+      opacity: 1;
+    }
+
+    .popup.error {
+      background: var(--tertiary);
+    }
+
+    /* ============= CONTAINER ============= */
+    .login-container {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 450px;
+      padding: 40px;
+      animation: slideUp 0.6s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ============= HEADER ============= */
+    .login-header {
       text-align: center;
-      font-size: 12px;
-      color: rgba(255,255,255,0.7);
+      margin-bottom: 30px;
+    }
+
+    .logo {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+
+    .login-header h1 {
+      font-size: 28px;
+      color: var(--text-dark);
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .login-header p {
+      font-size: 14px;
+      color: var(--text-light);
+    }
+
+    /* ============= FORM ============= */
+    .form-group {
       margin-bottom: 20px;
     }
 
-    form { position: relative; }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
-    input { 
-      width: 100%; 
-      padding: 14px; 
-      margin: 10px 0; 
-      border-radius: 10px; 
-      border: 2px solid transparent;
-      font-size: 15px; 
-      background: rgba(255,255,255,0.2); 
-      color: #fff; 
-      outline: none;
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
       transition: all 0.3s ease;
     }
 
-    input::placeholder { color: rgba(255,255,255,0.6); }
-
     input:focus {
-      background: rgba(255,255,255,0.3);
-      border-color: #00c9a7;
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.1);
     }
 
-    input.error {
-      border-color: #ff4d4d;
-      background: rgba(255,77,77,0.1);
+    input::placeholder {
+      color: var(--text-light);
     }
 
-    button { 
-      width: 100%; 
-      padding: 14px; 
-      margin: 15px 0 10px 0;
-      border-radius: 10px; 
-      border: none; 
+    /* ============= BUTTONS ============= */
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 25px;
+    }
+
+    button {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
       font-size: 15px;
-      background: linear-gradient(to right, #00c9a7, #92fe9d); 
-      color: #222; 
-      font-weight: 600; 
-      cursor: pointer; 
-      position: relative;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    button:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0,201,167,0.4);
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .spinner { 
-      border: 3px solid rgba(255,255,255,0.3); 
-      border-top: 3px solid #00c9a7; 
-      border-radius: 50%; 
-      width: 18px; 
-      height: 18px; 
-      animation: spin 1s linear infinite; 
-      position: absolute; 
-      top: 50%; 
-      right: 16px; 
-      transform: translateY(-50%); 
-      display: none; 
-    }
-
-    .spinner.show { display: inline-block; }
-
-    @keyframes spin { 
-      0% { transform: translateY(-50%) rotate(0deg); } 
-      100% { transform: translateY(-50%) rotate(360deg); } 
-    }
-
-    .popup { 
-      position: fixed;
-      top: 20px;
-      left: 50%; 
-      transform: translateX(-50%); 
-      background: #00c9a7; 
-      color: #fff; 
-      padding: 16px 24px; 
-      border-radius: 10px; 
-      font-size: 14px; 
-      font-weight: 500; 
-      box-shadow: 0 4px 12px rgba(0,201,167,0.4); 
-      opacity: 0; 
-      transition: opacity 0.3s, top 0.3s; 
-      text-align: center;
-      max-width: 90%;
-      z-index: 1000;
-      display: none;
-    }
-
-    .popup.show { 
-      top: 30px; 
-      opacity: 1;
-      display: block;
-    }
-
-    .popup.error { background: #ff4d4d; }
-
-    .form-group { position: relative; margin: 10px 0; }
-
-    .info-text {
-      font-size: 12px;
-      color: rgba(255,255,255,0.6);
-      margin-top: 15px;
-      text-align: center;
-    }
-
-    .link {
-      color: #92fe9d;
-      text-decoration: none;
+      font-weight: 700;
       cursor: pointer;
-      font-weight: 500;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .link:hover { text-decoration: underline; }
-
-    .error-message {
-      color: #ff4d4d;
-      font-size: 12px;
-      margin-top: 5px;
-      display: none;
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #fff;
     }
 
-    .error-message.show { display: block; }
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
+    }
 
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: var(--secondary);
+      color: #fff;
+    }
+
+    .btn-secondary:hover {
+      background: #2980b9;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(52, 152, 219, 0.3);
+    }
+
+    /* ============= HIDDEN ELEMENTS ============= */
+    .hidden {
+      display: none !important;
+    }
+
+    /* ============= LINKS ============= */
+    .login-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+      color: var(--text-light);
+    }
+
+    .login-footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 700;
+      transition: all 0.3s ease;
+    }
+
+    .login-footer a:hover {
+      color: var(--primary-dark);
+    }
+
+    /* ============= OTP INPUT ============= */
+    .otp-input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .otp-input {
+      width: 50px !important;
+      height: 50px;
+      text-align: center;
+      font-size: 24px !important;
+      font-weight: 800;
+      padding: 10px !important;
+    }
+
+    .otp-input:nth-child(n+2) {
+      margin-left: 2px;
+    }
+
+    /* ============= RESPONSIVE ============= */
     @media (max-width: 480px) {
-      .login-container { 
-        padding: 25px 20px;
-        margin: 10px;
+      .login-container {
+        padding: 25px;
       }
-      h2 { font-size: 20px; }
+
+      .login-header h1 {
+        font-size: 24px;
+      }
+
+      .logo {
+        font-size: 40px;
+      }
+
+      button {
+        padding: 12px;
+        font-size: 13px;
+      }
+
+      .otp-input {
+        width: 40px !important;
+        height: 40px;
+        font-size: 18px !important;
+      }
+    }
+
+    /* ============= LOADING ============= */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top: 2px solid #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
+
 <body>
+  <!-- Popup -->
+  <div id="popup" class="popup"></div>
+
+  <!-- Login Container -->
   <div class="login-container">
-    <h2>🔐 Login</h2>
-    <p class="subtitle">Ratu Fresh - Fresh Grocery Delivery</p>
-    
-    <form id="loginForm" novalidate>
-      <div class="form-group">
-        <input 
-          id="phone" 
-          name="phone" 
-          type="tel" 
-          placeholder="📱 10-Digit Phone Number" 
-          maxlength="10"
-          inputmode="numeric"
-          required 
-          autocomplete="tel"
-        />
-        <div class="error-message" id="phoneError"></div>
+    <!-- Header -->
+    <div class="login-header">
+      <div class="logo">🥬</div>
+      <h1>Ratu Fresh</h1>
+      <p>ताज़ी सब्जियाँ, तेज़ डिलीवरी</p>
+    </div>
+
+    <!-- Login Form -->
+    <form id="loginForm">
+      <!-- Phone Input -->
+      <div id="phoneSection">
+        <div class="form-group">
+          <label for="phone">📱 फोन नंबर</label>
+          <input 
+            type="tel" 
+            id="phone" 
+            placeholder="10-digit number दर्ज करें"
+            maxlength="10"
+            pattern="[0-9]{10}"
+          />
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn-primary" onclick="sendOTP()">
+            ✉️ OTP भेजें
+          </button>
+          <button type="button" class="btn-secondary" onclick="goToSignup()">
+            📝 Signup
+          </button>
+        </div>
       </div>
 
-      <button type="submit" id="submitBtn">
-        Send OTP
-      </button>
-      <div id="spinner" class="spinner"></div>
+      <!-- OTP Section (Hidden) -->
+      <div id="otpSection" class="hidden">
+        <div class="form-group">
+          <label>🔐 OTP दर्ज करें</label>
+          <div class="otp-input-group" id="otpInputGroup">
+            <input type="text" class="otp-input" maxlength="1" placeholder="0" />
+            <input type="text" class="otp-input" maxlength="1" placeholder="0" />
+            <input type="text" class="otp-input" maxlength="1" placeholder="0" />
+            <input type="text" class="otp-input" maxlength="1" placeholder="0" />
+            <input type="text" class="otp-input" maxlength="1" placeholder="0" />
+            <input type="text" class="otp-input" maxlength="1" placeholder="0" />
+          </div>
+
+          <div class="form-group">
+            <small style="color: var(--text-light);">
+              OTP आपके email पर भेजा गया है
+            </small>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn-primary" onclick="verifyOTP()">
+            ✅ Verify करें
+          </button>
+          <button type="button" class="btn-secondary" onclick="resendOTP()">
+            🔄 फिर से भेजें
+          </button>
+        </div>
+
+        <button 
+          type="button" 
+          style="width: 100%; background: var(--border-color); color: var(--text-dark); margin-top: 10px;"
+          onclick="goBackToPhone()"
+        >
+          ← वापस
+        </button>
+      </div>
     </form>
 
-    <p class="info-text">
-      Don't have an account? <span class="link" onclick="goToSignup()">Sign Up</span>
-    </p>
-
-    <div id="popup" class="popup"></div>
+    <!-- Footer -->
+    <div class="login-footer">
+      खाता नहीं है? <a href="signup.html">Signup करें</a>
+    </div>
   </div>
 
   <script>
     // ============= CONSTANTS =============
     const API_BASE_URL = 'https://my-web-xrr5.onrender.com';
-    const REQUEST_TIMEOUT = 10000; // 10 seconds
-    const PHONE_PATTERN = /^[6-9]\d{9}$/;
+    const REQUEST_TIMEOUT = 10000;
+    const VAPID_PUBLIC_KEY = 'BOK6YcWupVRim0Dimrf7u3sZcijkOzLv9nsRX8_DcXSZ1zrjMk3z18XWDEBuGMXG_e2fACCx1V8K_DHkqbEaYA8';
 
-    // ============= DOM ELEMENTS =============
-    const form = document.getElementById('loginForm');
-    const phoneInput = document.getElementById('phone');
-    const submitBtn = document.getElementById('submitBtn');
-    const popup = document.getElementById('popup');
-    const spinner = document.getElementById('spinner');
-    const phoneError = document.getElementById('phoneError');
+    // ============= STATE =============
+    let currentPhone = '';
+    let otpAttempts = 0;
 
     // ============= UTILITY FUNCTIONS =============
-    function showPopup(message, isError = false) {
+    function showPopup(message, type = 'success') {
+      const popup = document.getElementById("popup");
       popup.textContent = message;
-      popup.className = isError ? 'popup show error' : 'popup show';
-      
-      setTimeout(() => {
-        popup.classList.remove('show');
-      }, 3000);
+      popup.className = `popup show ${type}`;
+      setTimeout(() => popup.classList.remove('show'), 3000);
+      console.log(type === 'success' ? '✅' : '❌', message);
     }
 
-    function showError(element, message) {
-      element.textContent = message;
-      element.classList.add('show');
+    function el(id) {
+      return document.getElementById(id);
     }
 
-    function hideError(element) {
-      element.textContent = '';
-      element.classList.remove('show');
+    function goToSignup() {
+      window.location.href = "signup.html";
     }
 
-    function setLoading(isLoading) {
-      submitBtn.disabled = isLoading;
-      spinner.classList.toggle('show', isLoading);
-      submitBtn.textContent = isLoading ? 'Sending...' : 'Send OTP';
-    }
-
-    function validatePhone(phone) {
-      if (!phone) return 'फोन नंबर आवश्यक है';
-      if (phone.length !== 10) return 'फोन नंबर 10 अंकों का होना चाहिए';
-      if (!PHONE_PATTERN.test(phone)) return 'कृपया 6-9 से शुरू होने वाला सही नंबर दर्ज करें';
-      return null;
-    }
-
-    function saveToLocalStorage(phone, email) {
+    // ============= SEND OTP =============
+    async function sendOTP() {
       try {
-        localStorage.setItem("phone", phone);
-        localStorage.setItem("otpEmail", email || "");
-        localStorage.setItem("loginTime", new Date().toISOString());
-        
-        console.log("✅ Data saved to localStorage");
-        console.log("Phone:", localStorage.getItem("phone"));
-        console.log("Email:", localStorage.getItem("otpEmail"));
-        
-        return true;
+        const phone = el("phone").value.trim();
+
+        if (!phone) {
+          showPopup("❌ फोन नंबर दर्ज करें", 'error');
+          return;
+        }
+
+        if (!/^[6-9]\d{9}$/.test(phone)) {
+          showPopup("❌ सही 10-digit फोन नंबर दर्ज करें", 'error');
+          return;
+        }
+
+        console.log("🔄 Sending OTP to:", phone);
+
+        el("phone").disabled = true;
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>भेज रहे हैं...';
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+        const res = await fetch(`${API_BASE_URL}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        const data = await res.json();
+
+        if (data.success) {
+          currentPhone = phone;
+          showPopup("✅ OTP भेजा गया!");
+          el("phoneSection").classList.add("hidden");
+          el("otpSection").classList.remove("hidden");
+          el("otpInputGroup").querySelector("input").focus();
+          console.log("✅ OTP sent to:", data.email);
+        } else {
+          showPopup("❌ " + (data.error || "Error"), 'error');
+        }
+
+        el("phone").disabled = false;
+        btn.disabled = false;
+        btn.innerHTML = "✉️ OTP भेजें";
       } catch (err) {
-        console.error("❌ localStorage error:", err);
-        showPopup("❌ Storage error. Try again.", true);
+        console.error("❌ Error:", err);
+        showPopup("❌ Connection error", 'error');
+        el("phone").disabled = false;
+        event.target.disabled = false;
+        event.target.innerHTML = "✉️ OTP भेजें";
+      }
+    }
+
+    // ============= REGISTER SERVICE WORKER =============
+    async function registerServiceWorker() {
+      try {
+        if (!('serviceWorker' in navigator)) {
+          console.warn("⚠️ Service Workers not supported");
+          return null;
+        }
+
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        console.log("✅ Service Worker registered:", registration);
+        return registration;
+      } catch (err) {
+        console.error("❌ Service Worker registration error:", err);
+        return null;
+      }
+    }
+
+    // ============= REQUEST NOTIFICATION PERMISSION =============
+    async function askNotificationPermission() {
+      try {
+        if (!('Notification' in window)) {
+          console.warn("⚠️ Notifications not supported");
+          return false;
+        }
+
+        if (Notification.permission === 'granted') {
+          console.log("✅ Notification permission already granted");
+          return true;
+        }
+
+        if (Notification.permission === 'denied') {
+          console.warn("⚠️ Notification permission denied");
+          return false;
+        }
+
+        const permission = await Notification.requestPermission();
+        const granted = permission === 'granted';
+        console.log("🔔 Notification permission:", permission);
+        return granted;
+      } catch (err) {
+        console.error("❌ Permission error:", err);
         return false;
       }
     }
 
+    // ============= SUBSCRIBE TO PUSH NOTIFICATIONS =============
+    async function subscribeUser(registration, phone) {
+      try {
+        console.log("🔔 Subscribing user to push notifications...");
+
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+
+        console.log("✅ Push subscription:", subscription);
+
+        // Send to server
+        const res = await fetch(`${API_BASE_URL}/subscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription: subscription.toJSON(),
+            phone: phone
+          })
+        });
+
+        if (res.ok) {
+          console.log("✅ Subscribed to notifications");
+          localStorage.setItem('pushSubscribed', 'true');
+          return true;
+        } else {
+          console.warn("⚠️ Subscription save failed");
+          return false;
+        }
+      } catch (err) {
+        console.error("❌ Subscription error:", err);
+        return false;
+      }
+    }
+
+    // ============= HELPER: BASE64 TO UINT8ARRAY =============
     function urlBase64ToUint8Array(base64String) {
       try {
         const padding = '='.repeat((4 - base64String.length % 4) % 4);
-        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const base64 = (base64String + padding)
+          .replace(/\-/g, '+')
+          .replace(/_/g, '/');
+
         const rawData = window.atob(base64);
         const outputArray = new Uint8Array(rawData.length);
-        for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+
+        for (let i = 0; i < rawData.length; ++i) {
+          outputArray[i] = rawData.charCodeAt(i);
+        }
         return outputArray;
       } catch (err) {
         console.error("❌ Base64 conversion error:", err);
@@ -292,221 +549,186 @@
       }
     }
 
-    async function registerServiceWorker() {
-      if (!('serviceWorker' in navigator)) {
-        console.warn("Service Worker not supported");
-        return null;
-      }
+    // ============= VERIFY OTP (WITH NOTIFICATIONS) =============
+    async function verifyOTP() {
       try {
-        const registration = await navigator.serviceWorker.register('/public/service-worker.js', {
-          scope: '/'
-        });
-        console.log("✅ Service Worker registered");
-        return registration;
-      } catch (err) {
-        console.error('❌ SW registration failed', err);
-        return null;
-      }
-    }
+        const inputs = document.querySelectorAll(".otp-input");
+        const otp = Array.from(inputs).map(i => i.value).join('');
 
-    async function askNotificationPermission() {
-      if (!('Notification' in window)) {
-        console.warn("Notifications not supported");
-        return false;
-      }
-      
-      if (Notification.permission === 'granted') return true;
-      if (Notification.permission === 'denied') return false;
-
-      try {
-        const permission = await Notification.requestPermission();
-        return permission === 'granted';
-      } catch (err) {
-        console.error('❌ Notification permission error:', err);
-        return false;
-      }
-    }
-
-    async function subscribeUser(registration, phone) {
-      try {
-        const vapidPublicKey = 'BOK6YcWupVRim0Dimrf7u3sZcijkOzLv9nsRX8_DcXSZ1zrjMk3z18XWDEBuGMXG_e2fACCx1V8K_DHkqbEaYA8';
-        
-        const uint8array = urlBase64ToUint8Array(vapidPublicKey);
-        if (!uint8array) throw new Error("Invalid VAPID key");
-
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: uint8array
-        });
-
-        console.log("✅ Push subscription created");
-
-        // Send subscription to server
-        const res = await fetch(`${API_BASE_URL}/subscribe`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subscription, phone }),
-          timeout: REQUEST_TIMEOUT
-        });
-
-        if (res.ok) {
-          console.log("✅ User subscribed for push notifications");
-        } else {
-          console.warn("⚠️ Subscription failed");
+        if (otp.length !== 6) {
+          showPopup("❌ सभी 6 digits दर्ज करें", 'error');
+          return;
         }
-      } catch (err) {
-        console.error('❌ Push subscribe failed', err);
-        // Don't fail login for notification errors
-      }
-    }
 
-    async function setupNotifications(phone) {
-      try {
-        const registration = await registerServiceWorker();
-        if (!registration) return;
-
-        const granted = await askNotificationPermission();
-        if (granted) {
-          await subscribeUser(registration, phone);
+        if (!/^\d{6}$/.test(otp)) {
+          showPopup("❌ सिर्फ numbers दर्ज करें", 'error');
+          return;
         }
-      } catch (err) {
-        console.error("❌ Notification setup error:", err);
-        // Continue with login even if notification setup fails
-      }
-    }
 
-    // ============= FORM SUBMISSION =============
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const phone = phoneInput.value.trim();
+        console.log("🔄 Verifying OTP:", otp);
 
-      // Validate phone
-      const phoneValidationError = validatePhone(phone);
-      if (phoneValidationError) {
-        phoneInput.classList.add('error');
-        showError(phoneError, phoneValidationError);
-        return;
-      }
-
-      phoneInput.classList.remove('error');
-      hideError(phoneError);
-      setLoading(true);
-
-      try {
-        console.log("📱 Sending login request for phone:", phone);
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>Verify कर रहे हैं...';
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
-        const res = await fetch(`${API_BASE_URL}/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone }),
+        const res = await fetch(`${API_BASE_URL}/verify-otp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: currentPhone, otp }),
           signal: controller.signal
         });
 
         clearTimeout(timeoutId);
-
         const data = await res.json();
-        console.log("📊 Server response:", data);
 
-        if (res.ok && data.success) {
-          console.log("✅ Login successful");
+        if (data.success) {
+          console.log("✅ OTP verified");
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("userData", JSON.stringify(data.user));
           
-          // Save to localStorage
-          const saved = saveToLocalStorage(phone, data.email);
-          if (!saved) {
-            setLoading(false);
-            return;
-          }
+          showPopup("✅ Login सफल!");
 
-          // Setup notifications in background (non-blocking)
-          setupNotifications(phone);
+          // ============= SETUP NOTIFICATIONS =============
+          setTimeout(async () => {
+            console.log("🔔 Setting up notifications...");
+            
+            try {
+              const registration = await registerServiceWorker();
+              if (registration) {
+                const granted = await askNotificationPermission();
+                if (granted) {
+                  const subscribed = await subscribeUser(registration, currentPhone);
+                  if (subscribed) {
+                    console.log("✅ Notifications setup complete");
+                  }
+                }
+              }
+            } catch (err) {
+              console.warn("⚠️ Notifications setup failed (non-critical):", err);
+            }
 
-          showPopup('✅ OTP भेजा गया');
-          
-          setTimeout(() => {
-            console.log("🔄 Redirecting to OTP page");
-            window.location.href = 'otp.html';
+            // Redirect after notification setup
+            setTimeout(() => {
+              window.location.href = "profiles.html";
+            }, 1000);
           }, 1500);
+
         } else {
-          const errorMsg = data.error || 'Login failed';
-          console.error("❌ Login error:", errorMsg);
-          showPopup(errorMsg, true);
-          setLoading(false);
+          otpAttempts++;
+          showPopup("❌ " + (data.error || "Invalid OTP"), 'error');
+          if (otpAttempts >= 3) {
+            showPopup("❌ बहुत सारे प्रयास। फिर से OTP भेजें", 'error');
+            goBackToPhone();
+          }
         }
+
+        btn.disabled = false;
+        btn.innerHTML = "✅ Verify करें";
       } catch (err) {
-        console.error('❌ Request error:', err);
-        
-        let errorMessage = 'Server error';
-        if (err.name === 'AbortError') {
-          errorMessage = 'Request timeout - check connection';
-        } else if (err instanceof TypeError) {
-          errorMessage = 'Network error - check internet';
-        }
-
-        showPopup(errorMessage, true);
-        setLoading(false);
+        console.error("❌ Error:", err);
+        showPopup("❌ Connection error", 'error');
+        event.target.disabled = false;
+        event.target.innerHTML = "✅ Verify करें";
       }
-    });
-
-    // ============= INPUT VALIDATION =============
-    phoneInput.addEventListener('input', (e) => {
-      // Allow only digits
-      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
-      
-      // Clear error on input
-      if (e.target.value) {
-        phoneInput.classList.remove('error');
-        hideError(phoneError);
-      }
-    });
-
-    phoneInput.addEventListener('blur', () => {
-      if (phoneInput.value) {
-        const error = validatePhone(phoneInput.value);
-        if (error) {
-          phoneInput.classList.add('error');
-          showError(phoneError, error);
-        }
-      }
-    });
-
-    // ============= NAVIGATION =============
-    function goToSignup() {
-      window.location.href = 'signup.html';
     }
 
-    // ============= PAGE LOAD =============
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log("✅ Login page loaded");
-      
-      // Clear previous session data if needed
-      const loginTime = localStorage.getItem("loginTime");
-      if (loginTime) {
-        const timeDiff = new Date() - new Date(loginTime);
-        const twoHours = 2 * 60 * 60 * 1000;
-        
-        if (timeDiff > twoHours) {
-          console.log("🔄 Session expired - clearing data");
-          localStorage.removeItem("phone");
-          localStorage.removeItem("otpEmail");
-          localStorage.removeItem("loginTime");
+    // ============= RESEND OTP =============
+    async function resendOTP() {
+      try {
+        console.log("🔄 Resending OTP to:", currentPhone);
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>भेज रहे हैं...';
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+        const res = await fetch(`${API_BASE_URL}/resend-otp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: currentPhone }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        const data = await res.json();
+
+        if (data.success) {
+          showPopup("✅ नया OTP भेजा गया!");
+          document.querySelectorAll(".otp-input").forEach(input => input.value = '');
+          document.querySelectorAll(".otp-input")[0].focus();
+          otpAttempts = 0;
+          console.log("✅ OTP resent");
+        } else {
+          showPopup("❌ " + (data.error || "Error"), 'error');
         }
+
+        btn.disabled = false;
+        btn.innerHTML = "🔄 फिर से भेजें";
+      } catch (err) {
+        console.error("❌ Error:", err);
+        showPopup("❌ Connection error", 'error');
+        event.target.disabled = false;
+        event.target.innerHTML = "🔄 फिर से भेजें";
+      }
+    }
+
+    // ============= GO BACK TO PHONE =============
+    function goBackToPhone() {
+      el("phoneSection").classList.remove("hidden");
+      el("otpSection").classList.add("hidden");
+      el("phone").value = '';
+      el("phone").focus();
+      document.querySelectorAll(".otp-input").forEach(input => input.value = '');
+      otpAttempts = 0;
+      console.log("↩️ Back to phone input");
+    }
+
+    // ============= OTP INPUT NAVIGATION =============
+    document.addEventListener('DOMContentLoaded', () => {
+      const inputs = document.querySelectorAll(".otp-input");
+
+      inputs.forEach((input, index) => {
+        input.addEventListener('input', (e) => {
+          if (e.target.value && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+          }
+        });
+
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !e.target.value && index > 0) {
+            inputs[index - 1].focus();
+          }
+        });
+
+        input.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const paste = (e.clipboardData || window.clipboardData).getData('text');
+          if (/^\d{6}$/.test(paste)) {
+            paste.split('').forEach((char, i) => {
+              if (inputs[i]) inputs[i].value = char;
+            });
+            inputs[inputs.length - 1].focus();
+          }
+        });
+      });
+
+      // Check if already logged in
+      const token = localStorage.getItem("token");
+      if (token) {
+        window.location.href = "profiles.html";
       }
 
-      // Focus on phone input
-      phoneInput.focus();
+      console.log("✅ Login page ready");
     });
 
     // ============= ERROR HANDLING =============
     window.addEventListener('error', (event) => {
       console.error('❌ Global error:', event.error);
-    });
-
-    window.addEventListener('unhandledrejection', (event) => {
-      console.error('❌ Unhandled rejection:', event.reason);
     });
   </script>
 </body>
