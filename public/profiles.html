@@ -876,6 +876,10 @@
       <img src="https://cdn-icons-png.flaticon.com/512/1170/1170678.png" alt="Shop" />
       <label>खरीदें</label>
     </span>
+    <span class="nav-icon" onclick="goToCart()">
+      <img src="https://cdn-icons-png.flaticon.com/512/893/893257.png" alt="Cart" />
+      <label>कार्ट</label>
+    </span>
     <span class="nav-icon" onclick="goToOrders()">
       <img src="https://cdn-icons-png.flaticon.com/512/3500/3500833.png" alt="Orders" />
       <label>ऑर्डर</label>
@@ -1098,11 +1102,24 @@
       }
     }
 
+    // ============= GO TO CART =============
+    function goToCart() {
+      const token = localStorage.getItem("token");
+      if (token) {
+        window.location.href = "cart.html";
+        console.log("🛒 Going to cart");
+      } else {
+        showPopup("❌ कृपया पहले लॉगिन करें", 'error');
+        window.location.href = "login.html";
+      }
+    }
+
     // ============= GO TO ORDERS =============
     function goToOrders() {
       const token = localStorage.getItem("token");
       if (token) {
         window.location.href = "order.html";
+        console.log("📦 Going to orders");
       } else {
         showPopup("❌ कृपया पहले लॉगिन करें", 'error');
         window.location.href = "login.html";
