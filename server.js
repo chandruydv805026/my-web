@@ -1,3 +1,4 @@
+// ============= IMPORTS =============
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
@@ -14,54 +15,73 @@ class Logger {
   static log(message, data = null) {
     console.log(`[${this.getTimestamp()}] ℹ️  ${message}`, data || "");
   }
-
   static success(message, data = null) {
     console.log(`[${this.getTimestamp()}] ✅ ${message}`, data || "");
   }
-
   static warn(message, data = null) {
     console.warn(`[${this.getTimestamp()}] ⚠️  ${message}`, data || "");
   }
-
   static error(message, err = null) {
     console.error(`[${this.getTimestamp()}] ❌ ${message}`, err ? err.message : "");
     if (err && err.stack) console.error(err.stack);
   }
-
   static debug(message, data = null) {
     if (process.env.DEBUG === "true") {
       console.log(`[${this.getTimestamp()}] 🔍 ${message}`, data || "");
     }
   }
-
   static getTimestamp() {
-    const now = new Date();
-    return now.toISOString();
+    return new Date().toISOString();
   }
 }
 
+// ============= DATABASE MODELS =============
 const User = require("./models/schema");
 const Cart = require("./models/cart");
 const Order = require("./models/order");
-const cartRoutes = require("./routes/cartRoutes");
 
+// ============= EXPRESS SETUP =============
 const app = express();
+
+// ============= MIDDLEWARE =============
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 app.use(cors());
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// ✅ Default route - main.html को serve करो
+// ============= REQUEST LOGGING =============
+app.use((req, res, next) => {
+  Logger.debug(`${req.method} ${req.path}`);
+  next();
+});
+
+// ============= HTML ROUTES - SERVE PAGES =============
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'main.html'));
 });
 
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
 
-// ============= ERROR HANDLING MIDDLEWARE =============
-// Request logging middleware
-app.use((req, res, next) => {
-  Logger.debug(`${req.method} ${req.path}`, { body: req.body });
-  next();
+app.get('/signup', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'signup.html'));
+});
+
+app.get('/otp', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'otp.html'));
+});
+
+app.get('/profiles', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'profiles.html'));
+});
+
+app.get('/cart', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'cart.html'));
+});
+
+app.get('/order', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'order.html'));
 });
 
 // ============= INITIALIZE SERVICES =============
@@ -79,19 +99,13 @@ const authenticate = (req, res, next) => {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
       Logger.warn("Token missing in request");
-      return res.status(401).json({ 
-        success: false,
-        error: "Token missing" 
-      });
+      return res.status(401).json({ success: false, error: "Token missing" });
     }
 
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if (err) {
         Logger.warn("Invalid token:", err.message);
-        return res.status(403).json({ 
-          success: false,
-          error: "Invalid token" 
-        });
+        return res.status(403).json({ success: false, error: "Invalid token" });
       }
       req.user = decoded;
       Logger.debug("User authenticated", { userId: decoded.userId });
@@ -99,10 +113,7 @@ const authenticate = (req, res, next) => {
     });
   } catch (err) {
     Logger.error("Authentication middleware error", err);
-    res.status(500).json({ 
-      success: false,
-      error: "Authentication error" 
-    });
+    res.status(500).json({ success: false, error: "Authentication error" });
   }
 };
 
@@ -124,8 +135,61 @@ try {
 
 const subscriptions = [];
 
-// ============= ROUTES =============
-app.use("/cart", cartRoutes);
+// ============= OTP STORAGE =============
+const otpStore = {};
+
+// ============= SEND OTP FUNCTION =============
+const sendOtp = async (phone, subject) => {
+  try {
+    Logger.log("🔄 Attempting to send OTP", { phone });
+
+    const user = await User.findOne({ phone: phone.trim() });
+    if (!user) {
+      Logger.warn("User not found for OTP send", { phone });
+      return null;
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    otpStore[phone] = { 
+      otp, 
+      expires: Date.now() + 120000, 
+      attempts: 0,
+      createdAt: new Date()
+    };
+
+    Logger.debug("📝 OTP generated", { phone, otp });
+
+    await resend.emails.send({
+      from: "Ratu Fresh <onboarding@resend.dev>",
+      to: user.email,
+      subject: subject,
+      html: `
+        <div style="font-family: Arial, sans-serif; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); padding: 40px 20px; border-radius: 10px; text-align: center;">
+          <h1 style="color: #fff; margin-bottom: 30px;">🔐 Ratu Fresh</h1>
+          <h2 style="color: #fff; font-size: 28px; margin-bottom: 20px;">आपका OTP कोड</h2>
+          <p style="color: rgba(255,255,255,0.9); font-size: 16px; margin-bottom: 30px;">यह कोड 2 मिनट के लिए मान्य है</p>
+          <div style="background: rgba(255,255,255,0.2); padding: 30px; border-radius: 10px; margin: 30px 0;">
+            <h1 style="color: #fff; font-size: 48px; letter-spacing: 8px; margin: 0;">${otp}</h1>
+          </div>
+          <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin-top: 30px;">
+            अगर आपने यह OTP नहीं मांगा है, तो इसे अनदेखा करें।
+          </p>
+          <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.3); margin: 30px 0;">
+          <p style="color: rgba(255,255,255,0.7); font-size: 12px;">
+            © 2025 Ratu Fresh - ताज़ी सब्जियाँ, तेज़ डिलीवरी
+          </p>
+        </div>
+      `
+    });
+
+    Logger.success("OTP sent successfully", { phone, email: user.email });
+    return user.email;
+
+  } catch (err) {
+    Logger.error("Send OTP error", err);
+    throw err;
+  }
+};
 
 // ============= SIGNUP ENDPOINT =============
 app.post("/signup", async (req, res) => {
@@ -134,30 +198,20 @@ app.post("/signup", async (req, res) => {
     
     Logger.log("Signup request received", { phone, email });
 
-    // Validation
     if (![name, phone, email, address, pincode, area].every(Boolean)) {
       Logger.warn("Signup validation failed - missing fields", { phone });
-      return res.status(400).json({ 
-        success: false,
-        error: "सभी फ़ील्ड आवश्यक हैं" 
-      });
+      return res.status(400).json({ success: false, error: "सभी फ़ील्ड आवश्यक हैं" });
     }
 
-    // Check if user exists
     const exists = await User.findOne({ $or: [{ phone }, { email }] });
     if (exists) {
       Logger.warn("Signup failed - user already exists", { phone, email });
-      return res.status(409).json({ 
-        success: false,
-        error: "User पहले से मौजूद है" 
-      });
+      return res.status(409).json({ success: false, error: "User पहले से मौजूद है" });
     }
 
-    // Create new user
     const newUser = await new User({ name, phone, email, address, pincode, area }).save();
     Logger.debug("User document created", { userId: newUser._id });
     
-    // Create cart for user
     const newCart = await new Cart({ user: newUser._id, items: [], totalPrice: 0 }).save();
     Logger.debug("Cart created", { cartId: newCart._id });
 
@@ -166,123 +220,45 @@ app.post("/signup", async (req, res) => {
 
     Logger.success("User signup successful", { userId: newUser._id, phone });
 
-    res.status(201).json({ 
-      success: true,
-      message: "Signup सफल", 
-      userId: newUser._id 
-    });
+    res.status(201).json({ success: true, message: "Signup सफल", userId: newUser._id });
   } catch (err) {
     Logger.error("Signup endpoint error", err);
-    res.status(500).json({ 
-      success: false,
-      error: "Signup failed: " + err.message 
-    });
+    res.status(500).json({ success: false, error: "Signup failed: " + err.message });
   }
 });
-
-// ============= OTP STORAGE =============
-const otpStore = {};
-
-// ============= SEND OTP FUNCTION =============
-const sendOtp = async (phone, subject) => {
-  try {
-    Logger.log("Attempting to send OTP", { phone });
-
-    const user = await User.findOne({ phone: phone.trim() });
-    if (!user) {
-      Logger.warn("User not found for OTP send", { phone });
-      return null;
-    }
-
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    otpStore[phone] = { 
-      otp, 
-      expires: Date.now() + 120000,
-      attempts: 0 
-    };
-
-    Logger.debug("OTP generated and stored", { phone });
-
-    // Send email via Resend
-    await resend.emails.send({
-      from: `Ratu Fresh <${process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"}>`,
-      to: user.email,
-      subject,
-      html: `
-        <div style="font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; border-radius: 10px;">
-          <h2 style="color: #333;">आपका OTP</h2>
-          <p style="font-size: 18px; color: #666;">कृपया यह OTP दर्ज करें:</p>
-          <h1 style="color: #00c9a7; font-size: 36px; letter-spacing: 5px; text-align: center; margin: 20px 0;">
-            ${otp}
-          </h1>
-          <p style="color: #999; font-size: 14px;">यह OTP 2 मिनट के लिए मान्य है।</p>
-          <p style="color: #999; font-size: 12px;">अगर आपने यह OTP नहीं मांगा है, तो इसे अनदेखा करें।</p>
-        </div>
-      `
-    });
-
-    Logger.success("OTP sent successfully", { phone, email: user.email });
-    return user.email;
-  } catch (err) {
-    Logger.error("Send OTP error", err);
-    throw err;
-  }
-};
 
 // ============= LOGIN ENDPOINT =============
 app.post("/login", async (req, res) => {
   try {
     const { phone } = req.body;
-
     Logger.log("Login request received", { phone });
 
-    // Validation
     if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
       Logger.warn("Login validation failed - invalid phone", { phone });
-      return res.status(400).json({ 
-        success: false,
-        error: "❌ Valid 10-digit phone number दर्ज करें" 
-      });
+      return res.status(400).json({ success: false, error: "Valid 10-digit phone number दर्ज करें" });
     }
 
-    // Find user
     const user = await User.findOne({ phone: phone.trim() });
     if (!user) {
       Logger.warn("Login failed - user not found", { phone });
-      return res.status(404).json({ 
-        success: false,
-        error: "❌ User not found। पहले Sign Up करें" 
-      });
+      return res.status(404).json({ success: false, error: "User not found। पहले Sign Up करें" });
     }
 
     Logger.debug("User found in database", { userId: user._id });
 
-    // Send OTP
     const email = await sendOtp(phone, "🔐 आपका OTP - Ratu Fresh");
     
     if (!email) {
       Logger.error("Login failed - OTP send failed", null);
-      return res.status(500).json({ 
-        success: false,
-        error: "❌ OTP भेजने में समस्या" 
-      });
+      return res.status(500).json({ success: false, error: "OTP भेजने में समस्या" });
     }
 
     Logger.success("Login OTP sent", { phone, email });
 
-    res.json({ 
-      success: true, 
-      message: "OTP भेजा गया", 
-      email: email
-    });
-
+    res.json({ success: true, message: "OTP भेजा गया", email });
   } catch (err) {
     Logger.error("Login endpoint error", err);
-    res.status(500).json({ 
-      success: false,
-      error: "Server error: " + err.message 
-    });
+    res.status(500).json({ success: false, error: "Server error: " + err.message });
   }
 });
 
@@ -290,40 +266,25 @@ app.post("/login", async (req, res) => {
 app.post("/resend-otp", async (req, res) => {
   try {
     const { phone } = req.body;
-
     Logger.log("Resend OTP request received", { phone });
 
     if (!phone) {
       Logger.warn("Resend OTP failed - no phone provided");
-      return res.status(400).json({ 
-        success: false,
-        error: "Phone number required" 
-      });
+      return res.status(400).json({ success: false, error: "Phone number required" });
     }
 
     const email = await sendOtp(phone, "🔁 नया OTP - Ratu Fresh");
     
     if (!email) {
       Logger.warn("Resend OTP failed - user not found", { phone });
-      return res.status(404).json({ 
-        success: false,
-        error: "User not found" 
-      });
+      return res.status(404).json({ success: false, error: "User not found" });
     }
 
     Logger.success("OTP resent successfully", { phone });
-
-    res.json({ 
-      success: true, 
-      message: "नया OTP भेजा गया" 
-    });
-
+    res.json({ success: true, message: "नया OTP भेजा गया" });
   } catch (err) {
     Logger.error("Resend OTP endpoint error", err);
-    res.status(500).json({ 
-      success: false,
-      error: err.message 
-    });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -331,29 +292,20 @@ app.post("/resend-otp", async (req, res) => {
 app.post("/verify-otp", async (req, res) => {
   try {
     const { phone, otp } = req.body;
-
     Logger.log("OTP verification request received", { phone });
 
     if (!phone || !otp) {
       Logger.warn("OTP verification failed - missing parameters");
-      return res.status(400).json({ 
-        success: false,
-        error: "Phone और OTP दोनों आवश्यक हैं" 
-      });
+      return res.status(400).json({ success: false, error: "Phone और OTP दोनों आवश्यक हैं" });
     }
 
     const record = otpStore[phone];
 
-    // Check if OTP record exists
     if (!record) {
       Logger.warn("OTP verification failed - no record found", { phone });
-      return res.status(400).json({ 
-        success: false,
-        error: "OTP नहीं भेजा गया या समाप्त हो गया" 
-      });
+      return res.status(400).json({ success: false, error: "OTP नहीं भेजा गया या समाप्त हो गया" });
     }
 
-    // Check OTP value
     if (String(record.otp) !== String(otp)) {
       record.attempts = (record.attempts || 0) + 1;
       Logger.warn("OTP verification failed - invalid OTP", { phone, attempts: record.attempts });
@@ -361,57 +313,231 @@ app.post("/verify-otp", async (req, res) => {
       if (record.attempts >= 3) {
         delete otpStore[phone];
         Logger.warn("OTP blocked - too many attempts", { phone });
-        return res.status(429).json({ 
-          success: false,
-          error: "बहुत सारे प्रयास। फिर से OTP भेजें" 
-        });
+        return res.status(429).json({ success: false, error: "बहुत सारे प्रयास। फिर से OTP भेजें" });
       }
 
-      return res.status(401).json({ 
-        success: false,
-        error: "OTP गलत है" 
-      });
+      return res.status(401).json({ success: false, error: "OTP गलत है" });
     }
 
-    // Check OTP expiry
     if (Date.now() > record.expires) {
       Logger.warn("OTP verification failed - OTP expired", { phone });
       delete otpStore[phone];
-      return res.status(401).json({ 
-        success: false,
-        error: "OTP समाप्त हो गया" 
-      });
+      return res.status(401).json({ success: false, error: "OTP समाप्त हो गया" });
     }
 
-    // Find user
     const user = await User.findOne({ phone: phone.trim() }).populate("cart");
     if (!user) {
       Logger.warn("OTP verification failed - user not found", { phone });
-      return res.status(404).json({ 
-        success: false,
-        error: "User नहीं मिला" 
-      });
+      return res.status(404).json({ success: false, error: "User नहीं मिला" });
     }
 
-    // Delete OTP after verification
     delete otpStore[phone];
 
-    // Create JWT token
-    const token = jwt.sign(
-      { userId: user._id, phone }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: "2h" }
-    );
+    const token = jwt.sign({ userId: user._id, phone }, process.env.JWT_SECRET, { expiresIn: "2h" });
 
     Logger.success("OTP verification successful", { userId: user._id, phone });
 
-    res.json({ success: true, token, user });
-
+    res.json({ 
+      success: true, 
+      token, 
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        pincode: user.pincode,
+        area: user.area
+      }
+    });
   } catch (err) {
     Logger.error("OTP verification endpoint error", err);
+    res.status(500).json({ success: false, error: "Server error: " + err.message });
+  }
+});
+
+// ============= ADD TO CART ENDPOINT =============
+app.post("/cart/add/:userId", authenticate, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { productId, name, qty, price } = req.body;
+
+    Logger.log("🛒 Adding to cart", { userId, name, qty, price });
+
+    if (!name || !qty || !price) {
+      Logger.warn("❌ Invalid cart data", { userId });
+      return res.status(400).json({ 
+        success: false,
+        error: "सभी फ़ील्ड आवश्यक हैं" 
+      });
+    }
+
+    let cart = await Cart.findOne({ user: userId });
+
+    if (!cart) {
+      Logger.debug("📝 Creating new cart", { userId });
+      cart = await new Cart({ 
+        user: userId, 
+        items: [],
+        totalPrice: 0
+      }).save();
+    }
+
+    const existingItem = cart.items.find(item => item.name === name);
+
+    if (existingItem) {
+      existingItem.quantity += qty;
+      Logger.debug("📊 Updated quantity", { name, newQty: existingItem.quantity });
+    } else {
+      cart.items.push({
+        productId: productId || name,
+        name,
+        quantity: qty,
+        price
+      });
+      Logger.debug("➕ Added new item", { name, qty });
+    }
+
+    cart.totalPrice = cart.items.reduce((sum, item) => 
+      sum + (item.quantity * item.price), 0
+    );
+
+    await cart.save();
+
+    Logger.success("✅ Item added to cart", { userId, name, totalPrice: cart.totalPrice });
+
+    res.json({ 
+      success: true,
+      message: `✅ ${name} कार्ट में जोड़ा गया`,
+      cart: {
+        items: cart.items,
+        totalPrice: cart.totalPrice
+      }
+    });
+
+  } catch (err) {
+    Logger.error("Add to cart endpoint error", err);
     res.status(500).json({ 
       success: false,
-      error: "Server error: " + err.message 
+      error: "कार्ट में जोड़ने में समस्या: " + err.message 
+    });
+  }
+});
+
+// ============= GET CART ENDPOINT =============
+app.get('/cart/:userId', authenticate, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    Logger.log("🛒 Fetching cart for user:", userId);
+
+    let cart = await Cart.findOne({ user: userId });
+
+    if (!cart) {
+      Logger.warn("❌ Cart not found, creating new", { userId });
+      cart = await new Cart({ 
+        user: userId, 
+        items: [],
+        totalPrice: 0
+      }).save();
+    }
+
+    Logger.success("✅ Cart fetched", { userId, itemCount: cart.items.length });
+
+    res.json({ 
+      success: true,
+      items: cart.items,
+      totalPrice: cart.totalPrice
+    });
+
+  } catch (err) {
+    Logger.error("Get cart endpoint error", err);
+    res.status(500).json({ 
+      success: false,
+      error: "कार्ट fetch करने में समस्या: " + err.message 
+    });
+  }
+});
+
+// ============= REMOVE FROM CART =============
+app.post("/cart/remove/:userId", authenticate, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { productId } = req.body;
+
+    Logger.log("🗑️ Removing from cart", { userId, productId });
+
+    const cart = await Cart.findOne({ user: userId });
+
+    if (!cart) {
+      Logger.warn("❌ Cart not found", { userId });
+      return res.status(404).json({ 
+        success: false,
+        error: "कार्ट नहीं मिला" 
+      });
+    }
+
+    cart.items = cart.items.filter(item => item.name !== productId);
+
+    cart.totalPrice = cart.items.reduce((sum, item) => 
+      sum + (item.quantity * item.price), 0
+    );
+
+    await cart.save();
+
+    Logger.success("✅ Item removed from cart", { userId });
+
+    res.json({ 
+      success: true,
+      message: "आइटम हटा दिया गया",
+      cart: {
+        items: cart.items,
+        totalPrice: cart.totalPrice
+      }
+    });
+
+  } catch (err) {
+    Logger.error("Remove from cart error", err);
+    res.status(500).json({ 
+      success: false,
+      error: "हटाने में समस्या: " + err.message 
+    });
+  }
+});
+
+// ============= CLEAR CART =============
+app.post("/cart/clear/:userId", authenticate, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    Logger.log("🧹 Clearing cart", { userId });
+
+    const cart = await Cart.findOne({ user: userId });
+
+    if (!cart) {
+      Logger.warn("❌ Cart not found", { userId });
+      return res.status(404).json({ 
+        success: false,
+        error: "कार्ट नहीं मिला" 
+      });
+    }
+
+    cart.items = [];
+    cart.totalPrice = 0;
+    await cart.save();
+
+    Logger.success("✅ Cart cleared", { userId });
+
+    res.json({ 
+      success: true,
+      message: "कार्ट साफ़ कर दिया गया"
+    });
+
+  } catch (err) {
+    Logger.error("Clear cart error", err);
+    res.status(500).json({ 
+      success: false,
+      error: "साफ़ करने में समस्या: " + err.message 
     });
   }
 });
@@ -421,21 +547,13 @@ app.post("/place-order", authenticate, async (req, res) => {
   try {
     const { products, totalPrice, customerName, address, phone } = req.body;
     
-    Logger.log("Order placement request received", { 
-      userId: req.user.userId,
-      totalPrice,
-      itemCount: products?.length 
-    });
+    Logger.log("📦 Order placement request received", { userId: req.user.userId, totalPrice, itemCount: products?.length });
 
     if (![products, totalPrice, customerName, address, phone].every(Boolean)) {
       Logger.warn("Order validation failed - missing fields", { userId: req.user.userId });
-      return res.status(400).json({ 
-        success: false,
-        error: "सभी फ़ील्ड आवश्यक हैं" 
-      });
+      return res.status(400).json({ success: false, error: "सभी फ़ील्ड आवश्यक हैं" });
     }
 
-    // Create order
     const order = await new Order({
       userId: req.user.userId,
       items: products.map(p => ({
@@ -447,7 +565,9 @@ app.post("/place-order", authenticate, async (req, res) => {
       totalAmount: totalPrice,
       deliveryAddress: address,
       phone,
-      paymentMode: "Cash on Delivery"
+      status: "pending",
+      paymentMode: "Cash on Delivery",
+      orderDate: new Date()
     }).save();
 
     Logger.debug("Order created in database", { orderId: order._id });
@@ -456,23 +576,21 @@ app.post("/place-order", authenticate, async (req, res) => {
       .map(p => `- ${p.name} (${p.qty < 1 ? p.qty * 1000 + " ग्राम" : p.qty + " किलो"})`)
       .join("\n");
 
-    // Send order email
     try {
       await resend.emails.send({
-        from: `Ratu Fresh <${process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"}>`,
+        from: "Ratu Fresh <onboarding@resend.dev>",
         to: "ck805026@gmail.com",
         subject: "🛒 नया ऑर्डर प्राप्त हुआ - Ratu Fresh",
         html: `
           <div style="font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; border-radius: 10px;">
             <h2 style="color: #333;">🛒 नया ऑर्डर प्राप्त हुआ</h2>
-            <p style="color: #666;"><strong>ग्राहक:</strong> ${customerName}</p>
-            <p style="color: #666;"><strong>फोन:</strong> ${phone}</p>
-            <p style="color: #666;"><strong>पता:</strong> ${address}</p>
-            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-            <h3 style="color: #333;">ऑर्डर विवरण:</h3>
-            <pre style="background: #fff; padding: 15px; border-radius: 5px; overflow-x: auto;">${productList}</pre>
-            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-            <p style="color: #00c9a7; font-size: 18px; font-weight: bold;"><strong>कुल कीमत: ₹${totalPrice}</strong></p>
+            <p><strong>ग्राहक:</strong> ${customerName}</p>
+            <p><strong>फोन:</strong> ${phone}</p>
+            <p><strong>पता:</strong> ${address}</p>
+            <hr>
+            <h3>ऑर्डर विवरण:</h3>
+            <pre>${productList}</pre>
+            <p><strong>कुल कीमत: ₹${totalPrice}</strong></p>
           </div>
         `
       });
@@ -482,31 +600,63 @@ app.post("/place-order", authenticate, async (req, res) => {
     }
 
     Logger.success("Order created successfully", { orderId: order._id, phone });
-
-    res.json({ 
-      success: true,
-      message: "ऑर्डर सफल", 
-      orderId: order._id 
-    });
+    res.json({ success: true, message: "ऑर्डर सफल", orderId: order._id });
   } catch (err) {
     Logger.error("Place order endpoint error", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ============= GET ORDERS ENDPOINT =============
+app.get('/orders/:userId', authenticate, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    Logger.log("📦 Fetching orders for user:", userId);
+
+    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+    
+    if (!orders || orders.length === 0) {
+      Logger.warn("❌ No orders found", { userId });
+      return res.json({ 
+        success: true,
+        orders: [],
+        message: "कोई ऑर्डर नहीं मिला"
+      });
+    }
+
+    Logger.success("✅ Orders fetched", { userId, count: orders.length });
+    
+    res.json({ 
+      success: true,
+      orders: orders.map(order => ({
+        _id: order._id,
+        totalAmount: order.totalAmount,
+        status: order.status || 'pending',
+        orderDate: order.orderDate || order.createdAt,
+        items: order.items,
+        deliveryAddress: order.deliveryAddress,
+        phone: order.phone
+      }))
+    });
+
+  } catch (err) {
+    Logger.error("Get orders endpoint error", err);
     res.status(500).json({ 
       success: false,
-      error: err.message 
+      error: "Orders fetch failed: " + err.message 
     });
   }
 });
 
-// ============= PUSH NOTIFICATION ENDPOINTS =============
+// ============= PUSH NOTIFICATIONS - SUBSCRIBE =============
 app.post("/subscribe", async (req, res) => {
   try {
     const { subscription, phone } = req.body;
-    
     if (!subscription || !phone) {
       Logger.warn("Subscribe failed - missing parameters");
       return res.status(400).json({ success: false, error: "Invalid parameters" });
     }
-
     subscriptions.push({ subscription, phone });
     Logger.success("User subscribed to push notifications", { phone });
     res.status(201).json({ success: true });
@@ -516,10 +666,10 @@ app.post("/subscribe", async (req, res) => {
   }
 });
 
+// ============= PUSH NOTIFICATIONS - SEND TO SPECIFIC USER =============
 app.post("/send", async (req, res) => {
   try {
     const { phone, payload } = req.body;
-    
     Logger.log("Sending notification to specific user", { phone });
 
     const targets = subscriptions.filter(s => s.phone === phone).map(s => s.subscription);
@@ -537,7 +687,6 @@ app.post("/send", async (req, res) => {
     
     const succeeded = results.filter(r => r.ok).length;
     Logger.success(`Notifications sent`, { phone, total: results.length, succeeded });
-
     res.json({ total: results.length, succeeded, failed: results.length - succeeded });
   } catch (err) {
     Logger.error("Send notification endpoint error", err);
@@ -545,10 +694,10 @@ app.post("/send", async (req, res) => {
   }
 });
 
+// ============= PUSH NOTIFICATIONS - BROADCAST =============
 app.post("/send-all", async (req, res) => {
   try {
     const { payload } = req.body;
-    
     Logger.log("Broadcasting notification to all users", { userCount: subscriptions.length });
 
     const results = await Promise.all(
@@ -564,7 +713,6 @@ app.post("/send-all", async (req, res) => {
     
     const succeeded = results.filter(r => r.ok).length;
     Logger.success(`Broadcast completed`, { total: results.length, succeeded });
-
     res.json({ total: results.length, succeeded, failed: results.length - succeeded });
   } catch (err) {
     Logger.error("Broadcast endpoint error", err);
@@ -572,11 +720,10 @@ app.post("/send-all", async (req, res) => {
   }
 });
 
-// ============= GEOCODING ENDPOINTS =============
+// ============= GEOCODING - REVERSE =============
 app.post("/reverse-geocode", async (req, res) => {
   try {
     const { lat, lng } = req.body;
-    
     Logger.debug("Reverse geocoding request", { lat, lng });
 
     if (typeof lat !== "number" || typeof lng !== "number") {
@@ -603,6 +750,7 @@ app.post("/reverse-geocode", async (req, res) => {
   }
 });
 
+// ============= GEOCODING - FORWARD =============
 app.post("/geocode", async (req, res) => {
   try {
     const { address, area, pincode } = req.body;
@@ -645,12 +793,10 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Ratufresh@2025';
 app.get('/admin', (req, res) => {
   try {
     const { password } = req.query;
-    
     if (password !== ADMIN_PASSWORD) {
       Logger.warn("Unauthorized admin access attempt");
       return res.status(401).send('Unauthorized');
     }
-
     Logger.log("Admin panel accessed");
     res.sendFile(path.join(__dirname, 'secure', 'admin.html'));
   } catch (err) {
@@ -679,9 +825,7 @@ app.use((err, req, res, next) => {
   Logger.error("Global error handler triggered", err);
   res.status(err.status || 500).json({ 
     success: false,
-    error: process.env.NODE_ENV === "production" 
-      ? "Server error" 
-      : err.message 
+    error: process.env.NODE_ENV === "production" ? "Server error" : err.message 
   });
 });
 
@@ -690,48 +834,41 @@ async function startServer() {
   try {
     Logger.log("Starting server...");
 
-    // Check environment variables
     if (!process.env.DBurl) throw new Error("DBurl not configured");
     if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET not configured");
     if (!process.env.RESEND_API_KEY) throw new Error("RESEND_API_KEY not configured");
 
     Logger.log("Environment variables verified");
 
-    // Connect to MongoDB
     await mongoose.connect(process.env.DBurl, { 
       useNewUrlParser: true, 
       useUnifiedTopology: true 
     });
     Logger.success("MongoDB connected successfully");
 
-    // Start server
     const PORT = process.env.PORT || 4000;
     app.listen(PORT, () => {
       Logger.success(`🚀 Server is running on port ${PORT}`);
       Logger.log(`📊 Environment: ${process.env.NODE_ENV || "development"}`);
       Logger.log(`🔗 Database: Connected`);
       Logger.log(`📧 Email Service: Resend configured`);
+      Logger.log(`🌐 Website: http://localhost:${PORT}`);
     });
-
   } catch (err) {
     Logger.error("Failed to start server", err);
     process.exit(1);
   }
 }
 
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   Logger.error("Unhandled Rejection at:", reason);
 });
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   Logger.error("Uncaught Exception:", error);
   process.exit(1);
 });
 
-// Start server
 startServer();
 
 module.exports = app;
-
