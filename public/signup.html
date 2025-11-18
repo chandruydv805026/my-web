@@ -133,6 +133,43 @@
     .popup.error {
       background: #ff4d4d;
     }
+    .form-group.address-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .form-group.address-group input {
+      flex: 1;
+    }
+    .map-btn {
+      width: 42px;
+      height: 42px;
+      border: none;
+      border-radius: 10px;
+      background: #185a9d;
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .landmark-hint {
+      font-size: 13px;
+      color: #555;
+      margin: -12px 0 16px 2px;
+    }
+    .village-hint {
+      font-size: 13px;
+      color: #185a9d;
+      margin: -12px 0 16px 2px;
+    }
+    .radius-hint {
+      font-size: 13px;
+      color: #333;
+      margin: 8px 0;
+      text-align: center;
+    }
     @media (max-width: 480px) {
       .signup-container {
         padding: 30px 20px;
@@ -160,18 +197,25 @@
         <input type="email" name="email" required placeholder=" " />
         <label>ईमेल</label>
       </div>
-       <div class="form-group">
-        <input type="text" name="address" required placeholder=" " />
+      <div class="form-group address-group">
+        <input type="text" name="address" required placeholder=" " id="addressInput"/>
         <label>पूरा पता</label>
+        <button type="button" class="map-btn" id="locBtn" title="Use current location">🗺️</button>
       </div>
       <div class="form-group">
         <input type="text" name="pincode" required maxlength="6" placeholder=" " />
         <label>पिनकोड</label>
       </div>
       <div class="form-group">
-        <input type="text" name="area" required placeholder=" " />
+        <input type="text" name="area" required placeholder=" " id="areaInput"/>
         <label>नज़दीकी इलाका / लैंडमार्क</label>
       </div>
+      <div class="form-group">
+        <input type="text" name="village" required placeholder=" " id="villageInput"/>
+        <label>गाँव / मोहल्ला</label>
+      </div>
+      <div class="landmark-hint" id="landmarkHint">📍 नज़दीकी प्रसिद्ध जगह यहाँ दिखाई देगी</div>
+      <div class="village-hint" id="villageHint">🏡 यहाँ गाँव/मोहल्ले का नाम दिखेगा</div>
       <button type="submit" id="signupBtn">
         साइन अप करें
         <span class="spinner" id="spinner"></span>
@@ -185,6 +229,32 @@
     const form = document.getElementById('signupForm');
     const button = document.getElementById('signupBtn');
     const spinner = document.getElementById('spinner');
+    const addressInput = document.getElementById('addressInput');
+    const locBtn = document.getElementById('locBtn');
+    const areaInput = document.getElementById('areaInput');
+    const villageInput = document.getElementById('villageInput');
+    const landmarkHint = document.getElementById('landmarkHint');
+    const villageHint = document.getElementById('villageHint');
+
+    const fillAddressFromGeo = (payload, data) => {
+      const addr = data.components || {};
+      const payloadCoords = {
+        lat: parseFloat(data.lat ?? payload.lat),
+        lng: parseFloat(data.lng ?? payload.lng)
+      };
+
+      const areaValue = formatArea(addr) || data.displayName;
+      const villageName = getVillageName(addr);
+
+      addressInput.value = data.displayName || `Lat: ${payload.lat.toFixed(5)}, Lng: ${payload.lng.toFixed(5)}`;
+      if (addr.postcode) pincodeInput.value = addr.postcode;
+      areaInput.value = formatArea(addr) || data.displayName || 'लोकेशन उपलब्ध नहीं';
+      villageInput.value = villageName || 'लोकेशन उपलब्ध नहीं';
+      landmarkHint.textContent = areaInput.value ? `⭐ ${areaInput.value}` : '📍 नज़दीकी प्रसिद्ध जगह नहीं मिली';
+      villageHint.textContent = villageName ? `🏡 ${villageName}` : '🏡 गाँव/मोहल्ला नहीं मिला';
+      latInput.value = payload.lat;
+      lngInput.value = payload.lng;
+    };
 
     function showPopup(message, isError = false) {
       const popup = document.getElementById("popup");
@@ -196,51 +266,49 @@
       }, 3000);
     }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
+    const pincodeInput = document.querySelector('input[name="pincode"]');
+    const latInput = document.createElement('input');
+    const lngInput = document.createElement('input');
+    latInput.type = lngInput.type = 'hidden';
+    latInput.name = 'latitude';
+    lngInput.name = 'longitude';
+    form.appendChild(latInput);
+    form.appendChild(lngInput);
 
-      if (!/^[6-9]\d{9}$/.test(data.phone)) {
-        showPopup('कृपया सही 10-अंकों का भारतीय मोबाइल नंबर दर्ज करें', true);
-        return;
-      }
+    locBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) return showPopup('लोकेशन सपोर्ट नहीं है', true);
 
-      if (!/^\d{6}$/.test(data.pincode)) {
-        showPopup('कृपया सही 6-अंकों का पिनकोड दर्ज करें', true);
-        return;
-      }
+      navigator.geolocation.getCurrentPosition(
+        async ({ coords }) => {
+          const payload = { lat: coords.latitude, lng: coords.longitude };
+          try {
+            const res = await fetch('http://localhost:4000/reverse-geocode', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            const data = await res.json();
 
-      button.classList.add('loading');
-      button.disabled = true;
+            if (res.ok && data.displayName) {
+              fillAddressFromGeo(payload, data);
+              window.open(`https://www.google.com/maps?q=${payload.lat},${payload.lng}`, '_blank');
+              showPopup('📍 पता, पिनकोड और इलाका ऑटो-भरा गया');
+            } else {
+              addressInput.value = `Lat: ${payload.lat.toFixed(5)}, Lng: ${payload.lng.toFixed(5)}`;
+              showPopup('सटीक पता नहीं मिला, कॉर्डिनेट्स भरे गए', true);
+            }
+          } catch {
+            showPopup('लोकेशन सर्वर से कनेक्ट नहीं हो पाया', true);
+          }
+        },
+        () => showPopup('लोकेशन नहीं मिल पाई', true),
+        { enableHighAccuracy: true }
+      );
+    });
 
-      try {
-        const res = await fetch('https://my-web-xrr5.onrender.com/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-
-        const result = await res.json();
-        if (res.ok) {
-          showPopup('✅ साइनअप सफल हुआ!');
-          form.reset();
-          setTimeout(() => {
-            window.location.href = "main.html";
-          }, 1500);
-        } else {
-          showPopup("❌ " + (result.error || 'साइनअप विफल रहा'), true);
-        }
-      } catch (err) {
-        console.error("Signup error:", err);
-        showPopup('❌ सर्वर से कनेक्ट नहीं हो पाया', true);
-      } finally {
-        button.classList.remove('loading');
-        button.disabled = false;
-      }
+    form.addEventListener('submit', (e) => {
+      // अब केवल default submit
     });
   </script>
 </body>
 </html>
-
-
