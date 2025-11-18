@@ -149,7 +149,7 @@
   <script>
     function maskEmail(email) {
       const [local, domain] = email.split("@");
-      if (local.length &lt;= 2) {
+      if (local.length <= 2) {
         return local[0] + "*@" + domain;
       }
       const first = local.slice(0, 2);
@@ -195,10 +195,10 @@
       resendBtn.disabled = true;
       const timer = setInterval(() => {
         countdown--;
-        resendBtn.textContent = countdown &gt; 0
+        resendBtn.textContent = countdown > 0
           ? `🔁 Resend OTP (${countdown}s)`
           : "🔁 Resend OTP";
-        if (countdown &lt;= 0) {
+        if (countdown <= 0) {
           resendBtn.disabled = false;
           clearInterval(timer);
         }
@@ -244,7 +244,7 @@
         console.log("✅ Response status:", res.status);
         console.log("✅ Response data:", result);
 
-        if (res.ok &amp;&amp; result.success) {
+        if (res.ok && result.success) {
           successMsg.textContent = "✅ OTP Verified! Redirecting...";
           successMsg.style.display = "block";
           loadingMsg.style.display = "none";
@@ -293,7 +293,7 @@
         const result = await res.json();
         console.log("✅ Resend Response:", result);
 
-        if (res.ok &amp;&amp; result.success) {
+        if (res.ok && result.success) {
           successMsg.textContent = "✅ नया OTP भेज दिया गया";
           successMsg.style.display = "block";
           loadingMsg.style.display = "none";
