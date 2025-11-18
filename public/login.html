@@ -102,6 +102,13 @@
         spinner.classList.remove('show');
 
         if (res.ok && data.success) {
+          // ✅ IMPORTANT: Save phone and email to localStorage
+          localStorage.setItem("phone", phone);
+          localStorage.setItem("otpEmail", data.email || "");
+          
+          console.log("✅ Phone saved:", phone);
+          console.log("✅ Email saved:", data.email);
+
           const registration = await registerServiceWorker();
           if (registration) {
             const granted = await askNotificationPermission();
