@@ -112,7 +112,7 @@
   <script>
     function maskEmail(email) {
       const [local, domain] = email.split("@");
-      if (local.length <= 2) {
+      if (local.length &lt;= 2) {
         return local[0] + "*@" + domain;
       }
       const first = local.slice(0, 2);
@@ -141,10 +141,10 @@
       resendBtn.disabled = true;
       const timer = setInterval(() => {
         countdown--;
-        resendBtn.textContent = countdown > 0
+        resendBtn.textContent = countdown &gt; 0
           ? `🔁 Resend OTP (${countdown}s)`
           : "🔁 Resend OTP";
-        if (countdown <= 0) {
+        if (countdown &lt;= 0) {
           resendBtn.disabled = false;
           clearInterval(timer);
         }
@@ -164,7 +164,7 @@
       });
 
       const result = await res.json();
-      if (res.ok && result.success) {
+      if (res.ok &amp;&amp; result.success) {
         localStorage.setItem("token", result.token);
         localStorage.setItem("userData", JSON.stringify(result.user));
         window.location.href = "profiles.html";
@@ -181,7 +181,7 @@
       });
 
       const result = await res.json();
-      if (res.ok && result.success) {
+      if (res.ok &amp;&amp; result.success) {
         alert("✅ नया OTP भेज दिया गया");
         countdown = 30;
         updateResendButton();
