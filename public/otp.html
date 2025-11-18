@@ -46,6 +46,7 @@
       background: rgba(255, 255, 255, 0.2);
       color: #fff;
       outline: none;
+      box-sizing: border-box;
     }
     .otp-container input::placeholder {
       color: #ddd;
@@ -71,6 +72,10 @@
       transform: scale(1.03);
       box-shadow: 0 4px 12px rgba(0, 201, 167, 0.4);
     }
+    .otp-container button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
     .resend-btn {
       background: none;
       border: none;
@@ -93,6 +98,27 @@
       background: rgba(255, 255, 255, 0.1);
       color: #92fe9d;
     }
+    .error-message {
+      color: #ff6b6b;
+      font-size: 12px;
+      margin-top: 8px;
+      text-align: center;
+      display: none;
+    }
+    .success-message {
+      color: #92fe9d;
+      font-size: 12px;
+      margin-top: 8px;
+      text-align: center;
+      display: none;
+    }
+    .loading {
+      display: none;
+      text-align: center;
+      color: #00c9a7;
+      font-size: 12px;
+      margin-top: 8px;
+    }
     @media (max-width: 480px) {
       .otp-container { padding: 25px 20px; }
     }
@@ -103,8 +129,19 @@
     <h2>Enter OTP</h2>
     <p id="emailInfo">📩 OTP भेजा गया है...</p>
     <form id="otpForm">
-      <input type="text" name="otp" placeholder="Enter OTP" maxlength="6" required />
-      <button type="submit">Verify</button>
+      <input 
+        type="text" 
+        name="otp" 
+        id="otpInput"
+        placeholder="Enter OTP" 
+        maxlength="6" 
+        required 
+        inputmode="numeric"
+      />
+      <button type="submit" id="submitBtn">Verify</button>
+      <div class="error-message" id="errorMsg"></div>
+      <div class="success-message" id="successMsg"></div>
+      <div class="loading" id="loadingMsg">Verifying...</div>
     </form>
     <button class="resend-btn" id="resendBtn" disabled>🔁 Resend OTP (30s)</button>
   </div>
@@ -124,9 +161,26 @@
     const form = document.getElementById('otpForm');
     const resendBtn = document.getElementById('resendBtn');
     const emailInfo = document.getElementById('emailInfo');
+    const errorMsg = document.getElementById('errorMsg');
+    const successMsg = document.getElementById('successMsg');
+    const loadingMsg = document.getElementById('loadingMsg');
+    const submitBtn = document.getElementById('submitBtn');
+    const otpInput = document.getElementById('otpInput');
 
+    // Get data from localStorage
     const phone = localStorage.getItem("phone");
     const email = localStorage.getItem("otpEmail");
+
+    // Debug log
+    console.log("📱 Phone:", phone);
+    console.log("📧 Email:", email);
+
+    // Check if phone exists
+    if (!phone) {
+      errorMsg.textContent = "❌ Phone number नहीं मिला। फिर से login करें।";
+      errorMsg.style.display = "block";
+      submitBtn.disabled = true;
+    }
 
     if (email) {
       emailInfo.textContent = `📩 OTP भेजा गया है: ${maskEmail(email)}`;
@@ -155,38 +209,109 @@
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const otp = form.otp.value;
+      const otp = form.otp.value.trim();
 
-      const res = await fetch('https://my-web-xrr5.onrender.com/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, otp })
-      });
+      // Validation
+      if (!otp || otp.length !== 6) {
+        errorMsg.textContent = "❌ कृपया 6 digit का OTP दर्ज करें";
+        errorMsg.style.display = "block";
+        return;
+      }
 
-      const result = await res.json();
-      if (res.ok &amp;&amp; result.success) {
-        localStorage.setItem("token", result.token);
-        localStorage.setItem("userData", JSON.stringify(result.user));
-        window.location.href = "profiles.html";
-      } else {
-        alert(result.error || "Invalid OTP");
+      if (!phone) {
+        errorMsg.textContent = "❌ Phone number नहीं मिला";
+        errorMsg.style.display = "block";
+        return;
+      }
+
+      // Clear messages
+      errorMsg.style.display = "none";
+      successMsg.style.display = "none";
+      loadingMsg.style.display = "block";
+      submitBtn.disabled = true;
+
+      console.log("🔄 Verifying OTP:", otp, "for phone:", phone);
+
+      try {
+        const res = await fetch('https://my-web-xrr5.onrender.com/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, otp })
+        });
+
+        const result = await res.json();
+        
+        console.log("✅ Response status:", res.status);
+        console.log("✅ Response data:", result);
+
+        if (res.ok &amp;&amp; result.success) {
+          successMsg.textContent = "✅ OTP Verified! Redirecting...";
+          successMsg.style.display = "block";
+          loadingMsg.style.display = "none";
+          
+          localStorage.setItem("token", result.token);
+          localStorage.setItem("userData", JSON.stringify(result.user));
+          
+          setTimeout(() => {
+            window.location.href = "profiles.html";
+          }, 1500);
+        } else {
+          errorMsg.textContent = result.error || "❌ OTP गलत है। फिर से कोशिश करें।";
+          errorMsg.style.display = "block";
+          loadingMsg.style.display = "none";
+          submitBtn.disabled = false;
+          console.error("❌ Error:", result);
+        }
+      } catch (err) {
+        console.error("❌ Network Error:", err);
+        errorMsg.textContent = `❌ नेटवर्क त्रुटि: ${err.message}`;
+        errorMsg.style.display = "block";
+        loadingMsg.style.display = "none";
+        submitBtn.disabled = false;
       }
     });
 
     resendBtn.addEventListener('click', async () => {
-      const res = await fetch('https://my-web-xrr5.onrender.com/resend-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone })
-      });
+      if (!phone) {
+        alert("❌ Phone number नहीं मिला");
+        return;
+      }
 
-      const result = await res.json();
-      if (res.ok &amp;&amp; result.success) {
-        alert("✅ नया OTP भेज दिया गया");
-        countdown = 30;
-        updateResendButton();
-      } else {
-        alert(result.error || "❌ OTP भेजने में समस्या हुई");
+      loadingMsg.textContent = "OTP भेज रहे हैं...";
+      loadingMsg.style.display = "block";
+      resendBtn.disabled = true;
+
+      console.log("🔄 Resending OTP for phone:", phone);
+
+      try {
+        const res = await fetch('https://my-web-xrr5.onrender.com/resend-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone })
+        });
+
+        const result = await res.json();
+        console.log("✅ Resend Response:", result);
+
+        if (res.ok &amp;&amp; result.success) {
+          successMsg.textContent = "✅ नया OTP भेज दिया गया";
+          successMsg.style.display = "block";
+          loadingMsg.style.display = "none";
+          countdown = 30;
+          updateResendButton();
+        } else {
+          errorMsg.textContent = result.error || "❌ OTP भेजने में समस्या";
+          errorMsg.style.display = "block";
+          loadingMsg.style.display = "none";
+          resendBtn.disabled = false;
+          console.error("❌ Error:", result);
+        }
+      } catch (err) {
+        console.error("❌ Resend Error:", err);
+        errorMsg.textContent = `❌ नेटवर्क त्रुटि: ${err.message}`;
+        errorMsg.style.display = "block";
+        loadingMsg.style.display = "none";
+        resendBtn.disabled = false;
       }
     });
   </script>
