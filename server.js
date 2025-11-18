@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const webpush = require("web-push");
+const axios = require("axios");
 const path = require("path");
 require("dotenv").config();
 
@@ -392,6 +394,7 @@ mongoose.connect(process.env.DBurl, {
 .catch(err => {
   console.error("❌ MongoDB से कनेक्शन फेल:", err);
 });
+
 
 
 
