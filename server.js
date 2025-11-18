@@ -1,15 +1,48 @@
-// 📦 Dependencies
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const { Resend } = require("resend");
 const webpush = require("web-push");
 const axios = require("axios");
 const path = require("path");
 require("dotenv").config();
 
-// 📩 Resend SDK
+const User = require("./models/schema");
+const Cart = require("./models/cart");
+const Order = require("./models/order");
+const cartRoutes = require("./routes/cartRoutes");
+
+const app = express();
+app.use(bodyParser.json());
+app.use(cors());
+app.use(express.static("public"));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "main.html"));
+});
+
+// Initialize Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const authenticate = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "Token missing" });
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(403).json({ error: "Invalid token" });
+    req.user = decoded;
+    next();
+  });
+};
+
+const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+webpush.setVapidDetails("mailto:you@example.com", vapidPublicKey, vapidPrivateKey);
+const subscriptions = [];
+
+app.use("/cart", cartRoutes);
+
 app.post("/signup", async (req, res) => {
   try {
     const { name, phone, email, address, pincode, area } = req.body;
@@ -32,143 +65,52 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-// 🌐 Static file serving
-app.use(express.static(path.join(__dirname, "public")));
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "main.html"));
-});
-app.get("/user/:id", authenticate, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id).populate("cart");
-    if (!user) return res.status(404).json({ success: false, message: "User नहीं मिला" });
-    res.status(200).json({ success: true, user });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "❌ Server error" });
-  }
-});
+const otpStore = {};
+const sendOtp = async (phone, subject) => {
+  const user = await User.findOne({ phone });
+  if (!user) return null;
 
-// 🛒 Cart routes
-app.use("/cart", cartRoutes);
-
-// 🔐 OTP Store (in-memory)
-const otpStore = {}; // { phone: { otp, expires } }
-
-// 📝 Signup route
-app.post("/signup", async (req, res) => {
-  const { name, phone, email, address, pincode, area } = req.body;
-
-  if (!name || !phone || !email || !address || !pincode || !area) {
-    return res.status(400).json({ error: "सभी फ़ील्ड आवश्यक हैं" });
-  }
+  const otp = Math.floor(100000 + Math.random() * 900000);
+  otpStore[phone] = { otp, expires: Date.now() + 120000 };
 
   try {
-    const existingUser = await User.findOne({ $or: [{ phone }, { email }] });
-    if (existingUser) {
-      return res.status(409).json({ error: "User पहले से मौजूद है" });
-    }
-
-    const newUser = new User({ name, phone, email, address, pincode, area });
-    await newUser.save();
-
-    const newCart = new Cart({ user: newUser._id, items: [], totalPrice: 0 });
-    await newCart.save();
-
-    newUser.cart = newCart._id;
-    await newUser.save();
-
-    res.status(201).json({ message: "✅ Signup सफल हुआ", userId: newUser._id });
+    await resend.emails.send({
+      from: `Ratu Fresh <${process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"}>`,
+      to: user.email,
+      subject,
+      html: `<p>आपका OTP: <strong>${otp}</strong></p><p>2 मिनट तक मान्य।</p>`
+    });
   } catch (err) {
-    console.error("Signup error:", err);
-    res.status(500).json({ error: "❌ Internal server error" });
+    console.error("Resend error:", err.message);
+    throw err;
   }
-});
 
-// 📩 Login → Send OTP
+  return user.email;
+};
+
 app.post("/login", async (req, res) => {
-  const { phone } = req.body;
-
   try {
-    const user = await User.findOne({ phone });
-    if (!user) return res.status(404).json({ error: "❌ User not found" });
-
-    if (!user.email || !user.email.includes("@")) {
-      return res.status(400).json({ error: "❌ Invalid email address" });
-    }
-
-    console.log("📩 Sending OTP to:", user.email);
-
-    const otp = Math.floor(100000 + Math.random() * 900000);
-    otpStore[phone] = { otp, expires: Date.now() + 2 * 60 * 1000 };
-
-    try {
-      const response = await resend.emails.send({
-        from: "Ratu Fresh <onboarding@resend.dev>",
-        to: user.email,
-        subject: "🔐 आपका OTP - Ratu Fresh",
-        text: `आपका OTP है: ${otp}\nयह 2 मिनट तक मान्य रहेगा।`
-      });
-
-      if (response.error) {
-        console.error("📨 Resend error:", response.error);
-        return res.status(500).json({ error: "❌ OTP भेजने में समस्या हुई" });
-      }
-
-      res.status(200).json({
-        success: true,
-        message: "✅ OTP भेज दिया गया",
-        email: user.email
-      });
-    } catch (emailErr) {
-      console.error("📨 Email send failed:", emailErr);
-      return res.status(500).json({ error: "❌ Email भेजने में समस्या हुई" });
-    }
-
+    const email = await sendOtp(req.body.phone, "🔐 आपका OTP - Ratu Fresh");
+    if (!email) return res.status(404).json({ error: "User not found" });
+    res.json({ success: true, message: "OTP भेजा गया", email });
   } catch (err) {
-    console.error("Login OTP error:", err);
-    res.status(500).json({ error: "❌ Server error" });
+    console.error("Login error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
-// 🔁 Resend OTP
+
 app.post("/resend-otp", async (req, res) => {
-  const { phone } = req.body;
-
   try {
-    const user = await User.findOne({ phone });
-    if (!user) return res.status(404).json({ error: "❌ User not found" });
-
-    if (!user.email || !user.email.includes("@")) {
-      return res.status(400).json({ error: "❌ Invalid email address" });
-    }
-
-    const otp = Math.floor(100000 + Math.random() * 900000);
-    otpStore[phone] = { otp, expires: Date.now() + 2 * 60 * 1000 };
-
-    try {
-      const response = await resend.emails.send({
-        from: "Ratu Fresh <onboarding@resend.dev>",
-        to: user.email,
-        subject: "🔁 नया OTP - Ratu Fresh",
-        text: `आपका नया OTP है: ${otp}\nयह 2 मिनट तक मान्य रहेगा।`
-      });
-
-      if (response.error) {
-        console.error("📨 Resend error:", response.error);
-        return res.status(500).json({ error: "❌ OTP भेजने में समस्या हुई" });
-      }
-
-      res.status(200).json({ success: true, message: "✅ नया OTP भेज दिया गया" });
-    } catch (emailErr) {
-      console.error("📨 Email send failed:", emailErr);
-      return res.status(500).json({ error: "❌ Email भेजने में समस्या हुई" });
-    }
-
+    const email = await sendOtp(req.body.phone, "🔁 नया OTP - Ratu Fresh");
+    if (!email) return res.status(404).json({ error: "User not found" });
+    res.json({ success: true, message: "नया OTP भेजा गया" });
   } catch (err) {
-    console.error("Resend OTP error:", err);
-    res.status(500).json({ error: "❌ Server error" });
+    console.error("Resend OTP error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ✅ Verify OTPapp.post("/verify-otp", async (req, res) => {
+app.post("/verify-otp", async (req, res) => {
   try {
     const { phone, otp } = req.body;
     const record = otpStore[phone];
@@ -178,7 +120,7 @@ app.post("/resend-otp", async (req, res) => {
     if (record?.otp == otp && Date.now() < record.expires) {
       delete otpStore[phone];
       const token = jwt.sign({ userId: user._id, phone }, process.env.JWT_SECRET, { expiresIn: "2h" });
-      return res.json({ success: true, token,user: { _id: user._id, name: user.name, phone: user.phone, email: user.email, address: user.address, pincode: user.pincode, area: user.area, createdAt: user.createdAt, cart: user.cart }  });
+      return res.json({ success: true, token, user });
     }
     res.status(401).json({ success: false, error: "OTP गलत या समाप्त हो गया" });
   } catch (err) {
@@ -187,19 +129,14 @@ app.post("/resend-otp", async (req, res) => {
   }
 });
 
-
-
-
-// 🛒 Place Order
 app.post("/place-order", authenticate, async (req, res) => {
-  const { products, totalPrice, customerName, address, phone } = req.body;
-
-  if (!products || !totalPrice || !customerName || !address || !phone) {
-    return res.status(400).json({ error: "❌ सभी फ़ील्ड आवश्यक हैं" });
-  }
-
   try {
-    const newOrder = new Order({
+    const { products, totalPrice, customerName, address, phone } = req.body;
+    if (![products, totalPrice, customerName, address, phone].every(Boolean)) {
+      return res.status(400).json({ error: "सभी फ़ील्ड आवश्यक हैं" });
+    }
+
+    const order = await new Order({
       userId: req.user.userId,
       items: products.map(p => ({
         productId: p.productId || p.name,
@@ -209,81 +146,43 @@ app.post("/place-order", authenticate, async (req, res) => {
       })),
       totalAmount: totalPrice,
       deliveryAddress: address,
-      phone: phone,
+      phone,
       paymentMode: "Cash on Delivery"
-    });
+    }).save();
 
-    await newOrder.save();
+    const productList = products
+      .map(p => `- ${p.name} (${p.qty < 1 ? p.qty * 1000 + " ग्राम" : p.qty + " किलो"})`)
+      .join("\n");
 
-    await resend.emails.send({
-      from: "Ratu Fresh <onboarding@resend.dev>",
-      to: "ck805026@gmail.com",
-      subject: "🛒 नया ऑर्डर प्राप्त हुआ - Ratu Fresh",
-      text: `
-नया ऑर्डर प्राप्त हुआ!
-
-ग्राहक: ${customerName}
-फोन: ${phone}
-पता: ${address}
-
-उत्पाद:
-${products.map(p => `- ${p.name} (${p.qty}kg)`).join("\n")}
-
-कुल कीमत: ₹${totalPrice}
-      `
-    });
-
-    res.status(200).json({
-      message: "✅ ऑर्डर सफलतापूर्वक लिया गया और ईमेल भेजा गया",
-      orderId: newOrder._id
-    });
-
-  } catch (err) {
-    console.error("Order error:", err);
-    res.status(500).json({ error: "❌ ऑर्डर सेव करने या ईमेल भेजने में समस्या हुई" });
-  }
-});
-
-// 📦 Get Orders
-// 📦 Get Orders
-app.get("/orders/:userId", authenticate, async (req, res) => {
-  try {
-    const orders = await Order.find({ userId: req.params.userId }).sort({ orderDate: -1 });
-
-    if (!orders || orders.length === 0) {
-      return res.status(404).json({ message: "कोई ऑर्डर नहीं मिला" });
+    try {
+      await resend.emails.send({
+        from: `Ratu Fresh <${process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"}>`,
+        to: "ck805026@gmail.com",
+        subject: "🛒 नया ऑर्डर प्राप्त हुआ - Ratu Fresh",
+        html: `
+          <h2>नया ऑर्डर प्राप्त हुआ</h2>
+          <p><strong>ग्राहक:</strong> ${customerName}</p>
+          <p><strong>फोन:</strong> ${phone}</p>
+          <p><strong>पता:</strong> ${address}</p>
+          <hr />
+          <h3>ऑर्डर विवरण:</h3>
+          <pre>${productList}</pre>
+          <hr />
+          <p><strong>कुल कीमत:</strong> ₹${totalPrice}</p>
+        `
+      });
+    } catch (emailErr) {
+      console.error("Order email send error:", emailErr.message);
+      // Don't fail the order creation if email fails
     }
 
-    res.status(200).json({ orders });
+    res.json({ message: "ऑर्डर सफल", orderId: order._id });
   } catch (err) {
-    console.error("Order fetch error:", err);
-    res.status(500).json({ error: "❌ ऑर्डर लोड करने में समस्या हुई" });
+    console.error("Place order error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
-// 🧾 ✅ Profile Update API
-app.put("/user/update", authenticate, async (req, res) => {
-  const { _id, name, email, phone, address, pincode, area } = req.body;
 
-  if (!_id || ![name, email, phone, address, pincode, area].every(Boolean)) {
-    return res.status(400).json({ success: false, message: "सभी फ़ील्ड आवश्यक हैं" });
-  }
-
-  try {
-    const updatedUser = await User.findByIdAndUpdate(
-      _id,
-      { name, email, phone, address, pincode, area },
-      { new: true }
-    );
-
-    if (!updatedUser) {
-      return res.status(404).json({ success: false, message: "User नहीं मिला" });
-    }
-
-    res.status(200).json({ success: true, user: updatedUser });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Update में समस्या है", error: err.message });
-  }
-});
 app.post("/subscribe", async (req, res) => {
   const { subscription, phone } = req.body;
   subscriptions.push({ subscription, phone });
@@ -355,27 +254,11 @@ app.get('/admin', (req, res) => {
   if (password !== ADMIN_PASSWORD) return res.status(401).send('Unauthorized');
   res.sendFile(path.join(__dirname, 'secure', 'admin.html'));
 });
-// 🌐 MongoDB Connection & Server Start
-mongoose.connect(process.env.DBurl, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => {
-  console.log("✅ MongoDB से कनेक्शन सफल");
 
-  const PORT = process.env.PORT || 4000;
-  app.listen(PORT, () => {
-   });
-})
-.catch(err => {
-  console.error("❌ MongoDB से कनेक्शन फेल:", err);
-});
-
-
-
-
-
-
-
-
-
+mongoose
+  .connect(process.env.DBurl, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => app.listen(process.env.PORT || 4000, () => console.log("🚀 Server running")))
+  .catch(err => {
+    console.error("DB connection error:", err.message);
+    process.exit(1);
+  });
