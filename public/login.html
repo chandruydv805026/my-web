@@ -5,108 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login</title>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #1f4037, #99f2c8);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .login-container {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(14px);
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
-      max-width: 380px;
-      width: 100%;
-      color: #fff;
-      position: relative;
-    }
-    input, button {
-      width: 100%;
-      padding: 14px;
-      margin: 10px 0;
-      border-radius: 10px;
-      border: none;
-      font-size: 15px;
-    }
-    input {
-      background: rgba(255, 255, 255, 0.2);
-      color: #fff;
-    }
-    button {
-      background: linear-gradient(to right, #00c9a7, #92fe9d);
-      color: #222;
-      font-weight: 600;
-      cursor: pointer;
-      position: relative;
-    }
-    .popup {
-      position: absolute;
-      top: -60px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #00c9a7;
-      color: #fff;
-      padding: 14px 24px;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 500;
-      box-shadow: 0 4px 12px rgba(0, 201, 167, 0.4);
-      opacity: 0;
-      transition: opacity 0.3s ease, top 0.3s ease;
-      z-index: 10;
-      text-align: center;
-      max-width: 90%;
-      word-wrap: break-word;
-    }
-    .popup.show {
-      top: -30px;
-      opacity: 1;
-    }
-    .popup.error {
-      background: #ff4d4d;
-    }
-    .spinner {
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      border-top: 3px solid #00c9a7;
-      border-radius: 50%;
-      width: 18px;
-      height: 18px;
-      animation: spin 1s linear infinite;
-      position: absolute;
-      top: 50%;
-      right: 16px;
-      transform: translateY(-50%);
-      display: none;
-    }
-    .spinner.show {
-      display: inline-block;
-    }
-    @keyframes spin {
-      0% { transform: translateY(-50%) rotate(0deg); }
-      100% { transform: translateY(-50%) rotate(360deg); }
-    }
-    @media (max-width: 480px) {
-      .popup {
-        font-size: 14px;
-        padding: 12px 20px;
-      }
-    }
+    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(to right, #1f4037, #99f2c8); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .login-container { background: rgba(255,255,255,0.15); backdrop-filter: blur(14px); padding: 30px; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.25); max-width: 380px; width: 100%; color: #fff; position: relative; }
+    input, button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: none; font-size: 15px; }
+    input { background: rgba(255,255,255,0.2); color: #fff; }
+    button { background: linear-gradient(to right, #00c9a7, #92fe9d); color: #222; font-weight: 600; cursor: pointer; position: relative; }
+    .popup { position: absolute; top: -60px; left: 50%; transform: translateX(-50%); background: #00c9a7; color: #fff; padding: 14px 24px; border-radius: 10px; font-size: 15px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,201,167,0.4); opacity: 0; transition: opacity .3s, top .3s; text-align: center; max-width: 90%; }
+    .popup.show { top: -30px; opacity: 1; }
+    .popup.error { background: #ff4d4d; }
+    .spinner { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid #00c9a7; border-radius: 50%; width: 18px; height: 18px; animation: spin 1s linear infinite; position: absolute; top: 50%; right: 16px; transform: translateY(-50%); display: none; }
+    .spinner.show { display: inline-block; }
+    @keyframes spin { 0% { transform: translateY(-50%) rotate(0deg); } 100% { transform: translateY(-50%) rotate(360deg); } }
   </style>
 </head>
 <body>
   <div class="login-container">
     <h2>Login</h2>
     <form id="loginForm">
-      <input type="text" name="phone" placeholder="Phone (10 digits)" maxlength="10" required />
-      <button type="submit">
-        Send OTP
-        <span class="spinner" id="spinner"></span>
-      </button>
+      <input id="phone" name="phone" type="tel" placeholder="Phone" required />
+      <button type="submit">Send OTP</button>
+      <div id="spinner" class="spinner"></div>
     </form>
     <div id="popup" class="popup"></div>
   </div>
@@ -118,47 +36,86 @@
 
     function showPopup(message, isError = false) {
       popup.textContent = message;
-      popup.classList.add('show');
-      popup.classList.toggle('error', isError);
-      setTimeout(() => {
-        popup.classList.remove('show');
-      }, 3000);
+      popup.className = isError ? 'popup show error' : 'popup show';
+      setTimeout(() => popup.classList.remove('show'), 2500);
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+      return outputArray;
+    }
+
+    async function registerServiceWorker() {
+      if (!('serviceWorker' in navigator)) return;
+      try {
+        return await navigator.serviceWorker.register('/public/service-worker.js');
+      } catch (err) {
+        console.error('SW registration failed', err);
+      }
+    }
+
+    async function askNotificationPermission() {
+      if (!('Notification' in window)) return false;
+      const permission = await Notification.requestPermission();
+      return permission === 'granted';
+    }
+
+    async function subscribeUser(registration, phone) {
+      const vapidPublicKey = 'BOK6YcWupVRim0Dimrf7u3sZcijkOzLv9nsRX8_DcXSZ1zrjMk3z18XWDEBuGMXG_e2fACCx1V8K_DHkqbEaYA8';
+      try {
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+        });
+        await fetch('https://my-web-xrr5.onrender.com/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription, phone })
+        });
+      } catch (err) {
+        console.error('Push subscribe failed', err);
+      }
     }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const phone = form.phone.value;
+      const phone = form.phone.value.trim();
 
       if (!/^[6-9]\d{9}$/.test(phone)) {
-        showPopup('Enter valid Indian phone number', true);
+        showPopup('Valid 10-digit Indian number दर्ज करें', true);
         return;
       }
 
       spinner.classList.add('show');
+
       try {
         const res = await fetch('https://my-web-xrr5.onrender.com/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone })
         });
-
-        const result = await res.json();
+        const data = await res.json();
         spinner.classList.remove('show');
 
-        if (res.ok && result.success) {
-          localStorage.setItem("phone", phone);
-          localStorage.setItem("otpEmail", result.email); // ✅ Store email
-          showPopup('✅ OTP भेज दिया गया');
-          setTimeout(() => {
-            window.location.href = "otp.html";
-          }, 1500);
+        if (res.ok && data.success) {
+          const registration = await registerServiceWorker();
+          if (registration) {
+            const granted = await askNotificationPermission();
+            if (granted) await subscribeUser(registration, phone);
+          }
+          showPopup('OTP भेज दिया गया');
+          setTimeout(() => window.location.href = 'otp.html', 1500);
         } else {
-          showPopup(result.error || "Login failed", true);
+          showPopup(data.error || 'Login failed', true);
         }
       } catch (err) {
-        console.error("Login error:", err);
+        console.error('Login error:', err);
         spinner.classList.remove('show');
-        showPopup("Server error", true);
+        showPopup('Server error', true);
       }
     });
   </script>
