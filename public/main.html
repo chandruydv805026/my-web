@@ -4,56 +4,51 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Ratu Fresh – सब्ज़ियाँ आपके दरवाज़े तक</title>
+
   <link rel="stylesheet" href="main.css">
   <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#4CAF50">
-</head>  
- 
-      <body>
-<!-- ✅ Navbar HTML -->
-<nav>
-  <div class="nav-left">
-    <div class="brand-tagline">🥬 Ratu Fresh – ताज़गी हर सुबह</div>
-  </div>
+  <meta name="theme-color" content="#4CAF50">
+</head>
 
-  <div class="nav-right">
-   
-    <ul>
-      <li><a href="login.html">Login</a></li>
-      <li><a href="signup.html">Signup</a></li>
-    </ul>
-  </div>
-</nav>
+<body>
+  <nav>
+    <div class="nav-left">
+      <div class="brand-tagline">🥬 Ratu Fresh – ताज़गी हर सुबह</div>
+    </div>
+    <div class="nav-right">
+      <ul>
+        <li><a href="login.html">Login</a></li>
+        <li><a href="signup.html">Signup</a></li>
+      </ul>
+    </div>
+  </nav>
+
   <div class="hero">
-  <h2>सब्ज़ियाँ आपके दरवाज़े तक</h2>
-  <p>हर सुबह की ताज़गी अब Ratu में! ऑर्डर करें और सब्ज़ियाँ सीधे घर पर पाएं।</p>
+    <h2>सब्ज़ियाँ आपके दरवाज़े तक</h2>
+    <p>हर सुबह की ताज़गी अब Ratu में! ऑर्डर करें और सब्ज़ियाँ सीधे घर पर पाएं।</p>
   </div>
 
-  <section class="products" id="productContainer">
-    <!-- Product cards will be inserted here -->
-  </section>
+  <section class="products" id="productContainer"></section>
 
   <footer>
     © 2025 Chandan Yadav, Ratu Jharkhand. All rights reserved.
   </footer>
 
-<!-- ✅ Login Modal -->
-  <div id="loginModal">
+  <div id="loginModal" style="display:none;">
     <div class="modal-content">
       <p>कृपया पहले लॉगिन करें ताकि आप ऑर्डर कर सकें।</p>
       <button class="login-btn" onclick="goToLogin()">Login करें</button>
       <button class="cancel-btn" onclick="closeModal()">Cancel</button>
     </div>
+  </div>
+
   <script src="main.js"></script>
-    <script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(reg => console.log('Service Worker registered:', reg))
-      .catch(err => console.error('Service Worker registration failed:', err));
-  });
-}
-</script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/firebase-messaging-sw.js")
+        .then(reg => console.log("✅ Service Worker registered for PWA:", reg))
+        .catch(err => console.error("❌ Service Worker registration failed:", err));
+    }
+  </script>
 </body>
 </html>
-
