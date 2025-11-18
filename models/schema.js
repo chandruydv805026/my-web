@@ -21,7 +21,6 @@ const userSchema = new Schema({
     lowercase: true,
     trim: true
   },
-  
   address: {
     type: String,
     required: true,
@@ -45,13 +44,14 @@ const userSchema = new Schema({
     ref: 'Cart',
     default: null
   },
-
-  // 🛡️ Optional: Role for future admin/user separation
-  role: {
-    type: String,
-    enum: ['user', 'admin'],
-    default: 'user'
-  }
+  pushSubscription: {
+    endpoint: String,
+    keys: {
+      p256dh: String,
+      auth: String
+    }
+  },
+  lastSubscribedAt: Date
 
 }, { timestamps: true });
 
