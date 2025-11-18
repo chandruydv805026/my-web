@@ -18,9 +18,6 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 app.use(express.static("public"));
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "main.html"));
-});
 
 // Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -46,6 +43,7 @@ app.use("/cart", cartRoutes);
 app.post("/signup", async (req, res) => {
   try {
     const { name, phone, email, address, pincode, area } = req.body;
+    
     if (![name, phone, email, address, pincode, area].every(Boolean)) {
       return res.status(400).json({ error: "सभी फ़ील्ड आवश्यक हैं" });
     }
@@ -58,74 +56,196 @@ app.post("/signup", async (req, res) => {
     newUser.cart = newCart._id;
     await newUser.save();
 
+    console.log("✅ New user created:", newUser._id);
+
     res.status(201).json({ message: "Signup सफल", userId: newUser._id });
   } catch (err) {
-    console.error("Signup error:", err.message);
-    res.status(500).json({ error: "Signup failed" });
+    console.error("❌ Signup error:", err.message);
+    res.status(500).json({ error: "Signup failed: " + err.message });
   }
 });
 
 const otpStore = {};
+
 const sendOtp = async (phone, subject) => {
-  const user = await User.findOne({ phone });
-  if (!user) return null;
-
-  const otp = Math.floor(100000 + Math.random() * 900000);
-  otpStore[phone] = { otp, expires: Date.now() + 120000 };
-
   try {
+    const user = await User.findOne({ phone: phone.trim() });
+    if (!user) {
+      console.log("❌ User not found in sendOtp:", phone);
+      return null;
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    otpStore[phone] = { otp, expires: Date.now() + 120000 };
+
+    console.log("📧 Sending OTP to:", user.email, "OTP:", otp);
+
     await resend.emails.send({
       from: `Ratu Fresh <${process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"}>`,
       to: user.email,
       subject,
       html: `<p>आपका OTP: <strong>${otp}</strong></p><p>2 मिनट तक मान्य।</p>`
     });
+
+    console.log("✅ OTP sent successfully");
+    return user.email;
   } catch (err) {
-    console.error("Resend error:", err.message);
+    console.error("❌ Resend error:", err.message);
     throw err;
   }
-
-  return user.email;
 };
 
 app.post("/login", async (req, res) => {
   try {
-    const email = await sendOtp(req.body.phone, "🔐 आपका OTP - Ratu Fresh");
-    if (!email) return res.status(404).json({ error: "User not found" });
-    res.json({ success: true, message: "OTP भेजा गया", email });
+    const { phone } = req.body;
+
+    if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
+      return res.status(400).json({ 
+        success: false,
+        error: "❌ Valid 10-digit phone number दर्ज करें" 
+      });
+    }
+
+    console.log("🔄 Login attempt for phone:", phone);
+
+    const user = await User.findOne({ phone: phone.trim() });
+    if (!user) {
+      console.log("❌ User not found for phone:", phone);
+      return res.status(404).json({ 
+        success: false,
+        error: "❌ User not found" 
+      });
+    }
+
+    console.log("✅ User found:", user.email);
+
+    const email = await sendOtp(phone, "🔐 आपका OTP - Ratu Fresh");
+    
+    if (!email) {
+      return res.status(500).json({ 
+        success: false,
+        error: "❌ OTP भेजने में समस्या" 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: "OTP भेजा गया", 
+      email: email
+    });
+
   } catch (err) {
-    console.error("Login error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("❌ Login error:", err.message);
+    res.status(500).json({ 
+      success: false,
+      error: "Server error: " + err.message 
+    });
   }
 });
 
 app.post("/resend-otp", async (req, res) => {
   try {
-    const email = await sendOtp(req.body.phone, "🔁 नया OTP - Ratu Fresh");
-    if (!email) return res.status(404).json({ error: "User not found" });
-    res.json({ success: true, message: "नया OTP भेजा गया" });
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Phone number required" 
+      });
+    }
+
+    console.log("🔄 Resending OTP for phone:", phone);
+
+    const email = await sendOtp(phone, "🔁 नया OTP - Ratu Fresh");
+    
+    if (!email) {
+      return res.status(404).json({ 
+        success: false,
+        error: "User not found" 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: "नया OTP भेजा गया" 
+    });
+
   } catch (err) {
-    console.error("Resend OTP error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("❌ Resend OTP error:", err.message);
+    res.status(500).json({ 
+      success: false,
+      error: err.message 
+    });
   }
 });
 
 app.post("/verify-otp", async (req, res) => {
   try {
     const { phone, otp } = req.body;
-    const record = otpStore[phone];
-    const user = await User.findOne({ phone }).populate("cart");
-    if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (record?.otp == otp && Date.now() < record.expires) {
-      delete otpStore[phone];
-      const token = jwt.sign({ userId: user._id, phone }, process.env.JWT_SECRET, { expiresIn: "2h" });
-      return res.json({ success: true, token, user });
+    console.log("🔄 Verifying OTP:", otp, "for phone:", phone);
+
+    if (!phone || !otp) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Phone और OTP दोनों आवश्यक हैं" 
+      });
     }
-    res.status(401).json({ success: false, error: "OTP गलत या समाप्त हो गया" });
+
+    const record = otpStore[phone];
+
+    if (!record) {
+      console.log("❌ No OTP record found for phone:", phone);
+      return res.status(400).json({ 
+        success: false,
+        error: "OTP नहीं भेजा गया या समाप्त हो गया" 
+      });
+    }
+
+    if (String(record.otp) !== String(otp)) {
+      console.log("❌ OTP mismatch. Expected:", record.otp, "Got:", otp);
+      return res.status(401).json({ 
+        success: false,
+        error: "OTP गलत है" 
+      });
+    }
+
+    if (Date.now() > record.expires) {
+      console.log("❌ OTP expired");
+      delete otpStore[phone];
+      return res.status(401).json({ 
+        success: false,
+        error: "OTP समाप्त हो गया" 
+      });
+    }
+
+    const user = await User.findOne({ phone: phone.trim() }).populate("cart");
+    if (!user) {
+      console.log("❌ User not found for phone:", phone);
+      return res.status(404).json({ 
+        success: false,
+        error: "User नहीं मिला" 
+      });
+    }
+
+    delete otpStore[phone];
+
+    const token = jwt.sign(
+      { userId: user._id, phone }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: "2h" }
+    );
+
+    console.log("✅ OTP verified successfully for user:", user._id);
+
+    res.json({ success: true, token, user });
+
   } catch (err) {
-    console.error("Verify OTP error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("❌ Verify OTP error:", err.message);
+    res.status(500).json({ 
+      success: false,
+      error: "Server error: " + err.message 
+    });
   }
 });
 
@@ -172,13 +292,12 @@ app.post("/place-order", authenticate, async (req, res) => {
         `
       });
     } catch (emailErr) {
-      console.error("Order email send error:", emailErr.message);
-      // Don't fail the order creation if email fails
+      console.error("❌ Order email error:", emailErr.message);
     }
 
     res.json({ message: "ऑर्डर सफल", orderId: order._id });
   } catch (err) {
-    console.error("Place order error:", err.message);
+    console.error("❌ Place order error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -225,7 +344,7 @@ app.post("/reverse-geocode", async (req, res) => {
     if (!data?.display_name) return res.status(404).json({ error: "Address not found" });
     res.json({ displayName: data.display_name, components: data.address || {} });
   } catch (err) {
-    console.error("Reverse geocode error:", err.message);
+    console.error("❌ Reverse geocode error:", err.message);
     res.status(500).json({ error: "Reverse geocoding failed" });
   }
 });
@@ -242,7 +361,7 @@ app.post("/geocode", async (req, res) => {
     const match = data[0];
     res.json({ lat: parseFloat(match.lat), lng: parseFloat(match.lon), displayName: match.display_name });
   } catch (err) {
-    console.error("Geocode error:", err.message);
+    console.error("❌ Geocode error:", err.message);
     res.status(500).json({ error: "Geocoding failed" });
   }
 });
@@ -257,8 +376,8 @@ app.get('/admin', (req, res) => {
 
 mongoose
   .connect(process.env.DBurl, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => app.listen(process.env.PORT || 4000, () => console.log("🚀 Server running")))
+  .then(() => app.listen(process.env.PORT || 4000, () => console.log("🚀 Server running on port", process.env.PORT || 4000)))
   .catch(err => {
-    console.error("DB connection error:", err.message);
+    console.error("❌ DB connection error:", err.message);
     process.exit(1);
   });
