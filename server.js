@@ -306,6 +306,77 @@ app.put("/user/update", authenticate, async (req, res) => {
     res.status(500).json({ success: false, message: "Update में समस्या है", error: err.message });
   }
 });
+app.post("/subscribe", async (req, res) => {
+  const { subscription, phone } = req.body;
+  subscriptions.push({ subscription, phone });
+  res.status(201).json({ success: true });
+});
+
+app.post("/send", async (req, res) => {
+  const { phone, payload } = req.body;
+  const targets = subscriptions.filter(s => s.phone === phone).map(s => s.subscription);
+  const results = await Promise.all(
+    targets.map(sub =>
+      webpush.sendNotification(sub, JSON.stringify(payload))
+        .then(() => ({ ok: true }))
+        .catch(err => ({ ok: false, error: err.message }))
+    )
+  );
+  res.json({ total: results.length, succeeded: results.filter(r => r.ok).length, failed: results.filter(r => !r.ok).length });
+});
+
+app.post("/send-all", async (req, res) => {
+  const { payload } = req.body;
+  const results = await Promise.all(
+    subscriptions.map(({ subscription }) =>
+      webpush.sendNotification(subscription, JSON.stringify(payload))
+        .then(() => ({ ok: true }))
+        .catch(err => ({ ok: false, error: err.message }))
+    )
+  );
+  res.json({ total: results.length, succeeded: results.filter(r => r.ok).length, failed: results.filter(r => !r.ok).length });
+});
+
+app.post("/reverse-geocode", async (req, res) => {
+  const { lat, lng } = req.body;
+  if (typeof lat !== "number" || typeof lng !== "number") {
+    return res.status(400).json({ error: "Invalid coordinates" });
+  }
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+    const { data } = await axios.get(url, { headers: { "User-Agent": "RatuFresh/1.0" } });
+    if (!data?.display_name) return res.status(404).json({ error: "Address not found" });
+    res.json({ displayName: data.display_name, components: data.address || {} });
+  } catch (err) {
+    console.error("Reverse geocode error:", err.message);
+    res.status(500).json({ error: "Reverse geocoding failed" });
+  }
+});
+
+app.post("/geocode", async (req, res) => {
+  const { address, area, pincode } = req.body;
+  const query = [address, area, pincode].filter(Boolean).join(", ");
+  if (!query) return res.status(400).json({ error: "Address is required" });
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`;
+    const { data } = await axios.get(url, { headers: { "User-Agent": "RatuFresh/1.0" } });
+    if (!Array.isArray(data) || !data.length) return res.status(404).json({ error: "Location not found" });
+    const match = data[0];
+    res.json({ lat: parseFloat(match.lat), lng: parseFloat(match.lon), displayName: match.display_name });
+  } catch (err) {
+    console.error("Geocode error:", err.message);
+    res.status(500).json({ error: "Geocoding failed" });
+  }
+});
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Ratufresh@2025';
+
+app.get('/admin', (req, res) => {
+  const { password } = req.query;
+  if (password !== ADMIN_PASSWORD) return res.status(401).send('Unauthorized');
+  res.sendFile(path.join(__dirname, 'secure', 'admin.html'));
+});
 // 🌐 MongoDB Connection & Server Start
 mongoose.connect(process.env.DBurl, {
   useNewUrlParser: true,
