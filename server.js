@@ -10,31 +10,27 @@ const path = require("path");
 require("dotenv").config();
 
 // 📩 Resend SDK
-const { Resend } = require("resend");
-const resend = new Resend(process.env.RESEND_API_KEY);
+app.post("/signup", async (req, res) => {
+  try {
+    const { name, phone, email, address, pincode, area } = req.body;
+    if (![name, phone, email, address, pincode, area].every(Boolean)) {
+      return res.status(400).json({ error: "सभी फ़ील्ड आवश्यक हैं" });
+    }
 
-// 📁 Models & Routes
-const User = require("./models/schema");
-const Cart = require("./models/cart");
-const Order = require("./models/order");
-const cartRoutes = require("./routes/cartRoutes");
+    const exists = await User.findOne({ $or: [{ phone }, { email }] });
+    if (exists) return res.status(409).json({ error: "User पहले से मौजूद है" });
 
-const app = express();
-app.use(bodyParser.json());
-app.use(cors());
+    const newUser = await new User({ name, phone, email, address, pincode, area }).save();
+    const newCart = await new Cart({ user: newUser._id, items: [], totalPrice: 0 }).save();
+    newUser.cart = newCart._id;
+    await newUser.save();
 
-// 🔐 JWT Middleware
-const authenticate = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: "❌ Token missing" });
-
-  const token = authHeader.split(" ")[1];
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(403).json({ error: "❌ Invalid token" });
-    req.user = decoded;
-    next();
-  });
-};
+    res.status(201).json({ message: "Signup सफल", userId: newUser._id });
+  } catch (err) {
+    console.error("Signup error:", err.message);
+    res.status(500).json({ error: "Signup failed" });
+  }
+});
 
 // 🌐 Static file serving
 app.use(express.static(path.join(__dirname, "public")));
@@ -172,47 +168,27 @@ app.post("/resend-otp", async (req, res) => {
   }
 });
 
-// ✅ Verify OTP
-app.post("/verify-otp", async (req, res) => {
-  const { phone, otp } = req.body;
-  const record = otpStore[phone];
-
+// ✅ Verify OTPapp.post("/verify-otp", async (req, res) => {
   try {
+    const { phone, otp } = req.body;
+    const record = otpStore[phone];
     const user = await User.findOne({ phone }).populate("cart");
-    if (!user) return res.status(404).json({ error: "❌ User not found" });
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (record && record.otp == otp && Date.now() < record.expires) {
+    if (record?.otp == otp && Date.now() < record.expires) {
       delete otpStore[phone];
-
-      const token = jwt.sign(
-        { userId: user._id, phone: user.phone },
-        process.env.JWT_SECRET,
-        { expiresIn: "2h" }
-      );
-
-      res.status(200).json({
-        success: true,
-        token,
-        user: {
-          _id: user._id,
-          name: user.name,
-          phone: user.phone,
-          email: user.email,
-          address: user.address,
-          pincode: user.pincode,
-          area: user.area,
-          createdAt: user.createdAt,
-          cart: user.cart
-        }
-      });
-    } else {
-      res.status(401).json({ success: false, error: "❌ Invalid or expired OTP" });
+      const token = jwt.sign({ userId: user._id, phone }, process.env.JWT_SECRET, { expiresIn: "2h" });
+      return res.json({ success: true, token,user: { _id: user._id, name: user.name, phone: user.phone, email: user.email, address: user.address, pincode: user.pincode, area: user.area, createdAt: user.createdAt, cart: user.cart }  });
     }
+    res.status(401).json({ success: false, error: "OTP गलत या समाप्त हो गया" });
   } catch (err) {
-    console.error("OTP verify error:", err);
-    res.status(500).json({ error: "❌ Server error" });
+    console.error("Verify OTP error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
+
+
+
 
 // 🛒 Place Order
 app.post("/place-order", authenticate, async (req, res) => {
@@ -394,6 +370,7 @@ mongoose.connect(process.env.DBurl, {
 .catch(err => {
   console.error("❌ MongoDB से कनेक्शन फेल:", err);
 });
+
 
 
 
