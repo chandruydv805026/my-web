@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Push Admin</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #fff; min-height: 100vh; display: flex; justify-content: center; align-items: center; margin: 0; }
+    .panel { width: 380px; background: rgba(255,255,255,0.08); border-radius: 18px; padding: 28px; box-shadow: 0 25px 45px rgba(15,23,42,0.4); backdrop-filter: blur(14px); }
+    h2 { margin: 0 0 20px; font-weight: 600; }
+    label { font-size: 14px; margin-top: 14px; display: block; }
+    input, textarea { width: 100%; margin-top: 6px; padding: 12px; border-radius: 10px; border: none; font-size: 15px; background: rgba(15,23,42,0.4); color: #fff; }
+    textarea { resize: vertical; min-height: 90px; }
+    button { margin-top: 18px; width: 100%; padding: 12px; border: none; border-radius: 12px; background: linear-gradient(135deg,#22d3ee,#2563eb); color: #fff; font-size: 16px; cursor: pointer; }
+    .status { margin-top: 14px; font-size: 14px; min-height: 20px; }
+    .status.error { color: #f87171; }
+    .status.ok { color: #34d399; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h2>Broadcast Notification</h2>
+    <form id="broadcastForm">
+      <label>Title
+        <input id="title" type="text" placeholder="Update" required>
+      </label>
+      <label>Body
+        <textarea id="body" placeholder="Message for everyone" required></textarea>
+      </label>
+      <label>Click URL
+        <input id="url" type="text" placeholder="/dashboard" value="/">
+      </label>
+      <button type="submit">Send to All</button>
+    </form>
+    <div id="status" class="status"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('broadcastForm');
+    const statusBox = document.getElementById('status');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      statusBox.textContent = 'Sending...';
+      statusBox.className = 'status';
+
+      const payload = {
+        title: document.getElementById('title').value.trim(),
+        body: document.getElementById('body').value.trim(),
+        url: document.getElementById('url').value.trim() || '/'
+      };
+
+      try {
+        const res = await fetch('http://localhost:4000/send-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payload })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          statusBox.textContent = `Sent: ${data.succeeded} / ${data.total}, Failed: ${data.failed}`;
+          statusBox.classList.add('ok');
+        } else {
+          statusBox.textContent = data.error || 'Server error';
+          statusBox.classList.add('error');
+        }
+      } catch (err) {
+        statusBox.textContent = 'Request failed';
+        statusBox.classList.add('error');
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>
