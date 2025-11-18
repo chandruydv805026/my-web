@@ -306,10 +306,43 @@
       );
     });
 
-    form.addEventListener('submit', (e) => {
-      // अब केवल default submit
+    const formatArea = (addr = {}) =>
+      addr.suburb || addr.residential || addr.quarter || addr.village || addr.town || addr.city || '';
+    const getVillageName = (addr = {}) =>
+      addr.village || addr.hamlet || addr.locality || addr.suburb || addr.city || '';
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      button.classList.add('loading');
+      try {
+        const body = {
+          name: form.name.value.trim(),
+          phone: form.phone.value.trim(),
+          email: form.email.value.trim(),
+          address: addressInput.value.trim(),
+          pincode: form.pincode.value.trim(),
+          area: areaInput.value.trim()
+        };
+
+        const res = await fetch('https://my-web-xrr5.onrender.com/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Signup failed');
+        showPopup('✅ Signup सफल! अब लॉगिन करें');
+        setTimeout(() => {
+          window.location.href = 'main.html';
+        }, 1200);
+        form.reset();
+      } catch (err) {
+        showPopup(err.message, true);
+      } finally {
+        button.classList.remove('loading');
+      }
     });
   </script>
 </body>
 </html>
-
