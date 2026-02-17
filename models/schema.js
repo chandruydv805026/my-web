@@ -38,20 +38,22 @@ const userSchema = new Schema({
     trim: true
   },
 
+  // 📍 Geolocation fields (Naya Add kiya gaya hai)
+  lat: {
+    type: Number,
+    default: null
+  },
+  lng: {
+    type: Number,
+    default: null
+  },
+
   // 🛒 Cart reference
   cart: {
     type: Schema.Types.ObjectId,
     ref: 'Cart',
     default: null
-  },
-  pushSubscription: {
-    endpoint: String,
-    keys: {
-      p256dh: String,
-      auth: String
-    }
-  },
-  lastSubscribedAt: Date
+  }
 
 }, { timestamps: true });
 
