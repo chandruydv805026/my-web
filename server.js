@@ -119,14 +119,12 @@ app.post("/api/products/add", upload.single('image'), async (req, res) => {
     }
 });
 
-// --- महत्वपूर्ण सुधार: UPDATE ROUTE ({new: true} पक्का किया गया) ---
 app.put("/api/products/update/:id", async (req, res) => {
     const { name, price, img, password } = req.body; 
     if (password !== ADMIN_PASSWORD_SECRET) {
         return res.status(403).json({ error: "Unauthorized: Wrong Admin Password" });
     }
     try {
-        // { new: true } यह पक्का करता है कि ताज़ा अपडेटेड डेटा तुरंत क्लाइंट को मिले
         const updatedProduct = await Product.findOneAndUpdate(
             { id: req.params.id }, 
             { name, price: Number(price), img },
@@ -136,7 +134,6 @@ app.put("/api/products/update/:id", async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Update failed" }); }
 });
 
-// --- नया: PRODUCT DELETE ROUTE (बिना कुछ हटाए जोड़ा गया) ---
 app.delete("/api/products/delete/:id", async (req, res) => {
     const { password } = req.body; 
     if (password !== ADMIN_PASSWORD_SECRET) {
@@ -152,7 +149,6 @@ app.delete("/api/products/delete/:id", async (req, res) => {
 
 // --- नया: BANNER ROUTES ---
 
-// बैनर जोड़ना
 app.post("/api/banners/add", upload.single('image'), async (req, res) => {
     const { title, password } = req.body;
     if (password !== ADMIN_PASSWORD_SECRET) {
@@ -168,7 +164,6 @@ app.post("/api/banners/add", upload.single('image'), async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Banner upload failed" }); }
 });
 
-// बैनर प्राप्त करना
 app.get("/api/banners", async (req, res) => {
     try {
         const banners = await Banner.find({ active: true });
@@ -176,7 +171,6 @@ app.get("/api/banners", async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Failed to fetch banners" }); }
 });
 
-// बैनर डिलीट करना
 app.delete("/api/banners/delete/:id", async (req, res) => {
     try {
         await Banner.findByIdAndDelete(req.params.id);
@@ -184,19 +178,36 @@ app.delete("/api/banners/delete/:id", async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Delete failed" }); }
 });
 
-// --- 2. GEOLOCATION ROUTE ---
+// --- 2. GEOLOCATION ROUTE (500 ERROR FIXED) ---
 app.post("/reverse-geocode", async (req, res) => {
     const { lat, lng } = req.body;
     if (!lat || !lng) return res.status(400).json({ error: "Coordinates missing" });
+    
     const distance = getDistance(SHOP_LAT, SHOP_LNG, lat, lng);
     if (distance > MAX_DISTANCE_KM) {
         return res.status(400).json({ error: `Out of area. We deliver within 5km.` });
     }
+
     try {
+        // [FIX] Added User-Agent and Area handling to prevent 500 errors
         const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
-        const { data } = await axios.get(url, { headers: { "User-Agent": "RatuFresh/1.0" } });
-        res.json({ displayName: data.display_name, pincode: data.address?.postcode || '', area: data.address?.suburb || '' });
-    } catch (err) { res.status(500).json({ error: "Location error" }); }
+        const { data } = await axios.get(url, { 
+            headers: { "User-Agent": "RatuFresh/1.0 (ck805026@gmail.com)" } 
+        });
+        
+        if (data && data.address) {
+            res.json({ 
+                displayName: data.display_name, 
+                pincode: data.address.postcode || '', 
+                area: data.address.suburb || data.address.neighbourhood || data.address.city || 'Local Area'
+            });
+        } else {
+            res.status(404).json({ error: "Address not found" });
+        }
+    } catch (err) { 
+        console.error("Geocode Error:", err.message);
+        res.status(500).json({ error: "Location service error. Please try again." }); 
+    }
 });
 
 // --- 3. AUTH ROUTES ---
@@ -232,7 +243,6 @@ app.post("/verify-signup", async (req, res) => {
             const savedUser = await newUser.save();
             await new Cart({ user: savedUser._id, items: [] }).save();
             delete signupTempStore[email];
-            // [UPDATE] यहाँ expiresIn को "90d" किया गया है
             const token = jwt.sign({ userId: savedUser._id }, process.env.JWT_SECRET, { expiresIn: "90d" });
             res.json({ success: true, token, user: savedUser });
         } catch (err) { res.status(500).json({ error: "Save user failed" }); }
@@ -264,7 +274,6 @@ app.post("/verify-login", async (req, res) => {
     if (record?.otp == otp && Date.now() < record.expires) {
         const user = await User.findOne({ phone });
         delete loginOtpStore[phone];
-        // [UPDATE] यहाँ expiresIn को "90d" किया गया है
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "90d" });
         return res.json({ success: true, token, user });
     }
@@ -284,7 +293,6 @@ app.post("/cart/sync", authenticate, async (req, res) => {
         const { item } = req.body; 
         const userId = req.user.userId;
         
-        // [FIX] पक्का करें कि डेटाबेस से ताज़ा प्राइस ही लिया जाए
         const dbProduct = await Product.findOne({ id: item.productId });
         if (dbProduct) {
             item.price = dbProduct.price;
@@ -298,7 +306,7 @@ app.post("/cart/sync", authenticate, async (req, res) => {
             const itemIndex = userCart.items.findIndex(p => p.productId === item.productId);
             if (itemIndex > -1) {
                 userCart.items[itemIndex].quantity = item.quantity;
-                userCart.items[itemIndex].price = item.price; // ताजा प्राइस अपडेट
+                userCart.items[itemIndex].price = item.price;
                 userCart.items[itemIndex].subtotal = item.subtotal;
             } else {
                 userCart.items.push(item);
@@ -376,7 +384,7 @@ app.post("/orders/cancel/:orderId", authenticate, async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Cancel failed" }); }
 });
 
-// --- 5. NOTIFICATION & PROFILE (401 Error Fixed) ---
+// --- 5. NOTIFICATION & PROFILE ---
 
 app.post("/admin/send-broadcast", authenticate, async (req, res) => {
     const { title, message } = req.body;
@@ -389,7 +397,6 @@ app.post("/admin/send-broadcast", authenticate, async (req, res) => {
         }, {
             headers: { 
                 "Content-Type": "application/json; charset=utf-8", 
-                // [FIX] 'Basic ' keyword और .trim() सुनिश्चित किया गया
                 "Authorization": `Basic ${ONESIGNAL_REST_KEY}` 
             }
         });
@@ -413,7 +420,6 @@ mongoose.connect(process.env.DBurl)
     .then(async () => {
         console.log("🚀 MongoDB Connected");
 
-        // नया: Order Auto-Delete (TTL Index) पक्का करने के लिए
         try {
             await mongoose.connection.db.collection('orders').createIndex(
                 { "orderDate": 1 }, 
@@ -445,6 +451,9 @@ mongoose.connect(process.env.DBurl)
             await Product.insertMany(initialProducts);
             console.log("✅ 16 Initial Products Seeded Successfully");
         }
-        app.listen(4000, () => console.log("🚀 Server: http://localhost:4000"));
+        
+        // [UPDATE] Port configuration for Render
+        const PORT = process.env.PORT || 4000;
+        app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
     })
     .catch(err => console.error("DB error:", err));
