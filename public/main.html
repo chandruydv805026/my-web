@@ -1,100 +1,297 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="theme-color" content="#2ecc71">
-  <meta name="description" content="Ratu Fresh - ताजी सब्जियों की तेज़ डिलीवरी आपके दरवाज़े तक">
-  <title>Ratu Fresh – ताज़ी सब्जियाँ 🥬</title>
-  <link rel="stylesheet" href="main.css">
-  <link rel="manifest" href="manifest.json">
+  <script>
+    (function() {
+      const token = localStorage.getItem('token');
+      if (token && token !== "undefined" && token !== "null") {
+        window.location.replace('profiles.html');
+      }
+    })();
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Ratu Fresh - Fresh Vegetables</title>
+  
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2e7d32">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(function(OneSignal) {
+      OneSignal.init({
+        appId: "bcfc9f9f-7c9c-43e6-9b75-8d10bdb1a06b", 
+        allowLocalhostAsSecureOrigin: true, 
+        promptOptions: {
+          slidedown: {
+            enabled: true,
+            autoPrompt: true,
+            timeDelay: 5, 
+          }
+        }
+      });
+    });
+  </script>
   <style>
-    /* Loading animation */
-    .page-loader {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      animation: fadeOut 0.5s ease-out 2s forwards;
+    :root {
+      --primary: #2e7d32;
+      --primary-dark: #1b5e20;
+      --bg: #f4f7f6;
+      --white: #ffffff;
+      --shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
 
-    @keyframes fadeOut {
-      to {
-        opacity: 0;
-        pointer-events: none;
-      }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+    
+    html { scroll-behavior: smooth; }
+    
+    body { background: var(--bg); color: #333; padding-bottom: 20px; -webkit-tap-highlight-color: transparent; }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: white; padding: 15px; position: sticky; top: 0; z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .brand { font-size: 1.4rem; font-weight: 800; }
+    .auth-links { display: flex; gap: 8px; }
+    .btn-auth { text-decoration: none; color: white; background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(255,255,255,0.3); transition: 0.3s; }
+    .btn-auth:active { transform: scale(0.95); }
+
+    .search-bar { width: 100%; padding: 12px; border: none; border-radius: 12px; outline: none; box-shadow: var(--shadow); font-size: 1rem; }
+
+    .slider-container { width: 100%; overflow: hidden; margin: 15px 0; position: relative; border-radius: 20px; }
+    .slider { display: flex; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; }
+    .slide { min-width: 100%; padding: 0 15px; box-sizing: border-box; }
+    .offer-card {
+      width: 100%; height: 130px; border-radius: 20px;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 20px; color: white; position: relative; box-shadow: var(--shadow);
+    }
+    .offer-card h2 { font-size: 1.6rem; margin: 3px 0; }
+    .offer-card p { font-size: 0.9rem; font-weight: 600; background: rgba(255,255,255,0.2); display: inline-block; padding: 2px 8px; border-radius: 5px; width: fit-content; }
+    
+    .banner-img { width: 100%; height: 130px; object-fit: cover; border-radius: 20px; box-shadow: var(--shadow); }
+
+    .products { 
+      display: grid; 
+      grid-template-columns: repeat(2, 1fr); 
+      gap: 12px; 
+      padding: 0 12px; 
+    }
+    
+    .card { background: var(--white); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid #eee; animation: fadeIn 0.5s ease; display: flex; flex-direction: column; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .card-img-box { width: 100%; height: 140px; background: #eee; }
+    .card-img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .card-body { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+    .main-info { margin-bottom: 10px; }
+    .card-body h3 { font-size: 1rem; font-weight: 800; color: #111; }
+    .sub-name { font-size: 0.75rem; color: #777; font-weight: 500; }
+    .price-display { font-size: 1.2rem; font-weight: 900; color: var(--primary); margin-top: 4px; }
+    
+    .qty-row { background: #f8f9f8; padding: 8px; border-radius: 10px; border: 1px solid #edf2ef; margin-top: auto; }
+    .qty-select { width: 100%; border: none; background: transparent; font-size: 0.85rem; font-weight: 800; color: var(--primary); outline: none; cursor: pointer; }
+    
+    .add-btn { width: 100%; margin-top: 10px; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3); transition: 0.2s; }
+    .add-btn:active { transform: scale(0.95); }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: flex-end; z-index: 2000; }
+    .modal { background: white; width: 100%; padding: 30px 20px; border-radius: 25px 25px 0 0; text-align: center; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); animation: slideUp 0.3s ease-out; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    @media (min-width: 768px) {
+      .products { grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 0 50px; }
+      .card-img-box { height: 200px; }
+      .modal-overlay { align-items: center; }
+      .modal { width: 400px; border-radius: 25px; }
     }
   </style>
 </head>
-
 <body>
-  <!-- Loading Screen -->
-  <div class="page-loader"></div>
 
-  <!-- Navigation -->
-  <nav>
-    <div class="nav-left">
-      <div class="brand-tagline">🥬 Ratu Fresh – ताज़गी हर सुबह</div>
+  <header class="header">
+    <div class="header-top">
+      <div class="brand">🥬 Ratu Fresh</div>
+      <div class="auth-links">
+        <a href="login.html" class="btn-auth">Login</a>
+        <a href="signup.html" class="btn-auth">Signup</a>
+      </div>
     </div>
-    <div class="nav-right">
-      <ul id="navLinks">
-        <li><a href="login.html">🔐 Login</a></li>
-        <li><a href="signup.html">✍️ Signup</a></li>
-      </ul>
-    </div>
-  </nav>
+    <input type="text" class="search-bar" id="search" placeholder="Search for vegetables..." onkeyup="render()">
+  </header>
 
-  <!-- Hero Section -->
-  <div class="hero">
-    <h2>🏠 सब्जियाँ आपके दरवाज़े तक</h2>
-    <p>हर सुबह की ताज़गी अब Ratu Fresh में! सीधे खेत से आपके रसोई तक। ऑर्डर करें और घर बैठे पाएं।</p>
+  <div class="slider-container">
+    <div class="slider" id="slider"></div>
   </div>
 
-  <!-- Search Section -->
-  <div class="search-section">
-    <div class="search-box">
-      <input 
-        type="text" 
-        id="searchInput" 
-        placeholder="🔍 सब्जी खोजें..." 
-        onkeyup="filterProducts()"
-      >
-      <button class="search-btn" onclick="filterProducts()">🔍</button>
+  <main class="products" id="grid">
+    <p style="text-align: center; grid-column: 1 / -1; padding: 20px; color: #999;">Fetching fresh vegetables...</p>
+  </main>
+
+  <div class="modal-overlay" id="loginModal">
+    <div class="modal">
+      <h2>Access Denied! ✋</h2>
+      <p style="color:#555; margin-top: 10px;">Please login or signup first to place your order and get Free Delivery.</p>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+        <a href="login.html" style="background: var(--primary); color: white; padding: 15px; border-radius: 15px; text-decoration: none; font-weight: 700;">Login Now</a>
+        <a href="signup.html" style="background: #ff9800; color: white; padding: 15px; border-radius: 15px; text-decoration: none; font-weight: 700;">Create Account</a>
+      </div>
+      <button onclick="closeModal()" style="margin-top:15px; border:none; background:none; color:#999; font-weight:600; cursor:pointer; padding: 10px;">Not Now</button>
     </div>
   </div>
 
-  <!-- Products Grid -->
-  <section class="products" id="productContainer"></section>
-
-  <!-- Login Modal -->
-  <div id="loginModal">
-    <div class="modal-content">
-      <h2 style="margin-bottom: 15px;">🔐 Login Required</h2>
-      <p>कृपया पहले लॉगिन करें ताकि आप ऑर्डर कर सकें।</p>
-      <button class="login-btn" onclick="goToLogin()">✨ Login करें</button>
-      <button class="cancel-btn" onclick="closeModal()">❌ Cancel</button>
-    </div>
-  </div>
-
-  <!-- Footer -->
-  <footer>
-    <p>© 2025 Chandan Yadav, Ratu Jharkhand. सभी अधिकार सुरक्षित। | 📞 Support: 24/7 Available</p>
-  </footer>
-
-  <script src="main.js"></script>
   <script>
-    // PWA Service Worker
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/firebase-messaging-sw.js")
-        .then(reg => console.log("✅ PWA Ready"))
-        .catch(err => console.error("❌ SW Error:", err));
+    // [SMART API DETECTION]
+    const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                    ? 'http://localhost:4000' 
+                    : '';
+
+    let products = [];
+    let banners = [];
+    let totalSlides = 0;
+    let bannerIndex = 0;
+
+    const staticBanners = [
+      {
+        type: 'card',
+        bg: 'linear-gradient(135deg, #ff9800, #e65100)',
+        tag: 'MEGA OFFER 🚚',
+        title: 'FREE DELIVERY',
+        sub: 'On all orders above ₹50!'
+      },
+      {
+        type: 'card',
+        bg: 'linear-gradient(135deg, #4caf50, #1b5e20)',
+        tag: 'FRESHNESS GUARANTEED 🥦',
+        title: 'Organic Produce',
+        sub: 'Direct from Farm to Doorstep'
+      }
+    ];
+
+    async function fetchAllData() {
+      try {
+        const pRes = await fetch(`${API_URL}/api/products`);
+        const newProducts = await pRes.json();
+        
+        if (JSON.stringify(products) !== JSON.stringify(newProducts)) {
+            products = newProducts;
+            render(); 
+        }
+
+        const bRes = await fetch(`${API_URL}/api/banners`);
+        const newBanners = await bRes.json();
+        
+        if (JSON.stringify(banners) !== JSON.stringify(newBanners)) {
+            banners = newBanners;
+            updateBannersUI();
+        }
+      } catch (err) {
+        console.error("Sync error");
+      }
     }
+
+    function updateBannersUI() {
+        const slider = document.getElementById("slider");
+        if(!slider) return;
+        let html = "";
+
+        staticBanners.forEach(b => {
+          html += `
+            <div class="slide">
+              <div class="offer-card" style="background: ${b.bg};">
+                <p>${b.tag}</p>
+                <h2>${b.title}</h2>
+                <span>${b.sub}</span>
+              </div>
+            </div>`;
+        });
+
+        banners.forEach(b => {
+          html += `
+            <div class="slide">
+              <img src="${API_URL}${b.img}" class="banner-img" alt="${b.title || 'Offer'}">
+            </div>`;
+        });
+
+        slider.innerHTML = html;
+        totalSlides = staticBanners.length + banners.length;
+        
+        if(!window.autoSliderInterval) {
+            startAutoSlider();
+        }
+    }
+
+    function startAutoSlider() {
+      if (totalSlides <= 1) return;
+      window.autoSliderInterval = setInterval(() => {
+        bannerIndex = (bannerIndex + 1) % totalSlides;
+        const slider = document.getElementById("slider");
+        if(slider) slider.style.transform = `translateX(-${bannerIndex * 100}%)`;
+      }, 4000);
+    }
+
+    function render() {
+      const search = document.getElementById("search").value.toLowerCase();
+      const grid = document.getElementById("grid");
+      const filtered = products.filter(p => p.name.toLowerCase().includes(search));
+      
+      if(filtered.length === 0) {
+        grid.innerHTML = '<p style="text-align:center; grid-column: 1 / -1; padding:20px; color:#999;">No vegetables found.</p>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(p => {
+        let opts = p.unit === 'pc' 
+          ? `<option value="1">1 Piece</option><option value="5">5 Pieces</option><option value="10">10 Pieces</option>`
+          : `<option value="0.25">250 g</option><option value="0.5">500 g</option><option value="1" selected>1 kg</option><option value="2">2 kg</option><option value="3">3 kg</option><option value="5">5 kg</option>`;
+
+        const imgSrc = p.img.startsWith('http') ? p.img : `${API_URL}${p.img}`;
+
+        return `
+        <div class="card">
+          <div class="card-img-box"><img src="${imgSrc}" class="card-img" onerror="this.src='https://via.placeholder.com/400x200?text=Fresh+Vegetable'"></div>
+          <div class="card-body">
+            <div class="main-info">
+              <h3>${p.name}</h3>
+              <div class="sub-name">Organic Fresh</div>
+              <div class="price-display" id="price-${p.id}">₹${p.price}</div>
+            </div>
+            <div class="qty-row">
+              <select class="qty-select" onchange="updatePrice('${p.id}', this.value, ${p.price})">
+                ${opts}
+              </select>
+            </div>
+            <button class="add-btn" onclick="checkLogin()">Add</button>
+          </div>
+        </div>
+      `}).join('');
+    }
+
+    function updatePrice(id, qty, base) {
+      const priceEl = document.getElementById(`price-${id}`);
+      if(priceEl) priceEl.innerText = `₹${Math.round(qty * base)}`;
+    }
+
+    function checkLogin() {
+      document.getElementById("loginModal").style.display = "flex";
+    }
+
+    function closeModal() { document.getElementById("loginModal").style.display = "none"; }
+
+    window.onload = () => {
+      if (!localStorage.getItem('token')) {
+          fetchAllData();
+          setInterval(fetchAllData, 5000); // Auto-Sync every 5 seconds
+      }
+    };
   </script>
 </body>
 </html>
