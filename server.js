@@ -77,12 +77,13 @@ function getDistance(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// Nodemailer Transporter
+// Nodemailer Transporter (UPDATED FOR RENDER STABILITY)
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: 587,
-    secure: false,
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+    service: 'gmail',
+    auth: { 
+        user: process.env.SMTP_USER, 
+        pass: process.env.SMTP_PASS 
+    }
 });
 
 const signupTempStore = {};
@@ -178,7 +179,7 @@ app.delete("/api/banners/delete/:id", async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Delete failed" }); }
 });
 
-// --- 2. GEOLOCATION ROUTE (500 ERROR FIXED) ---
+// --- 2. GEOLOCATION ROUTE (FIXED FOR 500/502 ERROR) ---
 app.post("/reverse-geocode", async (req, res) => {
     const { lat, lng } = req.body;
     if (!lat || !lng) return res.status(400).json({ error: "Coordinates missing" });
@@ -189,10 +190,10 @@ app.post("/reverse-geocode", async (req, res) => {
     }
 
     try {
-        // [FIX] Added User-Agent and Area handling to prevent 500 errors
         const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
         const { data } = await axios.get(url, { 
-            headers: { "User-Agent": "RatuFresh/1.0 (ck805026@gmail.com)" } 
+            headers: { "User-Agent": "RatuFreshApp/1.0 (ck805026@gmail.com)" },
+            timeout: 10000 
         });
         
         if (data && data.address) {
@@ -222,7 +223,7 @@ app.post("/send-signup-otp", async (req, res) => {
         signupTempStore[email] = { userData: req.body, otp, expires: Date.now() + 300000 };
         
         await transporter.sendMail({
-            from: process.env.SMTP_USER,
+            from: `"Ratu Fresh" <${process.env.SMTP_USER}>`,
             to: email,
             subject: "Verify Signup - Ratu Fresh",
             text: `Welcome ${name}! Your OTP is: ${otp}`
@@ -231,7 +232,10 @@ app.post("/send-signup-otp", async (req, res) => {
         const [userPart, domain] = email.split("@");
         const maskedEmail = userPart.substring(0, 2) + "******" + userPart.slice(-2) + "@" + domain;
         res.json({ success: true, message: "OTP Sent", maskedEmail });
-    } catch (err) { res.status(500).json({ error: "Signup OTP error" }); }
+    } catch (err) { 
+        console.error("OTP Error:", err.message);
+        res.status(500).json({ error: "Signup OTP error. Check Email settings." }); 
+    }
 });
 
 app.post("/verify-signup", async (req, res) => {
@@ -257,7 +261,7 @@ app.post("/login", async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000);
         loginOtpStore[phone] = { otp, expires: Date.now() + 300000 };
         await transporter.sendMail({
-            from: process.env.SMTP_USER,
+            from: `"Ratu Fresh" <${process.env.SMTP_USER}>`,
             to: user.email,
             subject: "Login OTP - Ratu Fresh",
             text: `Your Login OTP is: ${otp}`
@@ -361,7 +365,7 @@ app.post("/orders/place", authenticate, async (req, res) => {
         const mapsLink = user.lat && user.lng ? `https://www.google.com/maps?q=${user.lat},${user.lng}` : "Location not detected";
 
         await transporter.sendMail({
-            from: process.env.SMTP_USER,
+            from: `"Admin Order" <${process.env.SMTP_USER}>`,
             to: ADMIN_EMAIL,
             subject: `New Order! - #${savedOrder._id.toString().substring(0,8)}`,
             text: `Customer: ${user.name}\nAddress: ${req.body.address}\n📍 Maps Link: ${mapsLink}\nTotal: ₹${userCart.totalPrice}`
@@ -452,8 +456,8 @@ mongoose.connect(process.env.DBurl)
             console.log("✅ 16 Initial Products Seeded Successfully");
         }
         
-        // [UPDATE] Port configuration for Render
-        const PORT = process.env.PORT || 4000;
+        // Render के लिए 10000 पोर्ट इस्तेमाल करना सबसे सही रहता है
+        const PORT = process.env.PORT || 10000;
         app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
     })
     .catch(err => console.error("DB error:", err));
