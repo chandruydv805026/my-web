@@ -1,874 +1,450 @@
-// ============= IMPORTS =============
 const express = require("express");
 const mongoose = require("mongoose");
-const bodyParser = require("body-parser");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const { Resend } = require("resend");
-const webpush = require("web-push");
+const nodemailer = require("nodemailer");
 const axios = require("axios");
 const path = require("path");
+const multer = require("multer"); 
 require("dotenv").config();
 
-// ============= LOGGER UTILITY =============
-class Logger {
-  static log(message, data = null) {
-    console.log(`[${this.getTimestamp()}] ℹ️  ${message}`, data || "");
-  }
-  static success(message, data = null) {
-    console.log(`[${this.getTimestamp()}] ✅ ${message}`, data || "");
-  }
-  static warn(message, data = null) {
-    console.warn(`[${this.getTimestamp()}] ⚠️  ${message}`, data || "");
-  }
-  static error(message, err = null) {
-    console.error(`[${this.getTimestamp()}] ❌ ${message}`, err ? err.message : "");
-    if (err && err.stack) console.error(err.stack);
-  }
-  static debug(message, data = null) {
-    if (process.env.DEBUG === "true") {
-      console.log(`[${this.getTimestamp()}] 🔍 ${message}`, data || "");
-    }
-  }
-  static getTimestamp() {
-    return new Date().toISOString();
-  }
-}
-
-// ============= DATABASE MODELS =============
+// Models
 const User = require("./models/schema");
 const Cart = require("./models/cart");
 const Order = require("./models/order");
+const Product = require("./models/product"); 
+const Banner = require("./models/banner"); // नया: बैनर मॉडल
 
-// ============= EXPRESS SETUP =============
 const app = express();
+app.use(express.json());
 
-// ============= MIDDLEWARE =============
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
-app.use(cors());
-app.use(express.static(path.join(__dirname, 'public')));
+// Professional CORS Setup
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
-// ============= REQUEST LOGGING =============
-app.use((req, res, next) => {
-  Logger.debug(`${req.method} ${req.path}`);
-  next();
+// Static Files Setup
+app.use(express.static("public"));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
+// --- MULTER CONFIGURATION ---
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'public/uploads/'); 
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
+
+// Default Route
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "main.html"));
 });
 
-// ============= HTML ROUTES - SERVE PAGES =============
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'main.html'));
-});
+// CONFIGURATION
+const SHOP_LAT = 23.414336; 
+const SHOP_LNG = 85.216316;
+const MAX_DISTANCE_KM = 5;
+const ADMIN_EMAIL = "ck805026@gmail.com"; 
+const ADMIN_PASSWORD_SECRET = "admin786"; 
 
-app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
+// [UPDATE] यहाँ .trim() लगाया गया है ताकि .env के फालतू स्पेस हट जाएँ
+const ONESIGNAL_APP_ID = (process.env.ONESIGNAL_APP_ID || "").trim();
+const ONESIGNAL_REST_KEY = (process.env.ONESIGNAL_REST_KEY || "").trim();
 
-app.get('/signup', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'signup.html'));
-});
-
-app.get('/otp', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'otp.html'));
-});
-
-app.get('/profiles', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'profiles.html'));
-});
-
-app.get('/cart', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'cart.html'));
-});
-
-app.get('/order', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'order.html'));
-});
-
-// ============= INITIALIZE SERVICES =============
-let resend;
-try {
-  resend = new Resend(process.env.RESEND_API_KEY);
-  Logger.success("Resend initialized successfully");
-} catch (err) {
-  Logger.error("Failed to initialize Resend", err);
-}
-
-// ============= AUTHENTICATION MIDDLEWARE =============
+// Middleware for JWT Authentication
 const authenticate = (req, res, next) => {
-  try {
     const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
-      Logger.warn("Token missing in request");
-      return res.status(401).json({ success: false, error: "Token missing" });
-    }
-
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-      if (err) {
-        Logger.warn("Invalid token:", err.message);
-        return res.status(403).json({ success: false, error: "Invalid token" });
-      }
-      req.user = decoded;
-      Logger.debug("User authenticated", { userId: decoded.userId });
-      next();
-    });
-  } catch (err) {
-    Logger.error("Authentication middleware error", err);
-    res.status(500).json({ success: false, error: "Authentication error" });
-  }
-};
-
-// ============= WEB PUSH SETUP =============
-let vapidPublicKey, vapidPrivateKey;
-try {
-  vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
-  vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-  
-  if (!vapidPublicKey || !vapidPrivateKey) {
-    throw new Error("VAPID keys not configured");
-  }
-
-  webpush.setVapidDetails("mailto:you@example.com", vapidPublicKey, vapidPrivateKey);
-  Logger.success("Web Push configured successfully");
-} catch (err) {
-  Logger.error("Web Push setup failed", err);
-}
-
-const subscriptions = [];
-
-// ============= OTP STORAGE =============
-const otpStore = {};
-
-// ============= SEND OTP FUNCTION =============
-const sendOtp = async (phone, subject) => {
-  try {
-    Logger.log("🔄 Attempting to send OTP", { phone });
-
-    const user = await User.findOne({ phone: phone.trim() });
-    if (!user) {
-      Logger.warn("User not found for OTP send", { phone });
-      return null;
-    }
-
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    otpStore[phone] = { 
-      otp, 
-      expires: Date.now() + 120000, 
-      attempts: 0,
-      createdAt: new Date()
-    };
-
-    Logger.debug("📝 OTP generated", { phone, otp });
-
-    await resend.emails.send({
-      from: "Ratu Fresh <onboarding@resend.dev>",
-      to: user.email,
-      subject: subject,
-      html: `
-        <div style="font-family: Arial, sans-serif; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); padding: 40px 20px; border-radius: 10px; text-align: center;">
-          <h1 style="color: #fff; margin-bottom: 30px;">🔐 Ratu Fresh</h1>
-          <h2 style="color: #fff; font-size: 28px; margin-bottom: 20px;">आपका OTP कोड</h2>
-          <p style="color: rgba(255,255,255,0.9); font-size: 16px; margin-bottom: 30px;">यह कोड 2 मिनट के लिए मान्य है</p>
-          <div style="background: rgba(255,255,255,0.2); padding: 30px; border-radius: 10px; margin: 30px 0;">
-            <h1 style="color: #fff; font-size: 48px; letter-spacing: 8px; margin: 0;">${otp}</h1>
-          </div>
-          <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin-top: 30px;">
-            अगर आपने यह OTP नहीं मांगा है, तो इसे अनदेखा करें।
-          </p>
-          <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.3); margin: 30px 0;">
-          <p style="color: rgba(255,255,255,0.7); font-size: 12px;">
-            © 2025 Ratu Fresh - ताज़ी सब्जियाँ, तेज़ डिलीवरी
-          </p>
-        </div>
-      `
-    });
-
-    Logger.success("OTP sent successfully", { phone, email: user.email });
-    return user.email;
-
-  } catch (err) {
-    Logger.error("Send OTP error", err);
-    throw err;
-  }
-};
-
-// ============= SIGNUP ENDPOINT =============
-app.post("/signup", async (req, res) => {
-  try {
-    const { name, phone, email, address, pincode, area } = req.body;
-    
-    Logger.log("Signup request received", { phone, email });
-
-    if (![name, phone, email, address, pincode, area].every(Boolean)) {
-      Logger.warn("Signup validation failed - missing fields", { phone });
-      return res.status(400).json({ success: false, error: "सभी फ़ील्ड आवश्यक हैं" });
-    }
-
-    const exists = await User.findOne({ $or: [{ phone }, { email }] });
-    if (exists) {
-      Logger.warn("Signup failed - user already exists", { phone, email });
-      return res.status(409).json({ success: false, error: "User पहले से मौजूद है" });
-    }
-
-    const newUser = await new User({ name, phone, email, address, pincode, area }).save();
-    Logger.debug("User document created", { userId: newUser._id });
-    
-    const newCart = await new Cart({ user: newUser._id, items: [], totalPrice: 0 }).save();
-    Logger.debug("Cart created", { cartId: newCart._id });
-
-    newUser.cart = newCart._id;
-    await newUser.save();
-
-    Logger.success("User signup successful", { userId: newUser._id, phone });
-
-    res.status(201).json({ success: true, message: "Signup सफल", userId: newUser._id });
-  } catch (err) {
-    Logger.error("Signup endpoint error", err);
-    res.status(500).json({ success: false, error: "Signup failed: " + err.message });
-  }
-});
-
-// ============= LOGIN ENDPOINT =============
-app.post("/login", async (req, res) => {
-  try {
-    const { phone } = req.body;
-    Logger.log("Login request received", { phone });
-
-    if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
-      Logger.warn("Login validation failed - invalid phone", { phone });
-      return res.status(400).json({ success: false, error: "Valid 10-digit phone number दर्ज करें" });
-    }
-
-    const user = await User.findOne({ phone: phone.trim() });
-    if (!user) {
-      Logger.warn("Login failed - user not found", { phone });
-      return res.status(404).json({ success: false, error: "User not found। पहले Sign Up करें" });
-    }
-
-    Logger.debug("User found in database", { userId: user._id });
-
-    const email = await sendOtp(phone, "🔐 आपका OTP - Ratu Fresh");
-    
-    if (!email) {
-      Logger.error("Login failed - OTP send failed", null);
-      return res.status(500).json({ success: false, error: "OTP भेजने में समस्या" });
-    }
-
-    Logger.success("Login OTP sent", { phone, email });
-
-    res.json({ success: true, message: "OTP भेजा गया", email });
-  } catch (err) {
-    Logger.error("Login endpoint error", err);
-    res.status(500).json({ success: false, error: "Server error: " + err.message });
-  }
-});
-
-// ============= RESEND OTP ENDPOINT =============
-app.post("/resend-otp", async (req, res) => {
-  try {
-    const { phone } = req.body;
-    Logger.log("Resend OTP request received", { phone });
-
-    if (!phone) {
-      Logger.warn("Resend OTP failed - no phone provided");
-      return res.status(400).json({ success: false, error: "Phone number required" });
-    }
-
-    const email = await sendOtp(phone, "🔁 नया OTP - Ratu Fresh");
-    
-    if (!email) {
-      Logger.warn("Resend OTP failed - user not found", { phone });
-      return res.status(404).json({ success: false, error: "User not found" });
-    }
-
-    Logger.success("OTP resent successfully", { phone });
-    res.json({ success: true, message: "नया OTP भेजा गया" });
-  } catch (err) {
-    Logger.error("Resend OTP endpoint error", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ============= VERIFY OTP ENDPOINT =============
-app.post("/verify-otp", async (req, res) => {
-  try {
-    const { phone, otp } = req.body;
-    Logger.log("OTP verification request received", { phone });
-
-    if (!phone || !otp) {
-      Logger.warn("OTP verification failed - missing parameters");
-      return res.status(400).json({ success: false, error: "Phone और OTP दोनों आवश्यक हैं" });
-    }
-
-    const record = otpStore[phone];
-
-    if (!record) {
-      Logger.warn("OTP verification failed - no record found", { phone });
-      return res.status(400).json({ success: false, error: "OTP नहीं भेजा गया या समाप्त हो गया" });
-    }
-
-    if (String(record.otp) !== String(otp)) {
-      record.attempts = (record.attempts || 0) + 1;
-      Logger.warn("OTP verification failed - invalid OTP", { phone, attempts: record.attempts });
-      
-      if (record.attempts >= 3) {
-        delete otpStore[phone];
-        Logger.warn("OTP blocked - too many attempts", { phone });
-        return res.status(429).json({ success: false, error: "बहुत सारे प्रयास। फिर से OTP भेजें" });
-      }
-
-      return res.status(401).json({ success: false, error: "OTP गलत है" });
-    }
-
-    if (Date.now() > record.expires) {
-      Logger.warn("OTP verification failed - OTP expired", { phone });
-      delete otpStore[phone];
-      return res.status(401).json({ success: false, error: "OTP समाप्त हो गया" });
-    }
-
-    const user = await User.findOne({ phone: phone.trim() }).populate("cart");
-    if (!user) {
-      Logger.warn("OTP verification failed - user not found", { phone });
-      return res.status(404).json({ success: false, error: "User नहीं मिला" });
-    }
-
-    delete otpStore[phone];
-
-    const token = jwt.sign({ userId: user._id, phone }, process.env.JWT_SECRET, { expiresIn: "2h" });
-
-    Logger.success("OTP verification successful", { userId: user._id, phone });
-
-    res.json({ 
-      success: true, 
-      token, 
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        address: user.address,
-        pincode: user.pincode,
-        area: user.area
-      }
-    });
-  } catch (err) {
-    Logger.error("OTP verification endpoint error", err);
-    res.status(500).json({ success: false, error: "Server error: " + err.message });
-  }
-});
-
-// ============= ADD TO CART ENDPOINT =============
-app.post("/cart/add/:userId", authenticate, async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { productId, name, qty, price } = req.body;
-
-    Logger.log("🛒 Adding to cart", { userId, name, qty, price });
-
-    if (!name || !qty || !price) {
-      Logger.warn("❌ Invalid cart data", { userId });
-      return res.status(400).json({ 
-        success: false,
-        error: "सभी फ़ील्ड आवश्यक हैं" 
-      });
-    }
-
-    let cart = await Cart.findOne({ user: userId });
-
-    if (!cart) {
-      Logger.debug("📝 Creating new cart", { userId });
-      cart = await new Cart({ 
-        user: userId, 
-        items: [],
-        totalPrice: 0
-      }).save();
-    }
-
-    const existingItem = cart.items.find(item => item.name === name);
-
-    if (existingItem) {
-      existingItem.quantity += qty;
-      Logger.debug("📊 Updated quantity", { name, newQty: existingItem.quantity });
-    } else {
-      cart.items.push({
-        productId: productId || name,
-        name,
-        quantity: qty,
-        price
-      });
-      Logger.debug("➕ Added new item", { name, qty });
-    }
-
-    cart.totalPrice = cart.items.reduce((sum, item) => 
-      sum + (item.quantity * item.price), 0
-    );
-
-    await cart.save();
-
-    Logger.success("✅ Item added to cart", { userId, name, totalPrice: cart.totalPrice });
-
-    res.json({ 
-      success: true,
-      message: `✅ ${name} कार्ट में जोड़ा गया`,
-      cart: {
-        items: cart.items,
-        totalPrice: cart.totalPrice
-      }
-    });
-
-  } catch (err) {
-    Logger.error("Add to cart endpoint error", err);
-    res.status(500).json({ 
-      success: false,
-      error: "कार्ट में जोड़ने में समस्या: " + err.message 
-    });
-  }
-});
-
-// ============= GET CART ENDPOINT =============
-app.get('/cart/:userId', authenticate, async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    Logger.log("🛒 Fetching cart for user:", userId);
-
-    let cart = await Cart.findOne({ user: userId });
-
-    if (!cart) {
-      Logger.warn("❌ Cart not found, creating new", { userId });
-      cart = await new Cart({ 
-        user: userId, 
-        items: [],
-        totalPrice: 0
-      }).save();
-    }
-
-    Logger.success("✅ Cart fetched", { userId, itemCount: cart.items.length });
-
-    res.json({ 
-      success: true,
-      items: cart.items,
-      totalPrice: cart.totalPrice
-    });
-
-  } catch (err) {
-    Logger.error("Get cart endpoint error", err);
-    res.status(500).json({ 
-      success: false,
-      error: "कार्ट fetch करने में समस्या: " + err.message 
-    });
-  }
-});
-
-// ============= REMOVE FROM CART =============
-app.post("/cart/remove/:userId", authenticate, async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { productId } = req.body;
-
-    Logger.log("🗑️ Removing from cart", { userId, productId });
-
-    const cart = await Cart.findOne({ user: userId });
-
-    if (!cart) {
-      Logger.warn("❌ Cart not found", { userId });
-      return res.status(404).json({ 
-        success: false,
-        error: "कार्ट नहीं मिला" 
-      });
-    }
-
-    cart.items = cart.items.filter(item => item.name !== productId);
-
-    cart.totalPrice = cart.items.reduce((sum, item) => 
-      sum + (item.quantity * item.price), 0
-    );
-
-    await cart.save();
-
-    Logger.success("✅ Item removed from cart", { userId });
-
-    res.json({ 
-      success: true,
-      message: "आइटम हटा दिया गया",
-      cart: {
-        items: cart.items,
-        totalPrice: cart.totalPrice
-      }
-    });
-
-  } catch (err) {
-    Logger.error("Remove from cart error", err);
-    res.status(500).json({ 
-      success: false,
-      error: "हटाने में समस्या: " + err.message 
-    });
-  }
-});
-
-// ============= CLEAR CART =============
-app.post("/cart/clear/:userId", authenticate, async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    Logger.log("🧹 Clearing cart", { userId });
-
-    const cart = await Cart.findOne({ user: userId });
-
-    if (!cart) {
-      Logger.warn("❌ Cart not found", { userId });
-      return res.status(404).json({ 
-        success: false,
-        error: "कार्ट नहीं मिला" 
-      });
-    }
-
-    cart.items = [];
-    cart.totalPrice = 0;
-    await cart.save();
-
-    Logger.success("✅ Cart cleared", { userId });
-
-    res.json({ 
-      success: true,
-      message: "कार्ट साफ़ कर दिया गया"
-    });
-
-  } catch (err) {
-    Logger.error("Clear cart error", err);
-    res.status(500).json({ 
-      success: false,
-      error: "साफ़ करने में समस्या: " + err.message 
-    });
-  }
-});
-
-// ============= PLACE ORDER ENDPOINT =============
-app.post("/place-order", authenticate, async (req, res) => {
-  try {
-    const { products, totalPrice, customerName, address, phone } = req.body;
-    
-    Logger.log("📦 Order placement request received", { userId: req.user.userId, totalPrice, itemCount: products?.length });
-
-    if (![products, totalPrice, customerName, address, phone].every(Boolean)) {
-      Logger.warn("Order validation failed - missing fields", { userId: req.user.userId });
-      return res.status(400).json({ success: false, error: "सभी फ़ील्ड आवश्यक हैं" });
-    }
-
-    const order = await new Order({
-      userId: req.user.userId,
-      items: products.map(p => ({
-        productId: p.productId || p.name,
-        name: p.name,
-        quantity: p.qty,
-        price: p.price || 0
-      })),
-      totalAmount: totalPrice,
-      deliveryAddress: address,
-      phone,
-      status: "pending",
-      paymentMode: "Cash on Delivery",
-      orderDate: new Date()
-    }).save();
-
-    Logger.debug("Order created in database", { orderId: order._id });
-
-    const productList = products
-      .map(p => `- ${p.name} (${p.qty < 1 ? p.qty * 1000 + " ग्राम" : p.qty + " किलो"})`)
-      .join("\n");
-
+    if (!token) return res.status(401).json({ error: "Access Denied. Login Required." });
     try {
-      await resend.emails.send({
-        from: "Ratu Fresh <onboarding@resend.dev>",
-        to: "ck805026@gmail.com",
-        subject: "🛒 नया ऑर्डर प्राप्त हुआ - Ratu Fresh",
-        html: `
-          <div style="font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; border-radius: 10px;">
-            <h2 style="color: #333;">🛒 नया ऑर्डर प्राप्त हुआ</h2>
-            <p><strong>ग्राहक:</strong> ${customerName}</p>
-            <p><strong>फोन:</strong> ${phone}</p>
-            <p><strong>पता:</strong> ${address}</p>
-            <hr>
-            <h3>ऑर्डर विवरण:</h3>
-            <pre>${productList}</pre>
-            <p><strong>कुल कीमत: ₹${totalPrice}</strong></p>
-          </div>
-        `
-      });
-      Logger.success("Order confirmation email sent");
-    } catch (emailErr) {
-      Logger.warn("Order email failed - will not affect order", emailErr);
-    }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (err) { res.status(403).json({ error: "Invalid Token" }); }
+};
 
-    Logger.success("Order created successfully", { orderId: order._id, phone });
-    res.json({ success: true, message: "ऑर्डर सफल", orderId: order._id });
-  } catch (err) {
-    Logger.error("Place order endpoint error", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ============= GET ORDERS ENDPOINT =============
-app.get('/orders/:userId', authenticate, async (req, res) => {
-  try {
-    const { userId } = req.params;
-    
-    Logger.log("📦 Fetching orders for user:", userId);
-
-    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
-    
-    if (!orders || orders.length === 0) {
-      Logger.warn("❌ No orders found", { userId });
-      return res.json({ 
-        success: true,
-        orders: [],
-        message: "कोई ऑर्डर नहीं मिला"
-      });
-    }
-
-    Logger.success("✅ Orders fetched", { userId, count: orders.length });
-    
-    res.json({ 
-      success: true,
-      orders: orders.map(order => ({
-        _id: order._id,
-        totalAmount: order.totalAmount,
-        status: order.status || 'pending',
-        orderDate: order.orderDate || order.createdAt,
-        items: order.items,
-        deliveryAddress: order.deliveryAddress,
-        phone: order.phone
-      }))
-    });
-
-  } catch (err) {
-    Logger.error("Get orders endpoint error", err);
-    res.status(500).json({ 
-      success: false,
-      error: "Orders fetch failed: " + err.message 
-    });
-  }
-});
-
-// ============= PUSH NOTIFICATIONS - SUBSCRIBE =============
-app.post("/subscribe", async (req, res) => {
-  try {
-    const { subscription, phone } = req.body;
-    if (!subscription || !phone) {
-      Logger.warn("Subscribe failed - missing parameters");
-      return res.status(400).json({ success: false, error: "Invalid parameters" });
-    }
-    subscriptions.push({ subscription, phone });
-    Logger.success("User subscribed to push notifications", { phone });
-    res.status(201).json({ success: true });
-  } catch (err) {
-    Logger.error("Subscribe endpoint error", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ============= PUSH NOTIFICATIONS - SEND TO SPECIFIC USER =============
-app.post("/send", async (req, res) => {
-  try {
-    const { phone, payload } = req.body;
-    Logger.log("Sending notification to specific user", { phone });
-
-    const targets = subscriptions.filter(s => s.phone === phone).map(s => s.subscription);
-    
-    const results = await Promise.all(
-      targets.map(sub =>
-        webpush.sendNotification(sub, JSON.stringify(payload))
-          .then(() => ({ ok: true }))
-          .catch(err => {
-            Logger.warn("Push notification send failed", err);
-            return ({ ok: false, error: err.message });
-          })
-      )
-    );
-    
-    const succeeded = results.filter(r => r.ok).length;
-    Logger.success(`Notifications sent`, { phone, total: results.length, succeeded });
-    res.json({ total: results.length, succeeded, failed: results.length - succeeded });
-  } catch (err) {
-    Logger.error("Send notification endpoint error", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ============= PUSH NOTIFICATIONS - BROADCAST =============
-app.post("/send-all", async (req, res) => {
-  try {
-    const { payload } = req.body;
-    Logger.log("Broadcasting notification to all users", { userCount: subscriptions.length });
-
-    const results = await Promise.all(
-      subscriptions.map(({ subscription }) =>
-        webpush.sendNotification(subscription, JSON.stringify(payload))
-          .then(() => ({ ok: true }))
-          .catch(err => {
-            Logger.warn("Broadcast notification failed", err);
-            return ({ ok: false, error: err.message });
-          })
-      )
-    );
-    
-    const succeeded = results.filter(r => r.ok).length;
-    Logger.success(`Broadcast completed`, { total: results.length, succeeded });
-    res.json({ total: results.length, succeeded, failed: results.length - succeeded });
-  } catch (err) {
-    Logger.error("Broadcast endpoint error", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ============= GEOCODING - REVERSE =============
-app.post("/reverse-geocode", async (req, res) => {
-  try {
-    const { lat, lng } = req.body;
-    Logger.debug("Reverse geocoding request", { lat, lng });
-
-    if (typeof lat !== "number" || typeof lng !== "number") {
-      Logger.warn("Reverse geocoding failed - invalid coordinates");
-      return res.status(400).json({ success: false, error: "Invalid coordinates" });
-    }
-    
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
-    const { data } = await axios.get(url, { 
-      headers: { "User-Agent": "RatuFresh/1.0" },
-      timeout: 5000
-    });
-    
-    if (!data?.display_name) {
-      Logger.warn("Reverse geocoding - address not found", { lat, lng });
-      return res.status(404).json({ success: false, error: "Address not found" });
-    }
-    
-    Logger.success("Reverse geocoding successful", { address: data.display_name });
-    res.json({ displayName: data.display_name, components: data.address || {} });
-  } catch (err) {
-    Logger.error("Reverse geocoding error", err);
-    res.status(500).json({ success: false, error: "Reverse geocoding failed" });
-  }
-});
-
-// ============= GEOCODING - FORWARD =============
-app.post("/geocode", async (req, res) => {
-  try {
-    const { address, area, pincode } = req.body;
-    const query = [address, area, pincode].filter(Boolean).join(", ");
-    
-    Logger.debug("Geocoding request", { query });
-
-    if (!query) {
-      Logger.warn("Geocoding failed - no address provided");
-      return res.status(400).json({ success: false, error: "Address is required" });
-    }
-
-    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`;
-    const { data } = await axios.get(url, { 
-      headers: { "User-Agent": "RatuFresh/1.0" },
-      timeout: 5000
-    });
-    
-    if (!Array.isArray(data) || !data.length) {
-      Logger.warn("Geocoding - location not found", { query });
-      return res.status(404).json({ success: false, error: "Location not found" });
-    }
-    
-    const match = data[0];
-    Logger.success("Geocoding successful", { query, displayName: match.display_name });
-    res.json({ 
-      lat: parseFloat(match.lat), 
-      lng: parseFloat(match.lon), 
-      displayName: match.display_name 
-    });
-  } catch (err) {
-    Logger.error("Geocoding error", err);
-    res.status(500).json({ success: false, error: "Geocoding failed" });
-  }
-});
-
-// ============= ADMIN ENDPOINT =============
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Ratufresh@2025';
-
-app.get('/admin', (req, res) => {
-  try {
-    const { password } = req.query;
-    if (password !== ADMIN_PASSWORD) {
-      Logger.warn("Unauthorized admin access attempt");
-      return res.status(401).send('Unauthorized');
-    }
-    Logger.log("Admin panel accessed");
-    res.sendFile(path.join(__dirname, 'secure', 'admin.html'));
-  } catch (err) {
-    Logger.error("Admin endpoint error", err);
-    res.status(500).send('Error loading admin panel');
-  }
-});
-
-// ============= HEALTH CHECK =============
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: "OK", 
-    timestamp: new Date(),
-    environment: process.env.NODE_ENV || "development"
-  });
-});
-
-// ============= 404 HANDLER =============
-app.use((req, res) => {
-  Logger.warn("404 - Route not found", { method: req.method, path: req.path });
-  res.status(404).json({ success: false, error: "Route not found" });
-});
-
-// ============= GLOBAL ERROR HANDLER =============
-app.use((err, req, res, next) => {
-  Logger.error("Global error handler triggered", err);
-  res.status(err.status || 500).json({ 
-    success: false,
-    error: process.env.NODE_ENV === "production" ? "Server error" : err.message 
-  });
-});
-
-// ============= DATABASE CONNECTION & SERVER START =============
-async function startServer() {
-  try {
-    Logger.log("Starting server...");
-
-    if (!process.env.DBurl) throw new Error("DBurl not configured");
-    if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET not configured");
-    if (!process.env.RESEND_API_KEY) throw new Error("RESEND_API_KEY not configured");
-
-    Logger.log("Environment variables verified");
-
-    await mongoose.connect(process.env.DBurl, { 
-      useNewUrlParser: true, 
-      useUnifiedTopology: true 
-    });
-    Logger.success("MongoDB connected successfully");
-
-    const PORT = process.env.PORT || 4000;
-    app.listen(PORT, () => {
-      Logger.success(`🚀 Server is running on port ${PORT}`);
-      Logger.log(`📊 Environment: ${process.env.NODE_ENV || "development"}`);
-      Logger.log(`🔗 Database: Connected`);
-      Logger.log(`📧 Email Service: Resend configured`);
-      Logger.log(`🌐 Website: http://localhost:${PORT}`);
-    });
-  } catch (err) {
-    Logger.error("Failed to start server", err);
-    process.exit(1);
-  }
+// Distance Calculation
+function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; 
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-process.on('unhandledRejection', (reason, promise) => {
-  Logger.error("Unhandled Rejection at:", reason);
+// Nodemailer Transporter
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: 587,
+    secure: false,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
 });
 
-process.on('uncaughtException', (error) => {
-  Logger.error("Uncaught Exception:", error);
-  process.exit(1);
+const signupTempStore = {};
+const loginOtpStore = {};
+
+// --- 1. PRODUCT ROUTES ---
+
+app.get("/api/products", async (req, res) => {
+    try {
+        const products = await Product.find();
+        res.json(products);
+    } catch (err) { res.status(500).json({ error: "Failed to fetch products" }); }
 });
 
-startServer();
+app.post("/api/products/add", upload.single('image'), async (req, res) => {
+    const { name, price, unit, inStock, password } = req.body;
+    if (password !== ADMIN_PASSWORD_SECRET) {
+        return res.status(403).json({ error: "Unauthorized: Wrong Admin Password" });
+    }
+    try {
+        const productId = name.toLowerCase().split(' ').join('-');
+        const newProduct = new Product({
+            id: productId,
+            name: name,
+            price: price,
+            unit: unit || 'kg',
+            inStock: inStock === 'true',
+            img: `/uploads/${req.file.filename}` 
+        });
+        await newProduct.save();
+        res.json({ success: true, message: "Product Added Successfully" });
+    } catch (err) { 
+        res.status(500).json({ error: "Failed to add product" }); 
+    }
+});
 
-module.exports = app;
+// --- महत्वपूर्ण सुधार: UPDATE ROUTE ({new: true} पक्का किया गया) ---
+app.put("/api/products/update/:id", async (req, res) => {
+    const { name, price, img, password } = req.body; 
+    if (password !== ADMIN_PASSWORD_SECRET) {
+        return res.status(403).json({ error: "Unauthorized: Wrong Admin Password" });
+    }
+    try {
+        // { new: true } यह पक्का करता है कि ताज़ा अपडेटेड डेटा तुरंत क्लाइंट को मिले
+        const updatedProduct = await Product.findOneAndUpdate(
+            { id: req.params.id }, 
+            { name, price: Number(price), img },
+            { new: true }
+        );
+        res.json({ success: true, product: updatedProduct });
+    } catch (err) { res.status(500).json({ error: "Update failed" }); }
+});
+
+// --- नया: PRODUCT DELETE ROUTE (बिना कुछ हटाए जोड़ा गया) ---
+app.delete("/api/products/delete/:id", async (req, res) => {
+    const { password } = req.body; 
+    if (password !== ADMIN_PASSWORD_SECRET) {
+        return res.status(403).json({ error: "Unauthorized: Wrong Admin Password" });
+    }
+    try {
+        await Product.findOneAndDelete({ id: req.params.id });
+        res.json({ success: true, message: "Product Deleted Successfully" });
+    } catch (err) { 
+        res.status(500).json({ error: "Delete failed" }); 
+    }
+});
+
+// --- नया: BANNER ROUTES ---
+
+// बैनर जोड़ना
+app.post("/api/banners/add", upload.single('image'), async (req, res) => {
+    const { title, password } = req.body;
+    if (password !== ADMIN_PASSWORD_SECRET) {
+        return res.status(403).json({ error: "Unauthorized" });
+    }
+    try {
+        const newBanner = new Banner({
+            title: title,
+            img: `/uploads/${req.file.filename}`
+        });
+        await newBanner.save();
+        res.json({ success: true, message: "Banner Added Successfully" });
+    } catch (err) { res.status(500).json({ error: "Banner upload failed" }); }
+});
+
+// बैनर प्राप्त करना
+app.get("/api/banners", async (req, res) => {
+    try {
+        const banners = await Banner.find({ active: true });
+        res.json(banners);
+    } catch (err) { res.status(500).json({ error: "Failed to fetch banners" }); }
+});
+
+// बैनर डिलीट करना
+app.delete("/api/banners/delete/:id", async (req, res) => {
+    try {
+        await Banner.findByIdAndDelete(req.params.id);
+        res.json({ success: true, message: "Banner Deleted" });
+    } catch (err) { res.status(500).json({ error: "Delete failed" }); }
+});
+
+// --- 2. GEOLOCATION ROUTE ---
+app.post("/reverse-geocode", async (req, res) => {
+    const { lat, lng } = req.body;
+    if (!lat || !lng) return res.status(400).json({ error: "Coordinates missing" });
+    const distance = getDistance(SHOP_LAT, SHOP_LNG, lat, lng);
+    if (distance > MAX_DISTANCE_KM) {
+        return res.status(400).json({ error: `Out of area. We deliver within 5km.` });
+    }
+    try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+        const { data } = await axios.get(url, { headers: { "User-Agent": "RatuFresh/1.0" } });
+        res.json({ displayName: data.display_name, pincode: data.address?.postcode || '', area: data.address?.suburb || '' });
+    } catch (err) { res.status(500).json({ error: "Location error" }); }
+});
+
+// --- 3. AUTH ROUTES ---
+
+app.post("/send-signup-otp", async (req, res) => {
+    const { name, email, phone } = req.body;
+    try {
+        const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+        if (existingUser) return res.status(400).json({ error: "Email or Phone already registered." });
+        
+        const otp = Math.floor(100000 + Math.random() * 900000);
+        signupTempStore[email] = { userData: req.body, otp, expires: Date.now() + 300000 };
+        
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: email,
+            subject: "Verify Signup - Ratu Fresh",
+            text: `Welcome ${name}! Your OTP is: ${otp}`
+        });
+        
+        const [userPart, domain] = email.split("@");
+        const maskedEmail = userPart.substring(0, 2) + "******" + userPart.slice(-2) + "@" + domain;
+        res.json({ success: true, message: "OTP Sent", maskedEmail });
+    } catch (err) { res.status(500).json({ error: "Signup OTP error" }); }
+});
+
+app.post("/verify-signup", async (req, res) => {
+    const { email, otp } = req.body;
+    const record = signupTempStore[email];
+    if (record?.otp == otp && Date.now() < record.expires) {
+        try {
+            const newUser = new User(record.userData);
+            const savedUser = await newUser.save();
+            await new Cart({ user: savedUser._id, items: [] }).save();
+            delete signupTempStore[email];
+            // [UPDATE] यहाँ expiresIn को "90d" किया गया है
+            const token = jwt.sign({ userId: savedUser._id }, process.env.JWT_SECRET, { expiresIn: "90d" });
+            res.json({ success: true, token, user: savedUser });
+        } catch (err) { res.status(500).json({ error: "Save user failed" }); }
+    } else { res.status(401).json({ error: "Invalid OTP" }); }
+});
+
+app.post("/login", async (req, res) => {
+    const { phone } = req.body;
+    try {
+        const user = await User.findOne({ phone });
+        if (!user) return res.status(404).json({ error: "User not found" });
+        const otp = Math.floor(100000 + Math.random() * 900000);
+        loginOtpStore[phone] = { otp, expires: Date.now() + 300000 };
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: user.email,
+            subject: "Login OTP - Ratu Fresh",
+            text: `Your Login OTP is: ${otp}`
+        });
+        const [userPart, domain] = user.email.split("@");
+        const maskedEmail = userPart.substring(0, 2) + "******" + userPart.slice(-2) + "@" + domain;
+        res.json({ success: true, maskedEmail });
+    } catch (err) { res.status(500).json({ error: "Mail error" }); }
+});
+
+app.post("/verify-login", async (req, res) => {
+    const { phone, otp } = req.body;
+    const record = loginOtpStore[phone];
+    if (record?.otp == otp && Date.now() < record.expires) {
+        const user = await User.findOne({ phone });
+        delete loginOtpStore[phone];
+        // [UPDATE] यहाँ expiresIn को "90d" किया गया है
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "90d" });
+        return res.json({ success: true, token, user });
+    }
+    res.status(401).json({ error: "Invalid OTP" });
+});
+
+// --- 4. CART & ORDER ROUTES ---
+app.get("/cart/get", authenticate, async (req, res) => {
+    try {
+        const userCart = await Cart.findOne({ user: req.user.userId });
+        res.json(userCart || { items: [], totalPrice: 0 });
+    } catch (err) { res.status(500).json({ error: "Cart fetch failed" }); }
+});
+
+app.post("/cart/sync", authenticate, async (req, res) => {
+    try {
+        const { item } = req.body; 
+        const userId = req.user.userId;
+        
+        // [FIX] पक्का करें कि डेटाबेस से ताज़ा प्राइस ही लिया जाए
+        const dbProduct = await Product.findOne({ id: item.productId });
+        if (dbProduct) {
+            item.price = dbProduct.price;
+            item.subtotal = dbProduct.price * item.quantity;
+        }
+
+        let userCart = await Cart.findOne({ user: userId });
+        if (!userCart) {
+            userCart = new Cart({ user: userId, items: [item], totalPrice: item.subtotal });
+        } else {
+            const itemIndex = userCart.items.findIndex(p => p.productId === item.productId);
+            if (itemIndex > -1) {
+                userCart.items[itemIndex].quantity = item.quantity;
+                userCart.items[itemIndex].price = item.price; // ताजा प्राइस अपडेट
+                userCart.items[itemIndex].subtotal = item.subtotal;
+            } else {
+                userCart.items.push(item);
+            }
+            userCart.totalPrice = userCart.items.reduce((acc, curr) => acc + curr.subtotal, 0);
+        }
+        await userCart.save();
+        res.json({ success: true, cart: userCart });
+    } catch (err) { res.status(500).json({ error: "Cart sync failed" }); }
+});
+
+app.delete("/cart/remove/:productId", authenticate, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        let userCart = await Cart.findOne({ user: userId });
+        if (userCart) {
+            userCart.items = userCart.items.filter(i => i.productId !== req.params.productId);
+            userCart.totalPrice = userCart.items.reduce((acc, curr) => acc + curr.subtotal, 0);
+            await userCart.save();
+            res.json({ success: true, cart: userCart });
+        } else { res.status(404).json({ error: "Cart not found" }); }
+    } catch (err) { res.status(500).json({ error: "Delete failed" }); }
+});
+
+app.get("/orders/my-orders", authenticate, async (req, res) => {
+    try {
+        const orders = await Order.find({ userId: req.user.userId }).sort({ orderDate: -1 });
+        res.json(orders);
+    } catch (err) { res.status(500).json({ error: "Fetch orders failed" }); }
+});
+
+app.post("/orders/place", authenticate, async (req, res) => {
+    try {
+        const userCart = await Cart.findOne({ user: req.user.userId });
+        const user = await User.findById(req.user.userId);
+        if (!userCart || userCart.items.length === 0) return res.status(400).json({ error: "Cart is empty" });
+
+        const newOrder = new Order({
+            userId: req.user.userId,
+            phone: user.phone,
+            items: userCart.items,
+            totalAmount: userCart.totalPrice,
+            deliveryAddress: req.body.address,
+            lat: user.lat,
+            lng: user.lng,
+            status: "Pending",
+            orderDate: new Date() 
+        });
+
+        const savedOrder = await newOrder.save();
+        
+        const mapsLink = user.lat && user.lng ? `https://www.google.com/maps?q=${user.lat},${user.lng}` : "Location not detected";
+
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: ADMIN_EMAIL,
+            subject: `New Order! - #${savedOrder._id.toString().substring(0,8)}`,
+            text: `Customer: ${user.name}\nAddress: ${req.body.address}\n📍 Maps Link: ${mapsLink}\nTotal: ₹${userCart.totalPrice}`
+        });
+
+        await Cart.findOneAndUpdate({ user: req.user.userId }, { items: [], totalPrice: 0 });
+        res.status(201).json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Order failed" }); }
+});
+
+app.post("/orders/cancel/:orderId", authenticate, async (req, res) => {
+    try {
+        const order = await Order.findOneAndUpdate(
+            { _id: req.params.orderId, userId: req.user.userId, status: "Pending" },
+            { status: "Cancelled" },
+            { new: true }
+        );
+        if(!order) return res.status(400).json({ error: "Cannot cancel" });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Cancel failed" }); }
+});
+
+// --- 5. NOTIFICATION & PROFILE (401 Error Fixed) ---
+
+app.post("/admin/send-broadcast", authenticate, async (req, res) => {
+    const { title, message } = req.body;
+    try {
+        await axios.post("https://onesignal.com/api/v1/notifications", {
+            app_id: ONESIGNAL_APP_ID,
+            included_segments: ["Total Subscriptions"], 
+            headings: { "en": title },
+            contents: { "en": message },
+        }, {
+            headers: { 
+                "Content-Type": "application/json; charset=utf-8", 
+                // [FIX] 'Basic ' keyword और .trim() सुनिश्चित किया गया
+                "Authorization": `Basic ${ONESIGNAL_REST_KEY}` 
+            }
+        });
+        res.json({ success: true });
+    } catch (err) { 
+        console.error("OneSignal Error Details:", err.response?.data || err.message);
+        res.status(500).json({ error: "Notification failed", details: err.response?.data }); 
+    }
+});
+
+app.put("/user/update", authenticate, async (req, res) => {
+    try {
+        const { name, phone, address, area, lat, lng } = req.body;
+        const updatedUser = await User.findByIdAndUpdate(req.user.userId, { name, phone, address, area, lat, lng }, { new: true });
+        res.json({ success: true, user: updatedUser });
+    } catch (err) { res.status(500).json({ error: "Update failed" }); }
+});
+
+// DATABASE CONNECTION & AUTO-FILL
+mongoose.connect(process.env.DBurl)
+    .then(async () => {
+        console.log("🚀 MongoDB Connected");
+
+        // नया: Order Auto-Delete (TTL Index) पक्का करने के लिए
+        try {
+            await mongoose.connection.db.collection('orders').createIndex(
+                { "orderDate": 1 }, 
+                { expireAfterSeconds: 7200 }
+            );
+            console.log("🕒 Auto-Delete Activated: Orders will vanish after 2 hours.");
+        } catch (e) { console.log("Index already exists or error."); }
+        
+        const count = await Product.countDocuments();
+        if (count === 0) {
+            const initialProducts = [
+                { id: 'aloo', name: 'Potato (Aloo)', price: 20, img: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Patates.jpg', unit: 'kg' },
+                { id: 'tomato', name: 'Tomato (Tamatar)', price: 30, img: 'https://upload.wikimedia.org/wikipedia/commons/8/89/Tomato_je.jpg', unit: 'kg' },
+                { id: 'onion', name: 'Onion (Pyaz)', price: 25, img: 'https://media.istockphoto.com/id/1181631588/photo/onions-for-sale-in-the-weekly-market-malkapur-maharashtra.webp?a=1&b=1&s=612x612&w=0&k=20&c=dzL0b1DNEWUehYWVqYzY9qE-ZK88KJgO6eY-etuQYoc=', unit: 'kg' },
+                { id: 'bhindi', name: 'Lady Finger (Bhindi)', price: 35, img: 'https://media.istockphoto.com/id/1503362390/photo/okra-over-wooden-table-background-cut-okra-and-whole-ladys-finger.jpg?s=1024x1024&w=is&k=20&c=xYk1xHhyPEMiZzYxaBu5IMyqXK3qdrlCVVFh8Yy4GgM=', unit: 'kg' },
+                { id: 'lauki', name: 'Bottle Gourd (Lauki)', price: 18, img: 'https://media.istockphoto.com/id/1194258667/photo/bottle-gourd-for-sale-in-market.jpg?s=1024x1024&w=is&k=20&c=rmDr-KGaiUEaxCqaEQ6e_MakDj6klaXYE-StTySjPUM=', unit: 'kg' },
+                { id: 'karela', name: 'Bitter Gourd (Karela)', price: 28, img: 'https://media.istockphoto.com/id/472402096/photo/top-view-of-green-bitter-gourds-in-the-basket.jpg?s=612x612&w=0&k=20&c=n7Ua0o7X4Qe_FSfl38ufHIPslxofgkyNpa2Z2NXmBfM=', unit: 'kg' },
+                { id: 'gajar', name: 'Carrot (Gajar)', price: 22, img: 'https://images.unsplash.com/photo-1633380110125-f6e685676160?auto=format&fit=crop&w=600', unit: 'kg' },
+                { id: 'mooli', name: 'Radish (Mooli)', price: 15, img: 'https://media.istockphoto.com/id/903099876/photo/fresh-vegetable-for-sale-on-market-in-india.webp?a=1&b=1&s=612x612&w=0&k=20&c=9oElMWTKZOzIny5ND9MESWmEgG-ONAINWzQL8tSrF04=', unit: 'kg' },
+                { id: 'baingan', name: 'Brinjal (Baingan)', price: 26, img: 'https://images.unsplash.com/photo-1613881553903-4543f5f2cac9?auto=format&fit=crop&q=60&w=600', unit: 'kg' },
+                { id: 'shimla', name: 'Capsicum (Shimla Mirch)', price: 40, img: 'https://media.istockphoto.com/id/137350104/photo/green-peppers.webp?a=1&b=1&s=612x612&w=0&k=20&c=7u2DZpZoSZIWkSDyvAbxkvNU09BrvPdQCPzM4LcsxvU=', unit: 'kg' },
+                { id: 'palak', name: 'Spinach (Palak)', price: 20, img: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=600', unit: 'kg' },
+                { id: 'phool', name: 'Cauliflower (Phool Gobhi)', price: 30, img: 'https://media.istockphoto.com/id/1372304664/photo/group-of-cauliflower-fresh-cauliflower-for-sale-at-a-market.webp?a=1&b=1&s=612x612&w=0&k=20&c=lEwN90TtHLVx-r3U9GRyRKmXKzfW4tdeUWRWAcOCX7k=', unit: 'kg' },
+                { id: 'lemon', name: 'Lemon (Nimbu)', price: 10, img: 'https://media.istockphoto.com/id/871706470/photo/group-of-fresh-lemon-on-an-old-vintage-wooden-table.webp?a=1&b=1&s=612x612&w=0&k=20&c=y-meMhMc9CK-Mtz8vM6JRaIOEeiXPcnbdsGca-KCogM=', unit: 'pc' },
+                { id: 'lahsoon', name: 'Garlic (Lahsoon)', price: 21, img: 'https://media.istockphoto.com/id/531644839/photo/garlic.webp?a=1&b=1&s=612x612&w=0&k=20&c=kABuNBJXIiwWun2GETzq_Gn_u3M9MlxgTfBFLOZYrnU=', unit: 'kg' },
+                { id: 'mirch', name: 'Green Chilli (Hari Mirch)', price: 45, img: 'https://media.istockphoto.com/id/942849220/photo/ripe-green-chilli-pepper.webp?a=1&b=1&s=612x612&w=0&k=20&c=qsUq5pSQ7j7T4O8UMEUiSgdSSt5DlKybwc7QS_o9Oao=', unit: 'kg' },
+                { id: 'chana', name: 'Green Chickpeas (Hara Chana)', price: 32, img: 'https://media.istockphoto.com/id/899854420/photo/fresh-green-chickpeas-or-chick-peas-also-known-as-harbara-or-harbhara-in-hindi-and-cicer-is.webp?a=1&b=1&s=612x612&w=0&k=20&c=B_zR-xU5c5WDsJTvZKJAq2MkTJwJ--autmPGFPPoQ3w=', unit: 'kg' }
+            ];
+            await Product.insertMany(initialProducts);
+            console.log("✅ 16 Initial Products Seeded Successfully");
+        }
+        app.listen(4000, () => console.log("🚀 Server: http://localhost:4000"));
+    })
+    .catch(err => console.error("DB error:", err));
