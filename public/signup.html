@@ -1,838 +1,216 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Signup – Ratu Fresh</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Ratu Fresh | Signup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: 'Segoe UI', sans-serif;
+    :root { --brand-green: #24b637; --text-main: #1a1a1a; --text-muted: #7d7d7d; --input-bg: #f9f9f9; }
+    * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { margin: 0; background: #fff; padding-bottom: 40px; }
+    .mobile-header { padding: 40px 24px 20px; }
+    .brand-logo { font-size: 28px; font-weight: 800; color: var(--brand-green); }
+    .form-container { padding: 0 24px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+    input { width: 100%; height: 56px; background: var(--input-bg); border: 1.5px solid #eee; border-radius: 16px; padding: 0 16px; font-size: 16px; outline: none; transition: 0.2s; }
+    input:focus { border-color: var(--brand-green); background: #fff; }
+    .address-row { display: flex; gap: 10px; }
+    .loc-btn { width: 56px; height: 56px; background: #e9f7eb; border: none; border-radius: 16px; color: var(--brand-green); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .submit-btn { width: 100%; height: 60px; background: var(--brand-green); color: #fff; border: none; border-radius: 18px; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 8px 20px rgba(36, 182, 55, 0.2); }
+    .submit-btn:disabled { background: #ccc; box-shadow: none; }
+    
+    .toast { position: fixed; top: 20px; left: 24px; right: 24px; background: #333; color: #fff; padding: 16px; border-radius: 12px; text-align: center; transform: translateY(-200%); transition: 0.4s; z-index: 3000; font-size: 14px; }
+    .toast.show { transform: translateY(0); }
+    .toast.error { background: #e74c3c; }
+
+    .overlay { 
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+      backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 2000; padding: 20px;
     }
-
-    body {
-      margin: 0;
-      background: linear-gradient(to right, #e0eafc, #cfdef3);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
-      color: #333;
+    .modal-card { 
+      background: #fff; padding: 30px; border-radius: 24px; width: 100%; max-width: 360px; text-align: center; 
     }
-
-    .signup-container {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(14px);
-      border-radius: 16px;
-      padding: 40px 30px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-      width: 100%;
-      max-width: 450px;
-      animation: slideIn 0.5s ease-out;
-      position: relative;
+    .otp-input { 
+      width: 100%; text-align: center; font-size: 30px; letter-spacing: 10px; font-weight: 800; 
+      margin: 20px 0; border: 1.5px solid #eee; background: #f9f9f9; border-radius: 16px; height: 60px; outline: none;
     }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-
-    .header h2 {
-      font-size: 28px;
-      color: #185a9d;
-      margin-bottom: 8px;
-      font-weight: 700;
-    }
-
-    .header p {
-      font-size: 13px;
-      color: #666;
-    }
-
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-
-    .form-group {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 2px solid #e0e0e0;
-      border-radius: 10px;
-      font-size: 14px;
-      background: rgba(255, 255, 255, 0.8);
-      color: #333;
-      outline: none;
-      transition: all 0.3s ease;
-    }
-
-    .form-group input:focus {
-      border-color: #185a9d;
-      background: #fff;
-      box-shadow: 0 0 8px rgba(24, 90, 157, 0.1);
-    }
-
-    .form-group input.error {
-      border-color: #ff6b6b;
-      background: rgba(255, 107, 107, 0.05);
-    }
-
-    .form-group label {
-      font-size: 13px;
-      color: #185a9d;
-      font-weight: 500;
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .label-required {
-      color: #ff4d4d;
-    }
-
-    .error-text {
-      font-size: 12px;
-      color: #ff6b6b;
-      margin-top: 4px;
-      display: none;
-    }
-
-    .error-text.show {
-      display: block;
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
-      align-items: flex-end;
-    }
-
-    .map-btn {
-      padding: 12px 14px;
-      background: linear-gradient(to right, #43cea2, #185a9d);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 18px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 44px;
-      width: 44px;
-      font-weight: 600;
-    }
-
-    .map-btn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(24, 90, 157, 0.3);
-    }
-
-    .map-btn:active {
-      transform: scale(0.98);
-    }
-
-    .hint-text {
-      font-size: 12px;
-      margin-top: 6px;
-      padding: 8px 10px;
-      border-radius: 6px;
-      background: rgba(24, 90, 157, 0.05);
-      border-left: 3px solid #185a9d;
-      color: #185a9d;
-    }
-
-    .hint-text.landmark {
-      border-left-color: #43cea2;
-      color: #43cea2;
-    }
-
-    button[type="submit"] {
-      padding: 14px;
-      background: linear-gradient(to right, #43cea2, #185a9d);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      position: relative;
-      transition: all 0.3s ease;
-      margin-top: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    button[type="submit"]:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(24, 90, 157, 0.3);
-    }
-
-    button[type="submit"]:active:not(:disabled) {
-      transform: translateY(0);
-    }
-
-    button[type="submit"]:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-top: 2px solid #fff;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      display: none;
-    }
-
-    button[type="submit"].loading .spinner {
-      display: inline-block;
-    }
-
-    button[type="submit"].loading {
-      opacity: 0.8;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    .popup {
-      position: fixed;
-      bottom: -100px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #43cea2;
-      color: #fff;
-      padding: 16px 24px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 500;
-      box-shadow: 0 4px 12px rgba(67, 206, 162, 0.3);
-      opacity: 0;
-      transition: all 0.3s ease;
-      z-index: 1000;
-      text-align: center;
-      max-width: 90%;
-      word-wrap: break-word;
-      pointer-events: none;
-    }
-
-    .popup.show {
-      bottom: 30px;
-      opacity: 1;
-    }
-
-    .popup.error {
-      background: #ff6b6b;
-      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-    }
-
-    .popup.success {
-      background: #43cea2;
-      box-shadow: 0 4px 12px rgba(67, 206, 162, 0.3);
-    }
-
-    .login-link {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 13px;
-      color: #666;
-    }
-
-    .login-link a {
-      color: #185a9d;
-      text-decoration: none;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .login-link a:hover {
-      text-decoration: underline;
-    }
-
-    .form-divider {
-      text-align: center;
-      font-size: 12px;
-      color: #999;
-      margin: 5px 0;
-    }
-
-    @media (max-width: 480px) {
-      .signup-container {
-        padding: 25px 18px;
-      }
-
-      .header h2 {
-        font-size: 22px;
-      }
-
-      form {
-        gap: 14px;
-      }
-
-      .popup {
-        font-size: 13px;
-        padding: 12px 18px;
-      }
-
-      .map-btn {
-        width: 40px;
-        height: 40px;
-      }
-    }
+    .success-icon { font-size: 50px; color: var(--brand-green); margin-bottom: 10px; }
   </style>
 </head>
 <body>
-  <div class="signup-container">
-    <div class="header">
-      <h2>📝 अपना खाता बनाएं</h2>
-      <p>Ratu Fresh में जुड़ें - ताजी सब्जियां, तेज़ डिलीवरी!</p>
-    </div>
 
-    <form id="signupForm" novalidate>
-      <!-- Name -->
-      <div class="form-group">
-        <label>
-          पूरा नाम
-          <span class="label-required">*</span>
-        </label>
-        <input
-          type="text"
-          name="name"
-          id="nameInput"
-          placeholder="अपना नाम दर्ज करें"
-          required
-        />
-        <div class="error-text" id="nameError"></div>
-      </div>
+  <div class="mobile-header">
+    <div class="brand-logo">Ratu Fresh</div>
+    <h2>Create Account</h2>
+    <p>Sign up to order fresh items within 5km.</p>
+  </div>
 
-      <!-- Phone -->
+  <div class="form-container">
+    <form id="signupForm">
+      <div class="form-group"><label>Full Name</label><input type="text" id="fullName" required></div>
+      <div class="form-group"><label>Mobile Number</label><input type="tel" id="phone" maxlength="10" required></div>
+      <div class="form-group"><label>Email Address</label><input type="email" id="email" required></div>
       <div class="form-group">
-        <label>
-          फोन नंबर
-          <span class="label-required">*</span>
-        </label>
-        <input
-          type="tel"
-          name="phone"
-          id="phoneInput"
-          placeholder="10-अंकीय फोन नंबर"
-          maxlength="10"
-          inputmode="numeric"
-          required
-        />
-        <div class="error-text" id="phoneError"></div>
-      </div>
-
-      <!-- Email -->
-      <div class="form-group">
-        <label>
-          ईमेल
-          <span class="label-required">*</span>
-        </label>
-        <input
-          type="email"
-          name="email"
-          id="emailInput"
-          placeholder="आपका ईमेल"
-          required
-        />
-        <div class="error-text" id="emailError"></div>
-      </div>
-
-      <!-- Address with Map -->
-      <div class="form-group">
-        <label>
-          पूरा पता
-          <span class="label-required">*</span>
-        </label>
-        <div class="form-row">
-          <input
-            type="text"
-            name="address"
-            id="addressInput"
-            placeholder="पूरा पता दर्ज करें"
-            required
-          />
-          <button type="button" class="map-btn" id="locBtn" title="GPS से पता प्राप्त करें">
-            📍
+        <label>Delivery Address</label>
+        <div class="address-row">
+          <input type="text" id="addressInput" placeholder="Detect location..." required readonly>
+          <button type="button" class="loc-btn" id="locBtn">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
           </button>
         </div>
-        <div class="error-text" id="addressError"></div>
       </div>
-
-      <!-- Pincode -->
-      <div class="form-group">
-        <label>
-          पिनकोड
-          <span class="label-required">*</span>
-        </label>
-        <input
-          type="text"
-          name="pincode"
-          id="pincodeInput"
-          placeholder="6-अंकीय पिनकोड"
-          maxlength="6"
-          inputmode="numeric"
-          required
-        />
-        <div class="error-text" id="pincodeError"></div>
-      </div>
-
-      <!-- Area / Landmark -->
-      <div class="form-group">
-        <label>
-          नज़दीकी इलाका / लैंडमार्क
-          <span class="label-required">*</span>
-        </label>
-        <input
-          type="text"
-          name="area"
-          id="areaInput"
-          placeholder="जैसे: बाजार, पार्क, मंदिर"
-          required
-        />
-        <div class="hint-text landmark" id="landmarkHint">
-          📍 नज़दीकी प्रसिद्ध जगह यहाँ दिखाई देगी
-        </div>
-        <div class="error-text" id="areaError"></div>
-      </div>
-
-      <!-- Village / Area -->
-      <div class="form-group">
-        <label>
-          गाँव / मोहल्ला
-          <span class="label-required">*</span>
-        </label>
-        <input
-          type="text"
-          name="village"
-          id="villageInput"
-          placeholder="गाँव या मोहल्ले का नाम"
-          required
-        />
-        <div class="hint-text" id="villageHint">
-          🏡 यहाँ गाँव/मोहल्ले का नाम दिखेगा
-        </div>
-        <div class="error-text" id="villageError"></div>
-      </div>
-
-      <button type="submit" id="signupBtn">
-        <span id="buttonText">साइन अप करें</span>
-        <span class="spinner" id="spinner"></span>
-      </button>
+      <div class="form-group"><label>Pincode</label><input type="text" id="pincodeInput" maxlength="6" required></div>
+      <div class="form-group"><label>Landmark / Area</label><input type="text" id="landmarkInput" required></div>
+      <button type="submit" class="submit-btn" id="signupBtn">Create Account</button>
     </form>
+  </div>
 
-    <div class="form-divider">पहले से खाता है?</div>
-    <div class="login-link">
-      <a onclick="goToLogin()">लॉगिन करें</a>
+  <div id="otpOverlay" class="overlay">
+    <div class="modal-card">
+      <h3 style="margin:0;">Verify Email</h3>
+      <p style="color:#666; font-size:14px; margin-top:8px;">Enter the OTP sent to: <br><b id="displayEmail" style="color:var(--brand-green);"></b></p>
+      <input type="text" id="otpVal" class="otp-input" maxlength="6" placeholder="000000">
+      <button type="button" class="submit-btn" id="verifyOtpBtn">Verify & Signup</button>
+      <p id="closeOtp" style="margin-top:15px; font-size:13px; color:#999; cursor:pointer;">Cancel</p>
     </div>
   </div>
 
-  <div id="popup" class="popup"></div>
+  <div id="successOverlay" class="overlay">
+    <div class="modal-card">
+      <div class="success-icon">✅</div>
+      <h3 style="margin:0;">Congratulations!</h3>
+      <p style="color:#444; font-size:15px; margin-top:10px; line-height:1.5;">Your account has been created successfully. You can now login and order fresh veggies!</p>
+      <button type="button" class="submit-btn" onclick="window.location.href='login.html'" style="margin-top: 20px;">Go to Login</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
 
   <script>
-    // ============= CONSTANTS =============
-    const API_BASE_URL = 'https://my-web-xrr5.onrender.com';
-    const REQUEST_TIMEOUT = 10000;
+    // [IMPROVED] Automatically detect server URL (Localhost vs Render)
+    const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                     ? 'http://localhost:4000' 
+                     : ''; // Render handles paths relatively when serving static files
 
-    // ============= DOM ELEMENTS =============
-    const form = document.getElementById('signupForm');
-    const nameInput = document.getElementById('nameInput');
-    const phoneInput = document.getElementById('phoneInput');
-    const emailInput = document.getElementById('emailInput');
-    const addressInput = document.getElementById('addressInput');
-    const pincodeInput = document.getElementById('pincodeInput');
-    const areaInput = document.getElementById('areaInput');
-    const villageInput = document.getElementById('villageInput');
-    const locBtn = document.getElementById('locBtn');
-    const signupBtn = document.getElementById('signupBtn');
-    const popup = document.getElementById('popup');
-    const landmarkHint = document.getElementById('landmarkHint');
-    const villageHint = document.getElementById('villageHint');
+    const toast = document.getElementById('toast');
+    const otpOverlay = document.getElementById('otpOverlay');
+    const successOverlay = document.getElementById('successOverlay');
+    
+    let signupCoords = { lat: null, lng: null };
 
-    // Error elements
-    const errorElements = {
-      name: document.getElementById('nameError'),
-      phone: document.getElementById('phoneError'),
-      email: document.getElementById('emailError'),
-      address: document.getElementById('addressError'),
-      pincode: document.getElementById('pincodeError'),
-      area: document.getElementById('areaError'),
-      village: document.getElementById('villageError')
-    };
+    function showStatus(msg, isError = false) {
+      toast.textContent = msg;
+      toast.className = isError ? 'toast show error' : 'toast show';
+      setTimeout(() => toast.classList.remove('show'), 4000);
+    }
 
-    // Hidden fields for latitude and longitude
-    const latInput = document.createElement('input');
-    const lngInput = document.createElement('input');
-    latInput.type = lngInput.type = 'hidden';
-    latInput.name = 'latitude';
-    lngInput.name = 'longitude';
-    form.appendChild(latInput);
-    form.appendChild(lngInput);
-
-    // ============= UTILITY FUNCTIONS =============
-    function showPopup(message, isError = false) {
-      popup.textContent = message;
-      popup.className = isError ? 'popup show error' : 'popup show success';
+    // --- GPS Logic (Forces Browser Prompt) ---
+    document.getElementById('locBtn').addEventListener('click', () => {
+      if (!navigator.geolocation) return showStatus("GPS not supported", true);
+      showStatus("Please allow location access...");
       
-      setTimeout(() => {
-        popup.classList.remove('show');
-      }, 3500);
-    }
-
-    function showError(fieldName, message) {
-      const input = document.getElementById(`${fieldName}Input`);
-      const errorEl = errorElements[fieldName];
-      
-      if (input) input.classList.add('error');
-      if (errorEl) {
-        errorEl.textContent = message;
-        errorEl.classList.add('show');
-      }
-    }
-
-    function hideError(fieldName) {
-      const input = document.getElementById(`${fieldName}Input`);
-      const errorEl = errorElements[fieldName];
-      
-      if (input) input.classList.remove('error');
-      if (errorEl) {
-        errorEl.textContent = '';
-        errorEl.classList.remove('show');
-      }
-    }
-
-    function formatArea(addr = {}) {
-      return (
-        addr.suburb ||
-        addr.residential ||
-        addr.quarter ||
-        addr.village ||
-        addr.town ||
-        addr.city ||
-        ''
-      );
-    }
-
-    function getVillageName(addr = {}) {
-      return (
-        addr.village ||
-        addr.hamlet ||
-        addr.locality ||
-        addr.suburb ||
-        addr.city ||
-        ''
-      );
-    }
-
-    function fillAddressFromGeo(payload, data) {
-      try {
-        const addr = data.components || {};
-        
-        addressInput.value = data.displayName || `${payload.lat.toFixed(5)}, ${payload.lng.toFixed(5)}`;
-        
-        if (addr.postcode) {
-          pincodeInput.value = addr.postcode;
-          hideError('pincode');
-        }
-        
-        const areaValue = formatArea(addr) || data.displayName || 'लोकेशन उपलब्ध नहीं';
-        areaInput.value = areaValue;
-        landmarkHint.textContent = `⭐ ${areaValue}`;
-        hideError('area');
-        
-        const villageName = getVillageName(addr) || 'लोकेशन उपलब्ध नहीं';
-        villageInput.value = villageName;
-        villageHint.textContent = `🏡 ${villageName}`;
-        hideError('village');
-        
-        latInput.value = payload.lat;
-        lngInput.value = payload.lng;
-        
-        console.log("✅ Address filled from GPS");
-        showPopup('✅ पता, पिनकोड और इलाका ऑटो-भरा गया');
-      } catch (err) {
-        console.error("❌ Error filling address:", err);
-        showPopup('❌ पता भरने में त्रुटि', true);
-      }
-    }
-
-    // ============= INPUT VALIDATION =============
-    const validationRules = {
-      name: (value) => {
-        if (!value) return 'नाम आवश्यक है';
-        if (value.length < 2) return 'नाम कम से कम 2 अक्षर का होना चाहिए';
-        if (!/^[a-zA-Z\s]+$/.test(value)) return 'केवल अक्षर दर्ज करें';
-        return null;
-      },
-      phone: (value) => {
-        if (!value) return 'फोन नंबर आवश्यक है';
-        if (!/^[6-9]\d{9}$/.test(value)) return 'सही 10-अंकीय फोन नंबर दर्ज करें';
-        return null;
-      },
-      email: (value) => {
-        if (!value) return 'ईमेल आवश्यक है';
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'सही ईमेल दर्ज करें';
-        return null;
-      },
-      address: (value) => {
-        if (!value) return 'पूरा पता आवश्यक है';
-        if (value.length < 10) return 'पता कम से कम 10 अक्षर का होना चाहिए';
-        return null;
-      },
-      pincode: (value) => {
-        if (!value) return 'पिनकोड आवश्यक है';
-        if (!/^\d{6}$/.test(value)) return '6-अंकीय पिनकोड दर्ज करें';
-        return null;
-      },
-      area: (value) => {
-        if (!value) return 'इलाका / लैंडमार्क आवश्यक है';
-        return null;
-      },
-      village: (value) => {
-        if (!value) return 'गाँव / मोहल्ला आवश्यक है';
-        return null;
-      }
-    };
-
-    Object.keys(validationRules).forEach(fieldName => {
-      const input = document.getElementById(`${fieldName}Input`);
-      
-      input.addEventListener('blur', () => {
-        const error = validationRules[fieldName](input.value.trim());
-        if (error) {
-          showError(fieldName, error);
-        } else {
-          hideError(fieldName);
-        }
-      });
-
-      input.addEventListener('input', () => {
-        hideError(fieldName);
-      });
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        signupCoords.lat = pos.coords.latitude;
+        signupCoords.lng = pos.coords.longitude;
+        try {
+          const res = await fetch(`${API_URL}/reverse-geocode`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat: signupCoords.lat, lng: signupCoords.lng })
+          });
+          const data = await res.json();
+          if (!res.ok) return showStatus(data.error, true);
+          document.getElementById('addressInput').value = data.displayName;
+          document.getElementById('pincodeInput').value = data.pincode;
+          document.getElementById('landmarkInput').value = data.area;
+          showStatus("Location Captured! ✨");
+        } catch (err) { showStatus("Server error", true); }
+      }, (err) => {
+        if (err.code === 1) showStatus("⚠️ Please allow location permission.", true);
+        else showStatus("📍 GPS is OFF. Please turn it on.", true);
+      }, { enableHighAccuracy: true, timeout: 15000 });
     });
 
-    // Phone input - allow only digits
-    phoneInput.addEventListener('input', (e) => {
-      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
-    });
-
-    // Pincode input - allow only digits
-    pincodeInput.addEventListener('input', (e) => {
-      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
-    });
-
-    // ============= GEOLOCATION =============
-    locBtn.addEventListener('click', (e) => {
+    // --- Step 1: Send OTP ---
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (!signupCoords.lat) return showStatus("Please detect location first!", true);
 
-      if (!navigator.geolocation) {
-        showPopup('❌ आपके डिवाइस में लोकेशन सपोर्ट नहीं है', true);
-        return;
-      }
-
-      locBtn.disabled = true;
-      locBtn.textContent = '⏳';
-
-      navigator.geolocation.getCurrentPosition(
-        async ({ coords }) => {
-          const payload = {
-            lat: coords.latitude,
-            lng: coords.longitude
-          };
-
-          console.log("📍 Got coordinates:", payload);
-
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-
-            const res = await fetch(`${API_BASE_URL}/reverse-geocode`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
-              signal: controller.signal
-            });
-
-            clearTimeout(timeoutId);
-
-            const data = await res.json();
-
-            if (res.ok && data.displayName) {
-              fillAddressFromGeo(payload, data);
-              
-              // Open Google Maps
-              window.open(
-                `https://www.google.com/maps?q=${payload.lat},${payload.lng}`,
-                '_blank'
-              );
-            } else {
-              addressInput.value = `${payload.lat.toFixed(5)}, ${payload.lng.toFixed(5)}`;
-              showPopup('⚠️ सटीक पता नहीं मिला, कॉर्डिनेट्स भरे गए', true);
-            }
-          } catch (err) {
-            console.error("❌ Geolocation error:", err);
-            addressInput.value = `${payload.lat.toFixed(5)}, ${payload.lng.toFixed(5)}`;
-            showPopup('❌ सर्वर से कनेक्ट नहीं हो पाया', true);
-          } finally {
-            locBtn.disabled = false;
-            locBtn.textContent = '📍';
-          }
-        },
-        (error) => {
-          console.error("❌ Geolocation error:", error);
-          let message = '❌ लोकेशन नहीं मिल पाई';
-          
-          if (error.code === error.PERMISSION_DENIED) {
-            message = '❌ कृपया लोकेशन परमिशन दें';
-          } else if (error.code === error.POSITION_UNAVAILABLE) {
-            message = '❌ लोकेशन उपलब्ध नहीं है';
-          } else if (error.code === error.TIMEOUT) {
-            message = '❌ लोकेशन समय सीमा समाप्त';
-          }
-          
-          showPopup(message, true);
-          locBtn.disabled = false;
-          locBtn.textContent = '📍';
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0
-        }
-      );
-    });
-
-    // ============= FORM SUBMISSION =============
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      // Validate all fields
-      let hasError = false;
-      Object.keys(validationRules).forEach(fieldName => {
-        const input = document.getElementById(`${fieldName}Input`);
-        const error = validationRules[fieldName](input.value.trim());
-        
-        if (error) {
-          showError(fieldName, error);
-          hasError = true;
-        } else {
-          hideError(fieldName);
-        }
-      });
-
-      if (hasError) {
-        showPopup('❌ कृपया सभी फील्ड सही से भरें', true);
-        return;
-      }
-
-      signupBtn.classList.add('loading');
+      const signupBtn = document.getElementById('signupBtn');
       signupBtn.disabled = true;
+      signupBtn.innerText = "Processing...";
+
+      const formData = {
+        name: document.getElementById('fullName').value,
+        phone: document.getElementById('phone').value,
+        email: document.getElementById('email').value,
+        address: document.getElementById('addressInput').value,
+        pincode: document.getElementById('pincodeInput').value,
+        area: document.getElementById('landmarkInput').value,
+        lat: signupCoords.lat,
+        lng: signupCoords.lng
+      };
 
       try {
-        const body = {
-          name: nameInput.value.trim(),
-          phone: phoneInput.value.trim(),
-          email: emailInput.value.trim(),
-          address: addressInput.value.trim(),
-          pincode: pincodeInput.value.trim(),
-          area: areaInput.value.trim()
-        };
-
-        console.log("📤 Submitting signup:", body);
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-
-        const res = await fetch(`${API_BASE_URL}/signup`, {
+        const res = await fetch(`${API_URL}/send-signup-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-          signal: controller.signal
+          body: JSON.stringify(formData)
         });
-
-        clearTimeout(timeoutId);
-
         const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || 'Signup failed');
+        if (res.ok) {
+          document.getElementById('displayEmail').innerText = data.maskedEmail;
+          otpOverlay.style.display = 'flex';
+        } else {
+          showStatus(data.error, true);
+          signupBtn.disabled = false;
+          signupBtn.innerText = "Create Account";
         }
-
-        console.log("✅ Signup successful:", data);
-        
-        showPopup('✅ Signup सफल! अब लॉगिन करें');
-        
-        setTimeout(() => {
-          window.location.href = 'login.html';
-        }, 1500);
-
-        form.reset();
       } catch (err) {
-        console.error("❌ Signup error:", err);
-        
-        let errorMessage = err.message || 'Signup failed';
-        if (err.name === 'AbortError') {
-          errorMessage = '❌ Request timeout - कनेक्शन जांचें';
-        } else if (err instanceof TypeError) {
-          errorMessage = '❌ नेटवर्क त्रुटि';
-        }
-        
-        showPopup(errorMessage, true);
-      } finally {
-        signupBtn.classList.remove('loading');
+        showStatus("Server error", true);
         signupBtn.disabled = false;
+        signupBtn.innerText = "Create Account";
       }
     });
 
-    // ============= NAVIGATION =============
-    function goToLogin() {
-      window.location.href = 'login.html';
-    }
+    // --- Step 2: Verify OTP & Show Congratulations ---
+    document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
+      const otp = document.getElementById('otpVal').value;
+      const email = document.getElementById('email').value;
+      const verifyBtn = document.getElementById('verifyOtpBtn');
 
-    // ============= PAGE LOAD =============
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log("✅ Signup page loaded");
-      nameInput.focus();
+      try {
+        verifyBtn.disabled = true;
+        verifyBtn.innerText = "Verifying...";
+
+        const res = await fetch(`${API_URL}/verify-signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp })
+        });
+
+        if (res.ok) {
+          otpOverlay.style.display = 'none'; // OTP डब्बा बंद
+          successOverlay.style.display = 'flex'; // बधाई वाला डब्बा चालू
+          console.log("Success! Showing Congratulations.");
+        } else {
+          showStatus("Invalid OTP. Try again.", true);
+          verifyBtn.disabled = false;
+          verifyBtn.innerText = "Verify & Signup";
+        }
+      } catch (err) {
+        showStatus("Verification failed", true);
+        verifyBtn.disabled = false;
+        verifyBtn.innerText = "Verify & Signup";
+      }
     });
 
-    // ============= ERROR HANDLING =============
-    window.addEventListener('error', (event) => {
-      console.error('❌ Global error:', event.error);
-    });
-
-    window.addEventListener('unhandledrejection', (event) => {
-      console.error('❌ Unhandled rejection:', event.reason);
+    document.getElementById('closeOtp').addEventListener('click', () => {
+      otpOverlay.style.display = 'none';
+      document.getElementById('signupBtn').disabled = false;
+      document.getElementById('signupBtn').innerText = "Create Account";
     });
   </script>
 </body>
