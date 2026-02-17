@@ -1,735 +1,270 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="theme-color" content="#2ecc71">
-  <title>Ratu Fresh – Login 🔐</title>
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Ratu Fresh | Premium Access</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
     :root {
-      --primary: #2ecc71;
-      --primary-dark: #27ae60;
-      --secondary: #3498db;
-      --tertiary: #e74c3c;
-      --text-dark: #2c3e50;
-      --text-light: #7f8c8d;
-      --border-color: #ecf0f1;
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      --brand-green: #00b894;
+      --brand-dark: #00a884;
+      --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      --text-main: #2d3436;
+      --text-muted: #636e72;
+      --white: #ffffff;
+      --error: #ff7675;
     }
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    * { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+    body { 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+      background: var(--bg-gradient); 
+      display: flex; justify-content: center; align-items: center; 
       min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
+      padding: 15px; /* Added padding for small screens */
     }
 
-    /* ============= POPUP ============= */
-    .popup {
-      position: fixed;
-      bottom: -100px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--primary);
-      color: #fff;
-      padding: 16px 24px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 500;
-      box-shadow: var(--shadow);
-      opacity: 0;
-      transition: all 0.3s ease;
-      z-index: 1000;
+    .container { 
+      background: rgba(255, 255, 255, 0.95);
+      padding: 40px; 
+      border-radius: 28px; 
+      box-shadow: 0 20px 50px rgba(0,0,0,0.1); 
+      max-width: 420px; width: 100%; /* Changed to 100% for better mobile fill */
       text-align: center;
-      max-width: 90%;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.4);
     }
 
-    .popup.show {
-      bottom: 30px;
-      opacity: 1;
+    .brand-logo { font-size: 34px; font-weight: 800; color: var(--brand-green); margin-bottom: 5px; letter-spacing: -1.5px; }
+    .brand-logo span { color: var(--text-main); }
+    .subtitle { font-size: 15px; color: var(--text-muted); margin-bottom: 30px; }
+
+    /* Input Styling */
+    .input-group { position: relative; margin-bottom: 20px; text-align: left; }
+    .input-group input { 
+      width: 100%; padding: 16px 18px; border: 2px solid #edf2f7; 
+      border-radius: 16px; font-size: 16px; outline: none; background: #f8fafc;
+      font-family: inherit; color: var(--text-main);
     }
 
-    .popup.error {
-      background: var(--tertiary);
+    .phone-input { padding-left: 65px !important; }
+    .prefix {
+      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+      font-weight: 700; color: var(--text-main); border-right: 1.5px solid #d1d9e0; 
+      padding-right: 10px; font-size: 16px; pointer-events: none; z-index: 5;
     }
 
-    /* ============= CONTAINER ============= */
-    .login-container {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      width: 100%;
-      max-width: 450px;
-      padding: 40px;
-      animation: slideUp 0.6s ease-out;
+    .input-group label {
+      position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); pointer-events: none; font-size: 14px;
+    }
+    .input-group input:focus ~ label,
+    .input-group input:not(:placeholder-shown) ~ label {
+      top: -10px; left: 12px !important; font-size: 12px; 
+      background: var(--brand-green); color: white; padding: 2px 10px; border-radius: 6px; font-weight: 600;
     }
 
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    /* OTP Boxes - Optimized for Mobile */
+    .otp-wrapper { 
+      display: flex; 
+      gap: 8px; 
+      justify-content: center; 
+      margin: 25px 0; 
+      flex-wrap: nowrap; /* Keeps OTP in one line */
+    }
+    .otp-box { 
+      width: 100%; /* Responsive width */
+      max-width: 45px; 
+      height: 55px; text-align: center; font-size: 20px; font-weight: 800;
+      border: 2px solid #edf2f7; border-radius: 12px; background: #f8fafc; outline: none;
+    }
+    .otp-box:focus { border-color: var(--brand-green); background: #fff; box-shadow: 0 0 10px rgba(0,184,148,0.1); }
+
+    .masked-email { background: #e9f7eb; color: var(--brand-dark); padding: 8px 15px; border-radius: 10px; font-size: 13px; font-weight: 600; display: inline-block; margin-bottom: 15px; word-break: break-all; }
+
+    button { 
+      width: 100%; padding: 16px; background: var(--brand-green); color: white; border: none; 
+      border-radius: 16px; font-size: 16px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 8px 20px rgba(0, 184, 148, 0.25); display: flex; justify-content: center; align-items: center; gap: 10px;
+    }
+    button:hover { background: var(--brand-dark); transform: translateY(-2px); }
+    button:active { transform: scale(0.98); } /* Better feedback on mobile touch */
+    button:disabled { background: #cbd5e0; cursor: not-allowed; }
+
+    .toggle-section { margin-top: 25px; padding-top: 20px; border-top: 1px solid #edf2f7; font-size: 14px; color: var(--text-muted); }
+    .toggle-link { color: var(--brand-green); text-decoration: none; font-weight: 700; cursor: pointer; }
+
+    /* Toast Response */
+    .toast {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+      background: #2d3436; color: #fff; padding: 14px 28px; border-radius: 14px; z-index: 1000;
+      width: 90%; max-width: 350px; text-align: center;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.error { background: var(--error); }
+    .hidden { display: none !important; }
+    .loader { width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    
+    /* Small Phone Fixes */
+    @media (max-width: 380px) {
+      .container { padding: 30px 20px; }
+      .otp-box { height: 48px; font-size: 18px; }
+      .otp-wrapper { gap: 5px; }
+      .brand-logo { font-size: 28px; }
     }
 
-    /* ============= HEADER ============= */
-    .login-header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-
-    .logo {
-      font-size: 48px;
-      margin-bottom: 15px;
-    }
-
-    .login-header h1 {
-      font-size: 28px;
-      color: var(--text-dark);
-      font-weight: 800;
-      margin-bottom: 8px;
-    }
-
-    .login-header p {
-      font-size: 14px;
-      color: var(--text-light);
-    }
-
-    /* ============= FORM ============= */
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-dark);
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    input {
-      width: 100%;
-      padding: 14px;
-      border: 2px solid var(--border-color);
-      border-radius: 8px;
-      font-size: 15px;
-      font-family: inherit;
-      transition: all 0.3s ease;
-    }
-
-    input:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.1);
-    }
-
-    input::placeholder {
-      color: var(--text-light);
-    }
-
-    /* ============= BUTTONS ============= */
-    .button-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 25px;
-    }
-
-    button {
-      flex: 1;
-      padding: 14px;
-      border: none;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: #fff;
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
-    }
-
-    .btn-primary:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .btn-secondary {
-      background: var(--secondary);
-      color: #fff;
-    }
-
-    .btn-secondary:hover {
-      background: #2980b9;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 15px rgba(52, 152, 219, 0.3);
-    }
-
-    /* ============= HIDDEN ELEMENTS ============= */
-    .hidden {
-      display: none !important;
-    }
-
-    /* ============= LINKS ============= */
-    .login-footer {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 14px;
-      color: var(--text-light);
-    }
-
-    .login-footer a {
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: 700;
-      transition: all 0.3s ease;
-    }
-
-    .login-footer a:hover {
-      color: var(--primary-dark);
-    }
-
-    /* ============= OTP INPUT ============= */
-    .otp-input-group {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-
-    .otp-input {
-      width: 50px !important;
-      height: 50px;
-      text-align: center;
-      font-size: 24px !important;
-      font-weight: 800;
-      padding: 10px !important;
-    }
-
-    .otp-input:nth-child(n+2) {
-      margin-left: 2px;
-    }
-
-    /* ============= RESPONSIVE ============= */
-    @media (max-width: 480px) {
-      .login-container {
-        padding: 25px;
-      }
-
-      .login-header h1 {
-        font-size: 24px;
-      }
-
-      .logo {
-        font-size: 40px;
-      }
-
-      button {
-        padding: 12px;
-        font-size: 13px;
-      }
-
-      .otp-input {
-        width: 40px !important;
-        height: 40px;
-        font-size: 18px !important;
-      }
-    }
-
-    /* ============= LOADING ============= */
-    .spinner {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-top: 2px solid #fff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-right: 8px;
-      vertical-align: middle;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
-
 <body>
-  <!-- Popup -->
-  <div id="popup" class="popup"></div>
-
-  <!-- Login Container -->
-  <div class="login-container">
-    <!-- Header -->
-    <div class="login-header">
-      <div class="logo">🥬</div>
-      <h1>Ratu Fresh</h1>
-      <p>ताज़ी सब्जियाँ, तेज़ डिलीवरी</p>
+  <div class="container">
+    <div class="brand-logo">Ratu<span>Fresh</span></div>
+    
+    <div id="loginStep">
+      <p class="subtitle">Log in to your account</p>
+      <form id="loginForm">
+        <div class="input-group">
+          <span class="prefix">+91</span>
+          <input id="phone" name="phone" class="phone-input" type="tel" placeholder=" " maxlength="10" required />
+          <label style="left: 65px;">Mobile Number</label>
+        </div>
+        <button type="submit" id="loginBtn">
+          <span id="loginBtnText">Continue</span>
+          <div id="loginLoader" class="loader hidden"></div>
+        </button>
+      </form>
+      <div class="toggle-section">
+        <p>Don't have an account? <span class="toggle-link" onclick="window.location.href='signup.html'">Sign Up</span></p>
+      </div>
     </div>
 
-    <!-- Login Form -->
-    <form id="loginForm">
-      <!-- Phone Input -->
-      <div id="phoneSection">
-        <div class="form-group">
-          <label for="phone">📱 फोन नंबर</label>
-          <input 
-            type="tel" 
-            id="phone" 
-            placeholder="10-digit number दर्ज करें"
-            maxlength="10"
-            pattern="[0-9]{10}"
-          />
-        </div>
-
-        <div class="button-group">
-          <button type="button" class="btn-primary" onclick="sendOTP()">
-            ✉️ OTP भेजें
-          </button>
-          <button type="button" class="btn-secondary" onclick="goToSignup()">
-            📝 Signup
-          </button>
-        </div>
+    <div id="otpStep" class="hidden">
+      <p class="subtitle">Verify your identity</p>
+      <div class="masked-email" id="emailMask">ch******26@gmail.com</div>
+      <p style="font-size: 13px; color: #777; margin-bottom: 10px;">Enter the OTP sent to your email</p>
+      
+      <div class="otp-wrapper">
+        <input type="text" class="otp-box" maxlength="1" oninput="moveFocus(this)" inputmode="numeric">
+        <input type="text" class="otp-box" maxlength="1" oninput="moveFocus(this)" inputmode="numeric">
+        <input type="text" class="otp-box" maxlength="1" oninput="moveFocus(this)" inputmode="numeric">
+        <input type="text" class="otp-box" maxlength="1" oninput="moveFocus(this)" inputmode="numeric">
+        <input type="text" class="otp-box" maxlength="1" oninput="moveFocus(this)" inputmode="numeric">
+        <input type="text" class="otp-box" maxlength="1" oninput="moveFocus(this)" inputmode="numeric">
       </div>
 
-      <!-- OTP Section (Hidden) -->
-      <div id="otpSection" class="hidden">
-        <div class="form-group">
-          <label>🔐 OTP दर्ज करें</label>
-          <div class="otp-input-group" id="otpInputGroup">
-            <input type="text" class="otp-input" maxlength="1" placeholder="0" />
-            <input type="text" class="otp-input" maxlength="1" placeholder="0" />
-            <input type="text" class="otp-input" maxlength="1" placeholder="0" />
-            <input type="text" class="otp-input" maxlength="1" placeholder="0" />
-            <input type="text" class="otp-input" maxlength="1" placeholder="0" />
-            <input type="text" class="otp-input" maxlength="1" placeholder="0" />
-          </div>
-
-          <div class="form-group">
-            <small style="color: var(--text-light);">
-              OTP आपके email पर भेजा गया है
-            </small>
-          </div>
-        </div>
-
-        <div class="button-group">
-          <button type="button" class="btn-primary" onclick="verifyOTP()">
-            ✅ Verify करें
-          </button>
-          <button type="button" class="btn-secondary" onclick="resendOTP()">
-            🔄 फिर से भेजें
-          </button>
-        </div>
-
-        <button 
-          type="button" 
-          style="width: 100%; background: var(--border-color); color: var(--text-dark); margin-top: 10px;"
-          onclick="goBackToPhone()"
-        >
-          ← वापस
-        </button>
-      </div>
-    </form>
-
-    <!-- Footer -->
-    <div class="login-footer">
-      खाता नहीं है? <a href="signup.html">Signup करें</a>
+      <button type="button" id="verifyBtn" onclick="verifyOTP()">
+        <span id="verifyBtnText">Verify & Login</span>
+        <div id="verifyLoader" class="loader hidden"></div>
+      </button>
+      <p class="toggle-section" style="border:none;">Wrong number? <span class="toggle-link" onclick="location.reload()">Go Back</span></p>
     </div>
   </div>
 
+  <div id="toast" class="toast"></div>
+
   <script>
-    // ============= CONSTANTS =============
-    const API_BASE_URL = 'https://my-web-xrr5.onrender.com';
-    const REQUEST_TIMEOUT = 10000;
-    const VAPID_PUBLIC_KEY = 'BOK6YcWupVRim0Dimrf7u3sZcijkOzLv9nsRX8_DcXSZ1zrjMk3z18XWDEBuGMXG_e2fACCx1V8K_DHkqbEaYA8';
+    // [IMPROVED] Automatically detect server URL based on the current website URL
+    // Taaki localhost pe localhost chale aur Render pe ratufresh.me chale
+    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                     ? 'http://localhost:4000' 
+                     : ''; // Render ke liye empty string kyunki static files wahin se serve ho rahi hain
 
-    // ============= STATE =============
-    let currentPhone = '';
-    let otpAttempts = 0;
+    let currentPhone = "";
+    const toast = document.getElementById('toast');
 
-    // ============= UTILITY FUNCTIONS =============
-    function showPopup(message, type = 'success') {
-      const popup = document.getElementById("popup");
-      popup.textContent = message;
-      popup.className = `popup show ${type}`;
-      setTimeout(() => popup.classList.remove('show'), 3000);
-      console.log(type === 'success' ? '✅' : '❌', message);
+    function showStatus(msg, isError = false) {
+      toast.textContent = msg;
+      toast.className = isError ? 'toast show error' : 'toast show';
+      setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
-    function el(id) {
-      return document.getElementById(id);
+    function moveFocus(curr) {
+      if (curr.value && curr.nextElementSibling) curr.nextElementSibling.focus();
     }
 
-    function goToSignup() {
-      window.location.href = "signup.html";
-    }
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      currentPhone = document.getElementById('phone').value;
+      const btn = document.getElementById('loginBtn');
+      const loader = document.getElementById('loginLoader');
+      const btnText = document.getElementById('loginBtnText');
 
-    // ============= SEND OTP =============
-    async function sendOTP() {
+      btn.disabled = true;
+      loader.classList.remove('hidden');
+      btnText.textContent = "Processing...";
+
       try {
-        const phone = el("phone").value.trim();
-
-        if (!phone) {
-          showPopup("❌ फोन नंबर दर्ज करें", 'error');
-          return;
-        }
-
-        if (!/^[6-9]\d{9}$/.test(phone)) {
-          showPopup("❌ सही 10-digit फोन नंबर दर्ज करें", 'error');
-          return;
-        }
-
-        console.log("🔄 Sending OTP to:", phone);
-
-        el("phone").disabled = true;
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span>भेज रहे हैं...';
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-
-        const res = await fetch(`${API_BASE_URL}/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone }),
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-        const data = await res.json();
-
-        if (data.success) {
-          currentPhone = phone;
-          showPopup("✅ OTP भेजा गया!");
-          el("phoneSection").classList.add("hidden");
-          el("otpSection").classList.remove("hidden");
-          el("otpInputGroup").querySelector("input").focus();
-          console.log("✅ OTP sent to:", data.email);
-        } else {
-          showPopup("❌ " + (data.error || "Error"), 'error');
-        }
-
-        el("phone").disabled = false;
-        btn.disabled = false;
-        btn.innerHTML = "✉️ OTP भेजें";
-      } catch (err) {
-        console.error("❌ Error:", err);
-        showPopup("❌ Connection error", 'error');
-        el("phone").disabled = false;
-        event.target.disabled = false;
-        event.target.innerHTML = "✉️ OTP भेजें";
-      }
-    }
-
-    // ============= REGISTER SERVICE WORKER =============
-    async function registerServiceWorker() {
-      try {
-        if (!('serviceWorker' in navigator)) {
-          console.warn("⚠️ Service Workers not supported");
-          return null;
-        }
-
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-        console.log("✅ Service Worker registered:", registration);
-        return registration;
-      } catch (err) {
-        console.error("❌ Service Worker registration error:", err);
-        return null;
-      }
-    }
-
-    // ============= REQUEST NOTIFICATION PERMISSION =============
-    async function askNotificationPermission() {
-      try {
-        if (!('Notification' in window)) {
-          console.warn("⚠️ Notifications not supported");
-          return false;
-        }
-
-        if (Notification.permission === 'granted') {
-          console.log("✅ Notification permission already granted");
-          return true;
-        }
-
-        if (Notification.permission === 'denied') {
-          console.warn("⚠️ Notification permission denied");
-          return false;
-        }
-
-        const permission = await Notification.requestPermission();
-        const granted = permission === 'granted';
-        console.log("🔔 Notification permission:", permission);
-        return granted;
-      } catch (err) {
-        console.error("❌ Permission error:", err);
-        return false;
-      }
-    }
-
-    // ============= SUBSCRIBE TO PUSH NOTIFICATIONS =============
-    async function subscribeUser(registration, phone) {
-      try {
-        console.log("🔔 Subscribing user to push notifications...");
-
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-        });
-
-        console.log("✅ Push subscription:", subscription);
-
-        // Send to server
-        const res = await fetch(`${API_BASE_URL}/subscribe`, {
+        // [FIXED] Using API_BASE variable
+        const res = await fetch(`${API_BASE}/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            subscription: subscription.toJSON(),
-            phone: phone
-          })
+          body: JSON.stringify({ phone: currentPhone })
         });
+        const data = await res.json();
 
         if (res.ok) {
-          console.log("✅ Subscribed to notifications");
-          localStorage.setItem('pushSubscribed', 'true');
-          return true;
+          document.getElementById('loginStep').classList.add('hidden');
+          document.getElementById('otpStep').classList.remove('hidden');
+          document.getElementById('emailMask').textContent = data.maskedEmail;
+          showStatus("OTP Sent Successfully! 🚀");
         } else {
-          console.warn("⚠️ Subscription save failed");
-          return false;
+          showStatus(data.error, true);
+          btn.disabled = false;
+          loader.classList.add('hidden');
+          btnText.textContent = "Continue";
         }
       } catch (err) {
-        console.error("❌ Subscription error:", err);
-        return false;
+        showStatus("Server Connection Failed", true);
+        btn.disabled = false;
+        loader.classList.add('hidden');
+        btnText.textContent = "Continue";
       }
-    }
+    });
 
-    // ============= HELPER: BASE64 TO UINT8ARRAY =============
-    function urlBase64ToUint8Array(base64String) {
-      try {
-        const padding = '='.repeat((4 - base64String.length % 4) % 4);
-        const base64 = (base64String + padding)
-          .replace(/\-/g, '+')
-          .replace(/_/g, '/');
-
-        const rawData = window.atob(base64);
-        const outputArray = new Uint8Array(rawData.length);
-
-        for (let i = 0; i < rawData.length; ++i) {
-          outputArray[i] = rawData.charCodeAt(i);
-        }
-        return outputArray;
-      } catch (err) {
-        console.error("❌ Base64 conversion error:", err);
-        return null;
-      }
-    }
-
-    // ============= VERIFY OTP (WITH NOTIFICATIONS) =============
     async function verifyOTP() {
+      const boxes = document.querySelectorAll('.otp-box');
+      let otp = "";
+      boxes.forEach(b => otp += b.value);
+
+      if (otp.length < 6) return showStatus("Enter complete OTP", true);
+
+      const vBtn = document.getElementById('verifyBtn');
+      const vLoader = document.getElementById('verifyLoader');
+      const vText = document.getElementById('verifyBtnText');
+
+      vBtn.disabled = true;
+      vLoader.classList.remove('hidden');
+      vText.textContent = "Verifying...";
+
       try {
-        const inputs = document.querySelectorAll(".otp-input");
-        const otp = Array.from(inputs).map(i => i.value).join('');
-
-        if (otp.length !== 6) {
-          showPopup("❌ सभी 6 digits दर्ज करें", 'error');
-          return;
-        }
-
-        if (!/^\d{6}$/.test(otp)) {
-          showPopup("❌ सिर्फ numbers दर्ज करें", 'error');
-          return;
-        }
-
-        console.log("🔄 Verifying OTP:", otp);
-
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span>Verify कर रहे हैं...';
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-
-        const res = await fetch(`${API_BASE_URL}/verify-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone: currentPhone, otp }),
-          signal: controller.signal
+        // [FIXED] Using API_BASE variable
+        const res = await fetch(`${API_BASE}/verify-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: currentPhone, otp })
         });
-
-        clearTimeout(timeoutId);
         const data = await res.json();
 
-        if (data.success) {
-          console.log("✅ OTP verified");
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("userData", JSON.stringify(data.user));
-          
-          showPopup("✅ Login सफल!");
-
-          // ============= SETUP NOTIFICATIONS =============
-          setTimeout(async () => {
-            console.log("🔔 Setting up notifications...");
-            
-            try {
-              const registration = await registerServiceWorker();
-              if (registration) {
-                const granted = await askNotificationPermission();
-                if (granted) {
-                  const subscribed = await subscribeUser(registration, currentPhone);
-                  if (subscribed) {
-                    console.log("✅ Notifications setup complete");
-                  }
-                }
-              }
-            } catch (err) {
-              console.warn("⚠️ Notifications setup failed (non-critical):", err);
-            }
-
-            // Redirect after notification setup
-            setTimeout(() => {
-              window.location.href = "profiles.html";
-            }, 1000);
-          }, 1500);
-
+        if (res.ok) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          showStatus("Welcome Back! Redirecting... 🎉");
+          setTimeout(() => window.location.href = 'profiles.html', 1500);
         } else {
-          otpAttempts++;
-          showPopup("❌ " + (data.error || "Invalid OTP"), 'error');
-          if (otpAttempts >= 3) {
-            showPopup("❌ बहुत सारे प्रयास। फिर से OTP भेजें", 'error');
-            goBackToPhone();
-          }
+          showStatus(data.error, true);
+          vBtn.disabled = false;
+          vLoader.classList.add('hidden');
+          vText.textContent = "Verify & Login";
         }
-
-        btn.disabled = false;
-        btn.innerHTML = "✅ Verify करें";
       } catch (err) {
-        console.error("❌ Error:", err);
-        showPopup("❌ Connection error", 'error');
-        event.target.disabled = false;
-        event.target.innerHTML = "✅ Verify करें";
+        showStatus("Verification failed", true);
+        vBtn.disabled = false;
+        vLoader.classList.add('hidden');
+        vText.textContent = "Verify & Login";
       }
     }
-
-    // ============= RESEND OTP =============
-    async function resendOTP() {
-      try {
-        console.log("🔄 Resending OTP to:", currentPhone);
-
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span>भेज रहे हैं...';
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-
-        const res = await fetch(`${API_BASE_URL}/resend-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone: currentPhone }),
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-        const data = await res.json();
-
-        if (data.success) {
-          showPopup("✅ नया OTP भेजा गया!");
-          document.querySelectorAll(".otp-input").forEach(input => input.value = '');
-          document.querySelectorAll(".otp-input")[0].focus();
-          otpAttempts = 0;
-          console.log("✅ OTP resent");
-        } else {
-          showPopup("❌ " + (data.error || "Error"), 'error');
-        }
-
-        btn.disabled = false;
-        btn.innerHTML = "🔄 फिर से भेजें";
-      } catch (err) {
-        console.error("❌ Error:", err);
-        showPopup("❌ Connection error", 'error');
-        event.target.disabled = false;
-        event.target.innerHTML = "🔄 फिर से भेजें";
-      }
-    }
-
-    // ============= GO BACK TO PHONE =============
-    function goBackToPhone() {
-      el("phoneSection").classList.remove("hidden");
-      el("otpSection").classList.add("hidden");
-      el("phone").value = '';
-      el("phone").focus();
-      document.querySelectorAll(".otp-input").forEach(input => input.value = '');
-      otpAttempts = 0;
-      console.log("↩️ Back to phone input");
-    }
-
-    // ============= OTP INPUT NAVIGATION =============
-    document.addEventListener('DOMContentLoaded', () => {
-      const inputs = document.querySelectorAll(".otp-input");
-
-      inputs.forEach((input, index) => {
-        input.addEventListener('input', (e) => {
-          if (e.target.value && index < inputs.length - 1) {
-            inputs[index + 1].focus();
-          }
-        });
-
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Backspace' && !e.target.value && index > 0) {
-            inputs[index - 1].focus();
-          }
-        });
-
-        input.addEventListener('paste', (e) => {
-          e.preventDefault();
-          const paste = (e.clipboardData || window.clipboardData).getData('text');
-          if (/^\d{6}$/.test(paste)) {
-            paste.split('').forEach((char, i) => {
-              if (inputs[i]) inputs[i].value = char;
-            });
-            inputs[inputs.length - 1].focus();
-          }
-        });
-      });
-
-      // Check if already logged in
-      const token = localStorage.getItem("token");
-      if (token) {
-        window.location.href = "profiles.html";
-      }
-
-      console.log("✅ Login page ready");
-    });
-
-    // ============= ERROR HANDLING =============
-    window.addEventListener('error', (event) => {
-      console.error('❌ Global error:', event.error);
-    });
   </script>
 </body>
 </html>
