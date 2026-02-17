@@ -16,7 +16,7 @@ const cartItemSchema = new Schema({
   quantity: {
     type: Number,
     required: true,
-    min: 1,
+    min: 0.01, // ✅ अब 250g (0.25) और 500g (0.5) जैसी वैल्यू भी valid होंगी
     default: 1
   },
   price: {
@@ -31,7 +31,7 @@ const cartItemSchema = new Schema({
   }
 }, { _id: false });
 
-// ✅ Main Cart Schema
+// ✅ Main Cart Schema with TTL
 const cartSchema = new Schema({
   user: {
     type: Schema.Types.ObjectId,
@@ -51,6 +51,11 @@ const cartSchema = new Schema({
     type: String,
     enum: ['active', 'ordered', 'cancelled'],
     default: 'active'
+  },
+  expiresAt: {
+    type: Date,
+    default: () => new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 दिन बाद
+    index: { expires: 0 } // TTL index
   }
 }, { timestamps: true });
 
