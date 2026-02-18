@@ -176,10 +176,10 @@
   </nav>
 
 <script>
-    // [IMPROVED] Automatically detect server URL (Localhost vs Render)
+    // [FIXED URL] - my-web-xrr5.onrender.com वाला बैकएंड लिंक यहाँ डाल दिया है
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                     ? 'http://localhost:4000' 
-                    : 'https://ratufresh-backend.onrender.com';
+                    : 'https://my-web-xrr5.onrender.com';
 
     const token = localStorage.getItem('token');
     let currentView = 'shop';
