@@ -192,7 +192,7 @@ app.post("/reverse-geocode", async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Location service error" }); }
 });
 
-// --- 3. AUTH ROUTES (UPDATED TO PROFESSIONAL DOMAIN) ---
+// --- 3. AUTH ROUTES ---
 
 app.post("/send-signup-otp", async (req, res) => {
     const { name, email, phone } = req.body;
@@ -205,7 +205,6 @@ app.post("/send-signup-otp", async (req, res) => {
         
         console.log(`🚀 SIGNUP OTP FOR ${name}: ${otp}`);
 
-        // ✅ Updated: 'onboarding@resend.dev' को बदलकर 'otp@ratufresh.me' किया गया
         await resend.emails.send({
             from: 'Ratu Fresh <otp@ratufresh.me>',
             to: email,
@@ -245,7 +244,6 @@ app.post("/login", async (req, res) => {
         
         console.log(`🚀 LOGIN OTP FOR ${phone}: ${otp}`);
 
-        // ✅ Updated: 'onboarding@resend.dev' को बदलकर 'otp@ratufresh.me' किया गया
         await resend.emails.send({
             from: 'Ratu Fresh <otp@ratufresh.me>',
             to: user.email,
@@ -343,7 +341,6 @@ app.post("/orders/place", authenticate, async (req, res) => {
         const savedOrder = await newOrder.save();
         const mapsLink = user.lat && user.lng ? `https://www.google.com/maps?q=${user.lat},${user.lng}` : "Location not detected";
 
-        // ✅ Updated: एडमिन को ईमेल भेजना (अब 'otp@ratufresh.me' से)
         await resend.emails.send({
             from: 'Ratu Fresh Admin <otp@ratufresh.me>',
             to: ADMIN_EMAIL,
@@ -354,6 +351,33 @@ app.post("/orders/place", authenticate, async (req, res) => {
         await Cart.findOneAndUpdate({ user: req.user.userId }, { items: [], totalPrice: 0 });
         res.status(201).json({ success: true });
     } catch (err) { res.status(500).json({ error: "Order failed" }); }
+});
+
+// ✅ नया फंक्शन: CANCEL ORDER ROUTE
+app.post("/orders/cancel/:orderId", authenticate, async (req, res) => {
+    try {
+        const order = await Order.findOneAndUpdate(
+            { _id: req.params.orderId, userId: req.user.userId, status: "Pending" },
+            { status: "Cancelled" },
+            { new: true }
+        );
+
+        if (!order) {
+            return res.status(400).json({ error: "Order cannot be cancelled. It might be processed or not found." });
+        }
+
+        // एडमिन को सूचना भेजें
+        await resend.emails.send({
+            from: 'Ratu Fresh <otp@ratufresh.me>',
+            to: ADMIN_EMAIL,
+            subject: `Order Cancelled - #${order._id.toString().substring(0,8)}`,
+            text: `Order #${order._id} has been cancelled by the customer.`
+        });
+
+        res.json({ success: true, message: "Order cancelled successfully" });
+    } catch (err) {
+        res.status(500).json({ error: "Cancellation failed" });
+    }
 });
 
 // --- 5. NOTIFICATION & PROFILE ---
