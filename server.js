@@ -47,6 +47,10 @@ const upload = multer({ storage: storage });
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "main.html"));
 });
+// Admin Page को एक्सेस करने के लिए (अगर फाइल public के बाहर है)
+app.get("/admin", (req, res) => {
+    res.sendFile(path.join(__dirname, "admin.html"));
+});
 
 // CONFIGURATION
 const SHOP_LAT = 23.414336; 
@@ -443,3 +447,4 @@ mongoose.connect(process.env.DBurl)
         app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
     })
     .catch(err => console.error("DB error:", err));
+
