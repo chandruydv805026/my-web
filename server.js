@@ -192,7 +192,7 @@ app.post("/reverse-geocode", async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Location service error" }); }
 });
 
-// --- 3. AUTH ROUTES (UPDATED TO RESEND) ---
+// --- 3. AUTH ROUTES (UPDATED TO PROFESSIONAL DOMAIN) ---
 
 app.post("/send-signup-otp", async (req, res) => {
     const { name, email, phone } = req.body;
@@ -205,9 +205,9 @@ app.post("/send-signup-otp", async (req, res) => {
         
         console.log(`🚀 SIGNUP OTP FOR ${name}: ${otp}`);
 
-        // Resend API के द्वारा ईमेल भेजना
+        // ✅ Updated: 'onboarding@resend.dev' को बदलकर 'otp@ratufresh.me' किया गया
         await resend.emails.send({
-            from: 'Ratu Fresh <onboarding@resend.dev>',
+            from: 'Ratu Fresh <otp@ratufresh.me>',
             to: email,
             subject: 'Verify Your Signup - Ratu Fresh',
             html: `<strong>Welcome ${name}!</strong><br>Your OTP for Ratu Fresh is: <h1>${otp}</h1>`
@@ -245,8 +245,9 @@ app.post("/login", async (req, res) => {
         
         console.log(`🚀 LOGIN OTP FOR ${phone}: ${otp}`);
 
+        // ✅ Updated: 'onboarding@resend.dev' को बदलकर 'otp@ratufresh.me' किया गया
         await resend.emails.send({
-            from: 'Ratu Fresh <onboarding@resend.dev>',
+            from: 'Ratu Fresh <otp@ratufresh.me>',
             to: user.email,
             subject: 'Login OTP - Ratu Fresh',
             html: `Your Login OTP for Ratu Fresh is: <h1>${otp}</h1>`
@@ -342,9 +343,9 @@ app.post("/orders/place", authenticate, async (req, res) => {
         const savedOrder = await newOrder.save();
         const mapsLink = user.lat && user.lng ? `https://www.google.com/maps?q=${user.lat},${user.lng}` : "Location not detected";
 
-        // एडमिन को ईमेल भेजना (Resend के माध्यम से)
+        // ✅ Updated: एडमिन को ईमेल भेजना (अब 'otp@ratufresh.me' से)
         await resend.emails.send({
-            from: 'Ratu Fresh <onboarding@resend.dev>',
+            from: 'Ratu Fresh Admin <otp@ratufresh.me>',
             to: ADMIN_EMAIL,
             subject: `New Order! - #${savedOrder._id.toString().substring(0,8)}`,
             text: `Customer: ${user.name}\nAddress: ${req.body.address}\n📍 Maps Link: ${mapsLink}\nTotal: ₹${userCart.totalPrice}`
