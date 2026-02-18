@@ -4,6 +4,8 @@
   <title>Ratu Fresh - Fresh Vegetables Home Delivery in Ranchi</title>
   <meta name="description" content="Ratu Fresh: Get fresh, organic vegetables delivered to your doorstep in Ratu, Ranchi. Best quality potatoes, tomatoes, and green vegetables at farm rates.">
   <meta name="keywords" content="Ratu Fresh, Ratu Vegetable, Online Vegetables Ranchi, Fresh Sabzi Ratu, Chandan Kumar Ratu Fresh">
+  
+  <meta name="thumbnail" content="https://ratufresh.me/icons/icon-512.png">
 
   <meta property="og:title" content="Ratu Fresh - Farm Fresh Vegetables">
   <meta property="og:description" content="Order fresh vegetables online in Ratu, Ranchi. Fast delivery and best prices!">
@@ -169,6 +171,25 @@
       </p>
   </footer>
 
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "VegetableStore",
+    "name": "Ratu Fresh",
+    "image": "https://ratufresh.me/icons/icon-512.png",
+    "url": "https://ratufresh.me/",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Shivala Colony, Ratu",
+      "addressLocality": "Ranchi",
+      "addressRegion": "JH",
+      "postalCode": "835222",
+      "addressCountry": "IN"
+    },
+    "telephone": "9955054109"
+  }
+  </script>
+
   <script>
     // [SMART API DETECTION] - आपके असली बैकएंड URL के साथ
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
@@ -265,7 +286,7 @@
       const filtered = products.filter(p => p.name.toLowerCase().includes(search));
       
       if(filtered.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; grid-column: 1 / -1; padding:20px; color:#999;">No vegetables found.</p>';
+        grid.innerHTML = '<p style="text-align: center; grid-column: 1 / -1; padding: 20px; color: #999;">No vegetables found.</p>';
         return;
       }
 
