@@ -179,7 +179,7 @@
     // [IMPROVED] Automatically detect server URL (Localhost vs Render)
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                     ? 'http://localhost:4000' 
-                    : '';
+                    : 'https://ratufresh-backend.onrender.com';
 
     const token = localStorage.getItem('token');
     let currentView = 'shop';
@@ -190,28 +190,26 @@
     let totalBanners = 3; 
     let currentSlide = 0;
 
+    // --- Updated OneSignal Logic ---
     window.OneSignalDeferred = window.OneSignalDeferred || [];
-    OneSignalDeferred.push(function(OneSignal) {
-        OneSignal.init({
+    OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
             appId: "bcfc9f9f-7c9c-43e6-9b75-8d10bdb1a06b",
-            allowLocalhostAsSecureOrigin: true,
-            promptOptions: {
-                slidedown: {
-                    prompts: [{
-                        type: "push",
-                        autoPrompt: true,
-                        text: {
-                            actionMessage: "Ratu Fresh se taaza sabziyon ke offers pana chahte hain?",
-                            acceptButton: "Haan, Bilकुल!",
-                            cancelButton: "Nahi"
-                        },
-                        delay: { pageViews: 1, timeDelay: 3 }
-                    }]
-                }
-            }
+            allowLocalhostAsSecureOrigin: false, // Live domain setup
+            notifyButton: {
+              enable: true, // कोने में घंटी दिखेगी
+            },
         });
+
+        // ऑटोमैटिक प्रॉम्प्ट
+        if (!OneSignal.Notifications.permission) {
+            await OneSignal.Slidedown.promptPush();
+        }
+
         const user = JSON.parse(localStorage.getItem('user'));
-        if (user) { OneSignal.login(user.phone); }
+        if (user && user.phone) { 
+            await OneSignal.login(user.phone); 
+        }
     });
 
     // --- मास्टर सिंक लॉजिक ---
