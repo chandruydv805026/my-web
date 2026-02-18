@@ -86,7 +86,7 @@ const transporter = nodemailer.createTransport({
         pass: process.env.SMTP_PASS 
     },
     tls: {
-        rejectUnauthorized: false // रेंडर के लिए ज़रूरी
+        rejectUnauthorized: false // रेंडर के लिए ज़रूरी
     }
 });
 
@@ -226,7 +226,8 @@ app.post("/send-signup-otp", async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000);
         signupTempStore[email] = { userData: req.body, otp, expires: Date.now() + 300000 };
         
-        console.log("Attempting to send OTP email...");
+        // [LOGS] यहाँ OTP प्रिंट होगा ताकि ईमेल न आने पर आप Render Logs से देख सकें
+        console.log(`🚀 SIGNUP OTP FOR ${name}: ${otp}`);
 
         await transporter.sendMail({
             from: `"Ratu Fresh" <${process.env.SMTP_USER}>`,
@@ -266,6 +267,10 @@ app.post("/login", async (req, res) => {
         if (!user) return res.status(404).json({ error: "User not found" });
         const otp = Math.floor(100000 + Math.random() * 900000);
         loginOtpStore[phone] = { otp, expires: Date.now() + 300000 };
+        
+        // [LOGS] लॉगिन के लिए भी OTP प्रिंट कर दिया है
+        console.log(`🚀 LOGIN OTP FOR ${phone}: ${otp}`);
+
         await transporter.sendMail({
             from: `"Ratu Fresh" <${process.env.SMTP_USER}>`,
             to: user.email,
