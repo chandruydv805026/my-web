@@ -2,10 +2,10 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
 const axios = require("axios");
 const path = require("path");
 const multer = require("multer"); 
+const { Resend } = require("resend"); // Nodemailer हटाकर Resend जोड़ा
 require("dotenv").config();
 
 // Models
@@ -13,10 +13,13 @@ const User = require("./models/schema");
 const Cart = require("./models/cart");
 const Order = require("./models/order");
 const Product = require("./models/product"); 
-const Banner = require("./models/banner"); // नया: बैनर मॉडल
+const Banner = require("./models/banner");
 
 const app = express();
 app.use(express.json());
+
+// Resend Initialize
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Professional CORS Setup
 app.use(cors({
@@ -52,7 +55,6 @@ const MAX_DISTANCE_KM = 5;
 const ADMIN_EMAIL = "ck805026@gmail.com"; 
 const ADMIN_PASSWORD_SECRET = "admin786"; 
 
-// [UPDATE] यहाँ .trim() लगाया गया है ताकि .env के फालतू स्पेस हट जाएँ
 const ONESIGNAL_APP_ID = (process.env.ONESIGNAL_APP_ID || "").trim();
 const ONESIGNAL_REST_KEY = (process.env.ONESIGNAL_REST_KEY || "").trim();
 
@@ -76,19 +78,6 @@ function getDistance(lat1, lon1, lat2, lon2) {
               Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-
-// Nodemailer Transporter (UPDATED FOR RENDER STABILITY)
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    pool: true, // कनेक्शन को बनाए रखता है (Fast & Stable)
-    auth: { 
-        user: process.env.SMTP_USER, 
-        pass: process.env.SMTP_PASS 
-    },
-    tls: {
-        rejectUnauthorized: false // रेंडर के लिए ज़रूरी
-    }
-});
 
 const signupTempStore = {};
 const loginOtpStore = {};
@@ -119,15 +108,13 @@ app.post("/api/products/add", upload.single('image'), async (req, res) => {
         });
         await newProduct.save();
         res.json({ success: true, message: "Product Added Successfully" });
-    } catch (err) { 
-        res.status(500).json({ error: "Failed to add product" }); 
-    }
+    } catch (err) { res.status(500).json({ error: "Failed to add product" }); }
 });
 
 app.put("/api/products/update/:id", async (req, res) => {
     const { name, price, img, password } = req.body; 
     if (password !== ADMIN_PASSWORD_SECRET) {
-        return res.status(403).json({ error: "Unauthorized: Wrong Admin Password" });
+        return res.status(403).json({ error: "Unauthorized" });
     }
     try {
         const updatedProduct = await Product.findOneAndUpdate(
@@ -142,17 +129,15 @@ app.put("/api/products/update/:id", async (req, res) => {
 app.delete("/api/products/delete/:id", async (req, res) => {
     const { password } = req.body; 
     if (password !== ADMIN_PASSWORD_SECRET) {
-        return res.status(403).json({ error: "Unauthorized: Wrong Admin Password" });
+        return res.status(403).json({ error: "Unauthorized" });
     }
     try {
         await Product.findOneAndDelete({ id: req.params.id });
         res.json({ success: true, message: "Product Deleted Successfully" });
-    } catch (err) { 
-        res.status(500).json({ error: "Delete failed" }); 
-    }
+    } catch (err) { res.status(500).json({ error: "Delete failed" }); }
 });
 
-// --- नया: BANNER ROUTES ---
+// --- BANNER ROUTES ---
 
 app.post("/api/banners/add", upload.single('image'), async (req, res) => {
     const { title, password } = req.body;
@@ -183,39 +168,31 @@ app.delete("/api/banners/delete/:id", async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Delete failed" }); }
 });
 
-// --- 2. GEOLOCATION ROUTE (FIXED FOR 500/502 ERROR) ---
+// --- 2. GEOLOCATION ROUTE ---
 app.post("/reverse-geocode", async (req, res) => {
     const { lat, lng } = req.body;
     if (!lat || !lng) return res.status(400).json({ error: "Coordinates missing" });
-    
     const distance = getDistance(SHOP_LAT, SHOP_LNG, lat, lng);
     if (distance > MAX_DISTANCE_KM) {
         return res.status(400).json({ error: `Out of area. We deliver within 5km.` });
     }
-
     try {
         const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
         const { data } = await axios.get(url, { 
             headers: { "User-Agent": "RatuFreshApp/1.0 (ck805026@gmail.com)" },
             timeout: 15000 
         });
-        
         if (data && data.address) {
             res.json({ 
                 displayName: data.display_name, 
                 pincode: data.address.postcode || '', 
                 area: data.address.suburb || data.address.neighbourhood || data.address.city || 'Local Area'
             });
-        } else {
-            res.status(404).json({ error: "Address not found" });
-        }
-    } catch (err) { 
-        console.error("Geocode Error:", err.message);
-        res.status(500).json({ error: "Location service error. Please try again." }); 
-    }
+        } else { res.status(404).json({ error: "Address not found" }); }
+    } catch (err) { res.status(500).json({ error: "Location service error" }); }
 });
 
-// --- 3. AUTH ROUTES ---
+// --- 3. AUTH ROUTES (UPDATED TO RESEND) ---
 
 app.post("/send-signup-otp", async (req, res) => {
     const { name, email, phone } = req.body;
@@ -226,22 +203,20 @@ app.post("/send-signup-otp", async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000);
         signupTempStore[email] = { userData: req.body, otp, expires: Date.now() + 300000 };
         
-        // [LOGS] यहाँ OTP प्रिंट होगा ताकि ईमेल न आने पर आप Render Logs से देख सकें
         console.log(`🚀 SIGNUP OTP FOR ${name}: ${otp}`);
 
-        await transporter.sendMail({
-            from: `"Ratu Fresh" <${process.env.SMTP_USER}>`,
+        // Resend API के द्वारा ईमेल भेजना
+        await resend.emails.send({
+            from: 'Ratu Fresh <onboarding@resend.dev>',
             to: email,
-            subject: "Verify Signup - Ratu Fresh",
-            text: `Welcome ${name}! Your OTP is: ${otp}`
+            subject: 'Verify Your Signup - Ratu Fresh',
+            html: `<strong>Welcome ${name}!</strong><br>Your OTP for Ratu Fresh is: <h1>${otp}</h1>`
         });
         
-        const [userPart, domain] = email.split("@");
-        const maskedEmail = userPart.substring(0, 2) + "******" + userPart.slice(-2) + "@" + domain;
-        res.json({ success: true, message: "OTP Sent", maskedEmail });
+        res.json({ success: true, message: "OTP Sent Successfully" });
     } catch (err) { 
-        console.error("OTP Error Detail:", err);
-        res.status(500).json({ error: "Check email settings or App Password", detail: err.message }); 
+        console.error("Resend Error:", err);
+        res.status(500).json({ error: "Failed to send email. Check Render logs." }); 
     }
 });
 
@@ -268,19 +243,16 @@ app.post("/login", async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000);
         loginOtpStore[phone] = { otp, expires: Date.now() + 300000 };
         
-        // [LOGS] लॉगिन के लिए भी OTP प्रिंट कर दिया है
         console.log(`🚀 LOGIN OTP FOR ${phone}: ${otp}`);
 
-        await transporter.sendMail({
-            from: `"Ratu Fresh" <${process.env.SMTP_USER}>`,
+        await resend.emails.send({
+            from: 'Ratu Fresh <onboarding@resend.dev>',
             to: user.email,
-            subject: "Login OTP - Ratu Fresh",
-            text: `Your Login OTP is: ${otp}`
+            subject: 'Login OTP - Ratu Fresh',
+            html: `Your Login OTP for Ratu Fresh is: <h1>${otp}</h1>`
         });
-        const [userPart, domain] = user.email.split("@");
-        const maskedEmail = userPart.substring(0, 2) + "******" + userPart.slice(-2) + "@" + domain;
-        res.json({ success: true, maskedEmail });
-    } catch (err) { res.status(500).json({ error: "Mail error" }); }
+        res.json({ success: true, message: "OTP Sent to registered email" });
+    } catch (err) { res.status(500).json({ error: "Login failed" }); }
 });
 
 app.post("/verify-login", async (req, res) => {
@@ -307,13 +279,11 @@ app.post("/cart/sync", authenticate, async (req, res) => {
     try {
         const { item } = req.body; 
         const userId = req.user.userId;
-        
         const dbProduct = await Product.findOne({ id: item.productId });
         if (dbProduct) {
             item.price = dbProduct.price;
             item.subtotal = dbProduct.price * item.quantity;
         }
-
         let userCart = await Cart.findOne({ user: userId });
         if (!userCart) {
             userCart = new Cart({ user: userId, items: [item], totalPrice: item.subtotal });
@@ -323,9 +293,7 @@ app.post("/cart/sync", authenticate, async (req, res) => {
                 userCart.items[itemIndex].quantity = item.quantity;
                 userCart.items[itemIndex].price = item.price;
                 userCart.items[itemIndex].subtotal = item.subtotal;
-            } else {
-                userCart.items.push(item);
-            }
+            } else { userCart.items.push(item); }
             userCart.totalPrice = userCart.items.reduce((acc, curr) => acc + curr.subtotal, 0);
         }
         await userCart.save();
@@ -372,11 +340,11 @@ app.post("/orders/place", authenticate, async (req, res) => {
         });
 
         const savedOrder = await newOrder.save();
-        
         const mapsLink = user.lat && user.lng ? `https://www.google.com/maps?q=${user.lat},${user.lng}` : "Location not detected";
 
-        await transporter.sendMail({
-            from: `"Admin Order" <${process.env.SMTP_USER}>`,
+        // एडमिन को ईमेल भेजना (Resend के माध्यम से)
+        await resend.emails.send({
+            from: 'Ratu Fresh <onboarding@resend.dev>',
             to: ADMIN_EMAIL,
             subject: `New Order! - #${savedOrder._id.toString().substring(0,8)}`,
             text: `Customer: ${user.name}\nAddress: ${req.body.address}\n📍 Maps Link: ${mapsLink}\nTotal: ₹${userCart.totalPrice}`
@@ -387,20 +355,7 @@ app.post("/orders/place", authenticate, async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Order failed" }); }
 });
 
-app.post("/orders/cancel/:orderId", authenticate, async (req, res) => {
-    try {
-        const order = await Order.findOneAndUpdate(
-            { _id: req.params.orderId, userId: req.user.userId, status: "Pending" },
-            { status: "Cancelled" },
-            { new: true }
-        );
-        if(!order) return res.status(400).json({ error: "Cannot cancel" });
-        res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Cancel failed" }); }
-});
-
 // --- 5. NOTIFICATION & PROFILE ---
-
 app.post("/admin/send-broadcast", authenticate, async (req, res) => {
     const { title, message } = req.body;
     try {
@@ -416,10 +371,7 @@ app.post("/admin/send-broadcast", authenticate, async (req, res) => {
             }
         });
         res.json({ success: true });
-    } catch (err) { 
-        console.error("OneSignal Error Details:", err.response?.data || err.message);
-        res.status(500).json({ error: "Notification failed", details: err.response?.data }); 
-    }
+    } catch (err) { res.status(500).json({ error: "Notification failed" }); }
 });
 
 app.put("/user/update", authenticate, async (req, res) => {
@@ -430,18 +382,13 @@ app.put("/user/update", authenticate, async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Update failed" }); }
 });
 
-// DATABASE CONNECTION & AUTO-FILL
+// DATABASE CONNECTION
 mongoose.connect(process.env.DBurl)
     .then(async () => {
         console.log("🚀 MongoDB Connected");
-
         try {
-            await mongoose.connection.db.collection('orders').createIndex(
-                { "orderDate": 1 }, 
-                { expireAfterSeconds: 7200 }
-            );
-            console.log("🕒 Auto-Delete Activated: Orders will vanish after 2 hours.");
-        } catch (e) { console.log("Index already exists or error."); }
+            await mongoose.connection.db.collection('orders').createIndex({ "orderDate": 1 }, { expireAfterSeconds: 7200 });
+        } catch (e) {}
         
         const count = await Product.countDocuments();
         if (count === 0) {
@@ -467,7 +414,6 @@ mongoose.connect(process.env.DBurl)
             console.log("✅ 16 Initial Products Seeded Successfully");
         }
         
-        // Render के लिए 10000 पोर्ट इस्तेमाल करना सबसे सही रहता है
         const PORT = process.env.PORT || 10000;
         app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
     })
