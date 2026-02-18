@@ -80,9 +80,13 @@ function getDistance(lat1, lon1, lat2, lon2) {
 // Nodemailer Transporter (UPDATED FOR RENDER STABILITY)
 const transporter = nodemailer.createTransport({
     service: 'gmail',
+    pool: true, // कनेक्शन को बनाए रखता है (Fast & Stable)
     auth: { 
         user: process.env.SMTP_USER, 
         pass: process.env.SMTP_PASS 
+    },
+    tls: {
+        rejectUnauthorized: false // रेंडर के लिए ज़रूरी
     }
 });
 
@@ -193,7 +197,7 @@ app.post("/reverse-geocode", async (req, res) => {
         const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
         const { data } = await axios.get(url, { 
             headers: { "User-Agent": "RatuFreshApp/1.0 (ck805026@gmail.com)" },
-            timeout: 10000 
+            timeout: 15000 
         });
         
         if (data && data.address) {
@@ -222,6 +226,8 @@ app.post("/send-signup-otp", async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000);
         signupTempStore[email] = { userData: req.body, otp, expires: Date.now() + 300000 };
         
+        console.log("Attempting to send OTP email...");
+
         await transporter.sendMail({
             from: `"Ratu Fresh" <${process.env.SMTP_USER}>`,
             to: email,
@@ -233,8 +239,8 @@ app.post("/send-signup-otp", async (req, res) => {
         const maskedEmail = userPart.substring(0, 2) + "******" + userPart.slice(-2) + "@" + domain;
         res.json({ success: true, message: "OTP Sent", maskedEmail });
     } catch (err) { 
-        console.error("OTP Error:", err.message);
-        res.status(500).json({ error: "Signup OTP error. Check Email settings." }); 
+        console.error("OTP Error Detail:", err);
+        res.status(500).json({ error: "Check email settings or App Password", detail: err.message }); 
     }
 });
 
