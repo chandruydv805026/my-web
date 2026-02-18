@@ -1,7 +1,7 @@
 // 1. OneSignal SDK (सबसे ऊपर)
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 
-// 2. Cache सेटिंग्स (वर्जन v4 कर दिया है ताकि v3 वाला पुराना कचरा साफ़ हो जाए)
+// 2. Cache सेटिंग्स (वर्जन v4)
 const CACHE_NAME = 'ratu-fresh-v4'; 
 const ASSETS_TO_CACHE = [
   '/',
@@ -23,16 +23,14 @@ self.addEventListener('install', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // [सुधार 1] API, Cart, और Orders के लिए 'Network Only' या 'Network First' बिना किसी देरी के
   if (url.pathname.includes('/api/') || url.pathname.includes('/cart/') || url.pathname.includes('/orders/')) {
     event.respondWith(
-      fetch(event.request, { cache: 'no-store' }) // पक्का करता है कि ब्राउज़र कैश इस्तेमाल न करे
+      fetch(event.request, { cache: 'no-store' }) 
         .catch(() => caches.match(event.request))
     );
     return;
   }
 
-  // [सुधार 2] HTML फाइल्स के लिए 'Network First' ताकि बदलाव तुरंत दिखें
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
@@ -46,7 +44,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // बाकी फाइल्स (Images, Icons) के लिए Cache-First
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
@@ -54,20 +51,38 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
+// --- [EXTRA POWER] पुश नोटिफिकेशन लिसनर (बैकग्राउंड में जगाने के लिए) ---
+self.addEventListener('push', (event) => {
+    if (event.data) {
+        const data = event.data.json();
+        const options = {
+            body: data.body || "Fresh vegetables are waiting!",
+            icon: '/icons/icon-192.png',
+            badge: '/icons/icon-192.png',
+            vibrate: [200, 100, 200],
+            data: { url: data.url || '/' }
+        };
+        event.waitUntil(
+            self.registration.showNotification(data.title || "Ratu Fresh", options)
+        );
+    }
+});
+
 // नोटिफिकेशन क्लिक हैंडलर
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const rootUrl = new URL('/', self.location.origin).href;
+  const targetUrl = event.notification.data.url || '/';
+  const fullUrl = new URL(targetUrl, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (let client of windowClients) {
-        if (client.url === rootUrl && 'focus' in client) {
+        if (client.url === fullUrl && 'focus' in client) {
           return client.focus();
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow(rootUrl);
+        return clients.openWindow(fullUrl);
       }
     })
   );
