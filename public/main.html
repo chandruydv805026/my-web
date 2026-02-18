@@ -23,20 +23,22 @@
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
-    OneSignalDeferred.push(function(OneSignal) {
-      OneSignal.init({
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
         appId: "bcfc9f9f-7c9c-43e6-9b75-8d10bdb1a06b", 
-        allowLocalhostAsSecureOrigin: true, 
-        promptOptions: {
-          slidedown: {
-            enabled: true,
-            autoPrompt: true,
-            timeDelay: 5, 
-          }
-        }
+        allowLocalhostAsSecureOrigin: false, // क्योंकि अब आप ratufresh.me पर लाइव हैं
+        notifyButton: {
+          enable: true, // कोने में घंटी (Bell) आइकॉन दिखेगा
+        },
       });
+
+      // --- ग्राहकों को "Allow Notification" का पॉपअप दिखाने के लिए ---
+      if (!OneSignal.Notifications.permission) {
+          await OneSignal.Slidedown.promptPush();
+      }
     });
   </script>
+
   <style>
     :root {
       --primary: #2e7d32;
@@ -152,7 +154,7 @@
     // [SMART API DETECTION]
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                     ? 'http://localhost:4000' 
-                    : '';
+                    : 'https://ratufresh-backend.onrender.com';
 
     let products = [];
     let banners = [];
