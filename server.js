@@ -450,6 +450,10 @@ app.put("/user/update", authenticate, async (req, res) => {
         res.json({ success: true, user: updatedUser });
     } catch (err) { res.status(500).json({ error: "Update failed" }); }
 });
+// [PING ROUTE] Render को जगाए रखने के लिए
+app.get("/ping", (req, res) => {
+    res.status(200).send("I am alive!");
+});
 
 // DATABASE CONNECTION
 mongoose.connect(process.env.DBurl)
@@ -487,3 +491,4 @@ mongoose.connect(process.env.DBurl)
         app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
     })
     .catch(err => console.error("DB error:", err));
+
