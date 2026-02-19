@@ -57,7 +57,7 @@ const SHOP_LAT = 23.414336;
 const SHOP_LNG = 85.216316;
 const MAX_DISTANCE_KM = 5;
 const ADMIN_EMAIL = "ck805026@gmail.com"; 
-const ADMIN_PASSWORD_SECRET = process.env.ADMIN_PASSWORD 
+const ADMIN_PASSWORD_SECRET = process.env.ADMIN_PASSWORD;
 
 const ONESIGNAL_APP_ID = (process.env.ONESIGNAL_APP_ID || "").trim();
 const ONESIGNAL_REST_KEY = (process.env.ONESIGNAL_REST_KEY || "").trim();
@@ -491,5 +491,6 @@ mongoose.connect(process.env.DBurl)
         app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
     })
     .catch(err => console.error("DB error:", err));
+
 
 
