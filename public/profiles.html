@@ -190,11 +190,9 @@
     let currentSlide = 0;
 
     // --- [BACK BUTTON FIX START] ---
-    // शुरुआती स्टेट सेट करें
     window.history.replaceState({ view: 'shop' }, 'shop', "");
 
     window.addEventListener('popstate', function(event) {
-        // 1. अगर कोई मॉडल (Modal) खुला है, तो पहले उसे बंद करो
         const modal = document.getElementById('custom-modal');
         if (modal && modal.style.display === 'flex') {
             closeModal();
@@ -202,17 +200,12 @@
             return;
         }
 
-        // 2. अगर यूजर 'shop' टैब में नहीं है, तो वापस 'shop' टैब दिखाओ
         if (currentView !== 'shop') {
             const homeBtn = document.querySelectorAll('.nav-icon')[0];
-            // सीधे UI बदलें, pushState नहीं करेंगे वरना लूप बनेगा
             changeViewOnlyUI('shop', homeBtn);
-        } else {
-            // अगर पहले से शॉप पर है, तो ब्राउज़र का डिफ़ॉल्ट (बाहर जाना) होने दें
         }
     });
 
-    // सिर्फ UI बदलने के लिए अलग फंक्शन (ताकि बैक बटन लूप न करे)
     async function changeViewOnlyUI(viewId, btn) {
         currentView = viewId;
         document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active-view'));
@@ -225,7 +218,11 @@
         const header = document.getElementById('app-header');
         if(header) header.style.display = (viewId === 'shop') ? 'block' : 'none';
         
-        if(viewId === 'shop') await syncEverything();
+        // [MODIFIED] Force Price Sync on Home Click
+        if(viewId === 'shop') {
+            products = []; // Clear current list to force fresh fetch
+            await syncEverything();
+        }
         if(viewId === 'cart') await fetchCartFromDB();
         if(viewId === 'orders') await fetchOrdersFromDB();
         if(viewId === 'profile') loadProfile();
@@ -624,11 +621,8 @@
     
     function closeModal() { document.getElementById('custom-modal').style.display = 'none'; }
 
-    // टैब बदलने का मुख्य फंक्शन (इसमें pushState जोड़ा गया है)
     async function switchView(viewId, btn) {
         if(currentView === viewId) return;
-        
-        // हिस्ट्री में नई एंट्री जोड़ें
         window.history.pushState({ view: viewId }, viewId, "");
         await changeViewOnlyUI(viewId, btn);
     }
@@ -640,6 +634,13 @@
             slider.style.transform = `translateX(-${currentSlide * 100}%)`; 
         }
     }, 4000);
+
+    // [ADDED] Cart Live Sync Interval
+    setInterval(() => {
+        if(currentView === 'cart') {
+            fetchCartFromDB();
+        }
+    }, 5000);
 
     async function initialCartLoad() {
         try {
