@@ -176,7 +176,6 @@
   </nav>
 
 <script>
-    // [FIXED URL] - my-web-xrr5.onrender.com वाला बैकएंड लिंक यहाँ डाल दिया है
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                     ? 'http://localhost:4000' 
                     : 'https://my-web-xrr5.onrender.com';
@@ -190,18 +189,58 @@
     let totalBanners = 3; 
     let currentSlide = 0;
 
-    // --- Updated OneSignal Logic ---
+    // --- [BACK BUTTON FIX START] ---
+    // शुरुआती स्टेट सेट करें
+    window.history.replaceState({ view: 'shop' }, 'shop', "");
+
+    window.addEventListener('popstate', function(event) {
+        // 1. अगर कोई मॉडल (Modal) खुला है, तो पहले उसे बंद करो
+        const modal = document.getElementById('custom-modal');
+        if (modal && modal.style.display === 'flex') {
+            closeModal();
+            window.history.pushState({ view: currentView }, currentView, ""); 
+            return;
+        }
+
+        // 2. अगर यूजर 'shop' टैब में नहीं है, तो वापस 'shop' टैब दिखाओ
+        if (currentView !== 'shop') {
+            const homeBtn = document.querySelectorAll('.nav-icon')[0];
+            // सीधे UI बदलें, pushState नहीं करेंगे वरना लूप बनेगा
+            changeViewOnlyUI('shop', homeBtn);
+        } else {
+            // अगर पहले से शॉप पर है, तो ब्राउज़र का डिफ़ॉल्ट (बाहर जाना) होने दें
+        }
+    });
+
+    // सिर्फ UI बदलने के लिए अलग फंक्शन (ताकि बैक बटन लूप न करे)
+    async function changeViewOnlyUI(viewId, btn) {
+        currentView = viewId;
+        document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active-view'));
+        const target = document.getElementById(viewId + '-view');
+        if(target) target.classList.add('active-view');
+        
+        document.querySelectorAll('.nav-icon').forEach(n => n.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        
+        const header = document.getElementById('app-header');
+        if(header) header.style.display = (viewId === 'shop') ? 'block' : 'none';
+        
+        if(viewId === 'shop') await syncEverything();
+        if(viewId === 'cart') await fetchCartFromDB();
+        if(viewId === 'orders') await fetchOrdersFromDB();
+        if(viewId === 'profile') loadProfile();
+        updateHeaderName();
+    }
+    // --- [BACK BUTTON FIX END] ---
+
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
             appId: "bcfc9f9f-7c9c-43e6-9b75-8d10bdb1a06b",
-            allowLocalhostAsSecureOrigin: false, // Live domain setup
-            notifyButton: {
-              enable: true, // कोने में घंटी दिखेगी
-            },
+            allowLocalhostAsSecureOrigin: false,
+            notifyButton: { enable: true },
         });
 
-        // ऑटोमैटिक प्रॉम्प्ट
         if (!OneSignal.Notifications.permission) {
             await OneSignal.Slidedown.promptPush();
         }
@@ -212,7 +251,6 @@
         }
     });
 
-    // --- मास्टर सिंक लॉजिक ---
     async function syncEverything() {
         try {
             const pRes = await fetch(`${API_URL}/api/products?t=${Date.now()}`);
@@ -248,9 +286,6 @@
         slider.innerHTML = bannersHTML;
         totalBanners = 3 + banners.length;
     }
-
-    async function fetchBanners() { await syncEverything(); }
-    async function fetchLiveProducts() { await syncEverything(); }
 
     function updateHeaderName() {
         const user = JSON.parse(localStorage.getItem('user'));
@@ -400,7 +435,7 @@
                 setTimeout(() => { 
                     document.getElementById('success-overlay').style.display = 'none'; 
                     const orderBtn = document.querySelectorAll('.nav-icon')[2];
-                    switchView('orders', orderBtn); 
+                    changeViewOnlyUI('orders', orderBtn); 
                     if(btn) {
                       btn.disabled = false;
                       btn.style.opacity = '1';
@@ -466,7 +501,6 @@
                     const lng = position.coords.longitude;
                     tempCoords.lat = lat;
                     tempCoords.lng = lng;
-                    
                     try {
                         const res = await fetch(`${API_URL}/reverse-geocode`, {
                             method: 'POST',
@@ -474,7 +508,6 @@
                             body: JSON.stringify({ lat, lng })
                         });
                         const data = await res.json();
-                        
                         if(res.ok) {
                             if(document.getElementById('upd-addr')) document.getElementById('upd-addr').value = data.displayName;
                             if(document.getElementById('upd-area')) document.getElementById('upd-area').value = data.area || data.pincode;
@@ -486,14 +519,10 @@
                         showAlert('Error', 'Failed to get address details.', 'error');
                     }
                 },
-                (error) => {
-                    showAlert('Permission Denied', 'Please allow location access.', 'error');
-                },
+                (error) => { showAlert('Permission Denied', 'Please allow location access.', 'error'); },
                 { enableHighAccuracy: true }
             );
-        } else {
-            showAlert('Not Supported', 'Location not supported.', 'error');
-        }
+        } else { showAlert('Not Supported', 'Location not supported.', 'error'); }
     }
 
     function loadProfile() {
@@ -542,9 +571,7 @@
                 tempCoords = { lat: null, lng: null };
                 showAlert('Profile Updated!', 'Your changes have been saved successfully.', 'success');
             }
-        } catch (err) {
-            showAlert('Error', 'Failed to save changes.', 'error');
-        }
+        } catch (err) { showAlert('Error', 'Failed to save changes.', 'error'); }
     }
 
     function logout() { 
@@ -597,23 +624,13 @@
     
     function closeModal() { document.getElementById('custom-modal').style.display = 'none'; }
 
+    // टैब बदलने का मुख्य फंक्शन (इसमें pushState जोड़ा गया है)
     async function switchView(viewId, btn) {
-        currentView = viewId;
-        document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active-view'));
-        const targetView = document.getElementById(viewId + '-view');
-        if(targetView) targetView.classList.add('active-view');
+        if(currentView === viewId) return;
         
-        document.querySelectorAll('.nav-icon').forEach(n => n.classList.remove('active'));
-        if(btn) btn.classList.add('active');
-        
-        const header = document.getElementById('app-header');
-        if(header) header.style.display = (viewId === 'shop') ? 'block' : 'none';
-        
-        if(viewId === 'shop') { await syncEverything(); }
-        if(viewId === 'cart') await fetchCartFromDB();
-        if(viewId === 'orders') await fetchOrdersFromDB();
-        if(viewId === 'profile') loadProfile();
-        updateHeaderName();
+        // हिस्ट्री में नई एंट्री जोड़ें
+        window.history.pushState({ view: viewId }, viewId, "");
+        await changeViewOnlyUI(viewId, btn);
     }
 
     setInterval(() => {
