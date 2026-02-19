@@ -87,7 +87,7 @@
       <div style="font-size: 40px; margin-bottom: 15px;">🛡️</div>
       <h2 style="font-size: 24px; font-weight: 800;">Secure Access</h2>
       <p style="color: #64748b; font-size: 14px; margin-bottom: 10px;">Please enter your admin secret key</p>
-      <input type="password" id="adminPassword" placeholder="Admin Key..." autofocus inputmode="numeric">
+      <input type="password" id="adminPassword" placeholder="Admin Key..." autofocus>
       <button class="btn btn-primary" onclick="loginAdmin()">UNLOCK PANEL</button>
       <div id="login-status" class="status"></div>
     </div>
@@ -169,7 +169,6 @@
   </div>
 
   <script>
-    // [SMART API DETECTION] automatically switches between Local and Render
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                     ? 'http://localhost:4000' 
                     : '';
@@ -190,14 +189,28 @@
       if(sectionName === 'banners') loadBanners();
     }
 
-    function loginAdmin() {
+    async function loginAdmin() {
       const input = document.getElementById('adminPassword');
-      if (input.value === "admin786") {
-        adminPass = input.value;
-        sessionStorage.setItem('adminAuthKey', adminPass);
-        showDashboard();
-      } else {
-        alert("Incorrect Admin Key!");
+      const enteredPass = input.value;
+      const statusDiv = document.getElementById('login-status');
+
+      try {
+        const res = await fetch(`${API_URL}/api/admin/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: enteredPass })
+        });
+
+        if (res.ok) {
+          adminPass = enteredPass;
+          sessionStorage.setItem('adminAuthKey', adminPass);
+          showDashboard();
+        } else {
+          statusDiv.innerText = "❌ Invalid Key!";
+          statusDiv.style.color = "var(--danger)";
+        }
+      } catch (err) {
+        statusDiv.innerText = "⚠️ Server Error";
       }
     }
 
@@ -206,13 +219,24 @@
       window.location.reload();
     }
 
-    function showDashboard() {
+    async function showDashboard() {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('admin-dashboard').style.display = 'block';
       loadAllProducts();
     }
 
-    window.onload = () => { if (adminPass === "admin786") showDashboard(); };
+    // Auto-login logic
+    window.onload = async () => { 
+        if (adminPass) {
+            const res = await fetch(`${API_URL}/api/admin/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: adminPass })
+            });
+            if(res.ok) showDashboard();
+            else sessionStorage.removeItem('adminAuthKey');
+        }
+    };
 
     // Inventory
     document.getElementById('newProductForm').onsubmit = async (e) => {
@@ -276,7 +300,7 @@
     }
 
     async function deleteItem(id) {
-        if(!confirm("क्या आप वाकई इस सब्जी को हमेशा के लिए हटाना चाहते हैं?")) return;
+        if(!confirm("क्या आप वाकई इस सब्जी को हटाना चाहते हैं?")) return;
         try {
             const res = await fetch(`${API_URL}/api/products/delete/${id}`, {
                 method: 'DELETE',
@@ -317,7 +341,11 @@
 
     async function deleteBanner(id) {
       if(confirm("Delete this banner?")) {
-        await fetch(`${API_URL}/api/banners/delete/${id}`, { method: 'DELETE' });
+        await fetch(`${API_URL}/api/banners/delete/${id}`, { 
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: adminPass })
+        });
         loadBanners(); 
       }
     }
@@ -326,8 +354,6 @@
       const title = document.getElementById('notif-title').value;
       const body = document.getElementById('notif-body').value;
       const btn = document.getElementById('notif-btn');
-      
-      // [FIX] Read token dynamically inside the function
       const adminToken = localStorage.getItem('token'); 
 
       if(!title || !body) return alert("Please fill all fields");
