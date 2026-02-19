@@ -282,7 +282,27 @@ app.post("/verify-login", async (req, res) => {
 // --- 4. CART & ORDER ROUTES ---
 app.get("/cart/get", authenticate, async (req, res) => {
     try {
-        const userCart = await Cart.findOne({ user: req.user.userId });
+        let userCart = await Cart.findOne({ user: req.user.userId });
+        
+        // [LIVE PRICE SYNC ADDED HERE]
+        if (userCart && userCart.items.length > 0) {
+            let updatedTotal = 0;
+            let isChanged = false;
+            for (let item of userCart.items) {
+                const dbProduct = await Product.findOne({ id: item.productId });
+                if (dbProduct && item.price !== dbProduct.price) {
+                    item.price = dbProduct.price;
+                    item.subtotal = dbProduct.price * item.quantity;
+                    isChanged = true;
+                }
+                updatedTotal += (item.price * item.quantity);
+            }
+            if (isChanged) {
+                userCart.totalPrice = updatedTotal;
+                await userCart.save();
+            }
+        }
+        
         res.json(userCart || { items: [], totalPrice: 0 });
     } catch (err) { res.status(500).json({ error: "Cart fetch failed" }); }
 });
@@ -339,11 +359,22 @@ app.post("/orders/place", authenticate, async (req, res) => {
         const user = await User.findById(req.user.userId);
         if (!userCart || userCart.items.length === 0) return res.status(400).json({ error: "Cart is empty" });
 
+        // [FINAL PRICE VERIFICATION ADDED HERE]
+        let verifiedTotal = 0;
+        for (let item of userCart.items) {
+            const dbP = await Product.findOne({ id: item.productId });
+            if (dbP) {
+                item.price = dbP.price;
+                item.subtotal = dbP.price * item.quantity;
+            }
+            verifiedTotal += item.subtotal;
+        }
+
         const newOrder = new Order({
             userId: req.user.userId,
             phone: user.phone,
             items: userCart.items,
-            totalAmount: userCart.totalPrice,
+            totalAmount: verifiedTotal,
             deliveryAddress: req.body.address,
             lat: user.lat,
             lng: user.lng,
@@ -358,7 +389,7 @@ app.post("/orders/place", authenticate, async (req, res) => {
             from: 'Ratu Fresh Admin <otp@ratufresh.me>',
             to: ADMIN_EMAIL,
             subject: `New Order! - #${savedOrder._id.toString().substring(0,8)}`,
-            text: `Customer: ${user.name}\nAddress: ${req.body.address}\n📍 Maps Link: ${mapsLink}\nTotal: ₹${userCart.totalPrice}`
+            text: `Customer: ${user.name}\nAddress: ${req.body.address}\n📍 Maps Link: ${mapsLink}\nTotal: ₹${verifiedTotal}`
         });
 
         await Cart.findOneAndUpdate({ user: req.user.userId }, { items: [], totalPrice: 0 });
