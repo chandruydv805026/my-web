@@ -450,6 +450,16 @@ app.put("/user/update", authenticate, async (req, res) => {
         res.json({ success: true, user: updatedUser });
     } catch (err) { res.status(500).json({ error: "Update failed" }); }
 });
+// admin.html के नए लॉगिन सिस्टम के लिए
+app.post("/api/admin/verify", (req, res) => {
+    const { password } = req.body;
+    // यह सीधे Render के Environment से पासवर्ड मैच करेगा
+    if (password === process.env.ADMIN_PASSWORD) {
+        res.json({ success: true });
+    } else {
+        res.status(401).json({ error: "Invalid Key" });
+    }
+});
 // [PING ROUTE] Render को जगाए रखने के लिए
 app.get("/ping", (req, res) => {
     res.status(200).send("I am alive!");
@@ -491,6 +501,7 @@ mongoose.connect(process.env.DBurl)
         app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
     })
     .catch(err => console.error("DB error:", err));
+
 
 
 
