@@ -216,7 +216,11 @@ app.post("/send-signup-otp", async (req, res) => {
             html: `<strong>Welcome ${name}!</strong><br>Your OTP for Ratu Fresh is: <h1>${otp}</h1>`
         });
         
-        res.json({ success: true, message: "OTP Sent Successfully" });
+        // [ADD] ईमेल मास्किंग लॉजिक
+        const [userPart, domain] = email.split("@");
+        const maskedEmail = userPart.substring(0, 2) + "******" + userPart.slice(-2) + "@" + domain;
+
+        res.json({ success: true, message: "OTP Sent Successfully", maskedEmail: maskedEmail });
     } catch (err) { 
         console.error("Resend Error:", err);
         res.status(500).json({ error: "Failed to send email. Check Render logs." }); 
@@ -254,7 +258,12 @@ app.post("/login", async (req, res) => {
             subject: 'Login OTP - Ratu Fresh',
             html: `Your Login OTP for Ratu Fresh is: <h1>${otp}</h1>`
         });
-        res.json({ success: true, message: "OTP Sent to registered email" });
+
+        // [ADD] ईमेल मास्किंग लॉजिक
+        const [userPart, domain] = user.email.split("@");
+        const maskedEmail = userPart.substring(0, 2) + "******" + userPart.slice(-2) + "@" + domain;
+
+        res.json({ success: true, message: "OTP Sent to registered email", maskedEmail: maskedEmail });
     } catch (err) { res.status(500).json({ error: "Login failed" }); }
 });
 
@@ -447,4 +456,3 @@ mongoose.connect(process.env.DBurl)
         app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
     })
     .catch(err => console.error("DB error:", err));
-
