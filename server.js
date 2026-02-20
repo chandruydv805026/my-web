@@ -72,7 +72,7 @@ const authenticate = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded; // इसमें userId होनी चाहिए
+        req.user = decoded; 
         next();
     } catch (err) {
         res.status(403).json({ error: "Invalid Token" });
@@ -179,7 +179,8 @@ app.post("/api/signup/magic-link", async (req, res) => {
         const newUser = new User({ name, email, phone, address, pincode, area, lat, lng, verificationToken: mToken, tokenExpiry: Date.now() + 3600000 });
         await newUser.save();
 
-        const verifyUrl = `https://my-web-xrr5.onrender.com/api/verify-email?token=${mToken}`;
+        // [DOMAIN FIX] Using custom domain for verification link
+        const verifyUrl = `https://ratufresh.me/api/verify-email?token=${mToken}`;
         await resend.emails.send({
             from: 'Ratu Fresh <otp@ratufresh.me>', to: email,
             subject: `नमस्ते ${name}, Verify Account!`,
@@ -203,7 +204,8 @@ app.get("/api/verify-email", async (req, res) => {
         if (!(await Cart.findOne({ user: user._id }))) await new Cart({ user: user._id, items: [] }).save();
 
         const loginToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "90d" });
-        res.redirect(`/profiles.html?token=${loginToken}&verified=true`);
+        // [DOMAIN FIX] Redirecting to custom domain
+        res.redirect(`https://ratufresh.me/profiles.html?token=${loginToken}&verified=true`);
     } catch (err) { res.status(500).send("Error"); }
 });
 
@@ -231,10 +233,10 @@ app.post("/verify-login", async (req, res) => {
     res.status(401).json({ error: "Invalid OTP" });
 });
 
-// --- 5. USER PROFILE (THIS WAS THE MAIN PROBLEM) ---
+// --- 5. USER PROFILE ---
 app.get("/api/user-profile", authenticate, async (req, res) => {
     try {
-        const user = await User.findById(req.user.userId); // req.user.userId matches jwt.sign
+        const user = await User.findById(req.user.userId);
         if (!user) return res.status(404).json({ error: "User not found" });
         res.json({ success: true, user });
     } catch (err) { res.status(500).json({ error: "Profile error" }); }
@@ -306,23 +308,32 @@ app.post("/orders/place", authenticate, async (req, res) => {
         const user = await User.findById(req.user.userId);
         if (!cart || cart.items.length === 0) return res.status(400).json({ error: "Empty cart" });
 
+        // [MATCH FIX] Ensuring items match the Order Schema
         const orderItems = cart.items.map(i => ({ productId: i.productId, name: i.name, quantity: i.quantity, price: i.price }));
+        
         const newOrder = new Order({
-            userId: req.user.userId, phone: user.phone, items: orderItems,
-            totalAmount: cart.totalPrice, deliveryAddress: req.body.address || user.address,
-            status: "Pending", orderDate: new Date()
+            userId: req.user.userId, 
+            phone: user.phone, 
+            items: orderItems,
+            totalAmount: cart.totalPrice, 
+            deliveryAddress: req.body.address || user.address,
+            status: "Pending", 
+            orderDate: new Date()
         });
         const saved = await newOrder.save();
 
         await resend.emails.send({
             from: 'Ratu Fresh <otp@ratufresh.me>', to: ADMIN_EMAIL,
             subject: `New Order #${saved._id.toString().substring(0,8)}`,
-            text: `Customer: ${user.name}\nTotal: ₹${cart.totalPrice}\nAddress: ${req.body.address}`
+            text: `Customer: ${user.name}\nTotal: ₹${cart.totalPrice}\nAddress: ${req.body.address || user.address}`
         });
 
         await Cart.findOneAndUpdate({ user: req.user.userId }, { items: [], totalPrice: 0 });
         res.status(201).json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Order failed" }); }
+    } catch (err) { 
+        console.error("Order Fail Error:", err);
+        res.status(500).json({ error: "Order failed - Data mismatch" }); 
+    }
 });
 
 app.post("/orders/cancel/:orderId", authenticate, async (req, res) => {
@@ -354,7 +365,6 @@ app.get("/ping", (req, res) => res.status(200).send("Alive"));
 mongoose.connect(process.env.DBurl).then(async () => {
     console.log("🚀 MongoDB Connected");
     
-    // Seed initial 16 products
     const count = await Product.countDocuments();
     if (count === 0) {
         const initialProducts = [
