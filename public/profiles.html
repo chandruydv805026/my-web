@@ -466,19 +466,27 @@
         }
     }
 
+    // --- [LIVE STATUS AUTO REFRESH] ---
+    setInterval(() => {
+        if (currentView === 'orders') {
+            fetchOrdersFromDB(); 
+        }
+    }, 3000); 
+
     async function fetchOrdersFromDB() {
         const token = localStorage.getItem('token');
         const list = document.getElementById('order-history-list');
         if(!list) return;
         try {
-            const res = await fetch(`${API_URL}/orders/my-orders`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const res = await fetch(`${API_URL}/orders/my-orders?t=${Date.now()}`, { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            });
             const orders = await res.json();
             if(!orders || orders.length === 0) {
                 list.innerHTML = `<div style="text-align:center; margin-top:50px; color:#bbb;"><p>No orders yet!</p></div>`;
                 return;
             }
 
-            // --- [STATUS CONFIG LOGIC] ---
             const statusColors = {
                 'Pending': '#ffa500',
                 'Confirmed': '#2196f3',
