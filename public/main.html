@@ -34,15 +34,15 @@
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
+      // डोमेन चेक ताकि एरर न आए
+      if (window.location.hostname !== 'ratufresh.me' && window.location.hostname !== 'localhost') return;
+
       await OneSignal.init({
         appId: "bcfc9f9f-7c9c-43e6-9b75-8d10bdb1a06b", 
-        allowLocalhostAsSecureOrigin: false, // क्योंकि अब आप ratufresh.me पर लाइव हैं
-        notifyButton: {
-          enable: true, // कोने में घंटी (Bell) आइकॉन दिखेगा
-        },
+        allowLocalhostAsSecureOrigin: false,
+        notifyButton: { enable: true },
       });
 
-      // --- ग्राहकों को "Allow Notification" का पॉपअप दिखाने के लिए ---
       if (!OneSignal.Notifications.permission) {
           await OneSignal.Slidedown.promptPush();
       }
@@ -59,9 +59,7 @@
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
-    
     html { scroll-behavior: smooth; }
-    
     body { background: var(--bg); color: #333; padding-bottom: 20px; -webkit-tap-highlight-color: transparent; }
 
     .header {
@@ -132,7 +130,7 @@
   <header class="header">
     <div class="header-top">
       <div class="brand">🥬 Ratu Fresh</div>
-      <div class="auth-links">
+      <div class="auth-links" id="authSection">
         <a href="login.html" class="btn-auth">Login</a>
         <a href="signup.html" class="btn-auth">Signup</a>
       </div>
@@ -191,7 +189,6 @@
   </script>
 
   <script>
-    // [SMART API DETECTION] - आपके असली बैकएंड URL के साथ
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                     ? 'http://localhost:4000' 
                     : 'https://my-web-xrr5.onrender.com';
@@ -207,22 +204,18 @@
     window.addEventListener('popstate', function(event) {
         const modal = document.getElementById("loginModal");
         if (modal && modal.style.display === "flex") {
-            // यदि बैक बटन दबाया और मॉडल खुला है, तो सिर्फ मॉडल बंद करो
             modal.style.display = "none";
-            // हिस्ट्री वापस पुश करो ताकि अगली बार बैक दबाने पर वेबसाइट बंद हो (एक ही बार में ऐप न कटे)
             window.history.replaceState({ modalOpen: false }, "", "");
         }
     });
 
     function checkLogin() {
-        // मॉडल खोलने के साथ हिस्ट्री में एक स्टेट पुश करें
         window.history.pushState({ modalOpen: true }, "", "");
         document.getElementById("loginModal").style.display = "flex";
     }
 
     function closeModal() { 
         document.getElementById("loginModal").style.display = "none"; 
-        // यदि यूजर "Not Now" बटन से बंद करता है, तो हिस्ट्री पीछे ले जाएँ
         if (window.history.state && window.history.state.modalOpen) {
             window.history.back();
         }
@@ -351,10 +344,15 @@
     }
 
     window.onload = () => {
-      if (!localStorage.getItem('token')) {
-          fetchAllData();
-          setInterval(fetchAllData, 5000); // Auto-Sync every 5 seconds
+      const token = localStorage.getItem('token');
+      // [FORCE REDIRECT] अगर टोकन है, तो पेज रेंडर होने से पहले ही भेजें
+      if (token && token !== "null" && token !== "undefined") {
+          window.location.replace('profiles.html');
+          return;
       }
+      // अगर टोकन नहीं है, तो डेटा लोड करें
+      fetchAllData();
+      setInterval(fetchAllData, 5000); 
     };
   </script>
 </body>
