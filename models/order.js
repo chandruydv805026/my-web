@@ -47,19 +47,7 @@ const orderSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  // [MUST ADD] लोकेशन के बिना डिलीवरी बॉय को घर ढूँढने में दिक्कत होगी
-  lat: Number,
-  lng: Number,
   
-  orderDate: {
-    type: Date,
-    default: Date.now
-  },
-  paymentMode: {
-    type: String,
-    enum: ['Cash on Delivery', 'UPI', 'Card'],
-    default: 'Cash on Delivery'
-  }
-});
 
 module.exports = mongoose.model('Order', orderSchema);
+
