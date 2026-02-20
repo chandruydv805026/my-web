@@ -314,11 +314,10 @@ app.post("/orders/place", authenticate, async (req, res) => {
         });
         const saved = await newOrder.save();
 
-        // [EMAIL ACTION LOGIC] - Status + Stock Buttons
+        // [EMAIL ACTION LOGIC] - Status + Cancel Buttons
         const adminKey = process.env.ADMIN_PASSWORD;
         const statusUrl = (s) => `https://ratufresh.me/api/admin/email-status?orderId=${saved._id}&status=${encodeURIComponent(s)}&pass=${adminKey}`;
         
-        // सामानों की लिस्ट ईमेल के लिए तैयार करें
         const itemsHtml = orderItems.map(i => `<li>${i.name} - ${i.quantity}</li>`).join('');
 
         await resend.emails.send({
@@ -333,13 +332,12 @@ app.post("/orders/place", authenticate, async (req, res) => {
                     <p><b>Items:</b><ul>${itemsHtml}</ul></p>
                     <p><b>Total:</b> ₹${cart.totalPrice}</p>
                     <hr>
-                    <p><b>Update Status:</b></p>
+                    <p><b>Quick Actions:</b></p>
                     <div style="margin-bottom:20px;">
-                        <a href="${statusUrl('Out for Delivery')}" style="background:#9c27b0; color:white; padding:10px 15px; text-decoration:none; border-radius:8px; display:inline-block; font-weight:bold; margin-bottom:10px;">🚀 Out for Delivery</a>
-                        <a href="${statusUrl('Delivered')}" style="background:#2e7d32; color:white; padding:10px 15px; text-decoration:none; border-radius:8px; display:inline-block; font-weight:bold;">✅ Complete Order</a>
+                        <a href="${statusUrl('Out for Delivery')}" style="background:#9c27b0; color:white; padding:10px 15px; text-decoration:none; border-radius:8px; display:inline-block; font-weight:bold; margin-bottom:10px; margin-right:5px;">🚀 Out for Delivery</a>
+                        <a href="${statusUrl('Delivered')}" style="background:#2e7d32; color:white; padding:10px 15px; text-decoration:none; border-radius:8px; display:inline-block; font-weight:bold; margin-bottom:10px; margin-right:5px;">✅ Mark Completed</a>
+                        <a href="${statusUrl('Cancelled')}" style="background:#ff4444; color:white; padding:10px 15px; text-decoration:none; border-radius:8px; display:inline-block; font-weight:bold;">❌ Cancel Order</a>
                     </div>
-                    <hr>
-                    <p style="font-size:12px; color:#777;">Tip: You can manage stock levels from your Admin Dashboard if items are sold out.</p>
                 </div>
             `
         });
@@ -357,7 +355,7 @@ app.get("/api/admin/email-status", async (req, res) => {
         await Order.findByIdAndUpdate(orderId, { status: status });
         res.send(`
             <div style="text-align:center; padding:50px; font-family:sans-serif;">
-                <h1 style="color:#2e7d32;">Update Successful! ✨</h1>
+                <h1 style="color:${status === 'Cancelled' ? '#ff4444' : '#2e7d32'};">Update Successful! ✨</h1>
                 <p style="font-size:18px;">Order #${orderId.toString().substring(0,8)} is now <b>${status}</b>.</p>
                 <br><a href="https://ratufresh.me" style="background:#2e7d32; color:white; padding:12px 25px; text-decoration:none; border-radius:10px; font-weight:bold;">Go to Website</a>
             </div>
