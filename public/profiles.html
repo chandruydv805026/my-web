@@ -166,7 +166,7 @@
         const token = localStorage.getItem('token');
         if(token && token !== "null" && token !== "undefined") { 
             try {
-                // Fetch fresh profile from server
+                // Fetch fresh profile from server using current token
                 const res = await fetch(`${API_URL}/api/user-profile`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -181,6 +181,7 @@
                         showAlert('Verified! ✅', 'Welcome to Ratu Fresh.', 'success');
                     }
                 } else {
+                    // Token invalid - redirect to signup
                     window.location.href = 'main.html';
                 }
             } catch(e) { window.location.href = 'main.html'; }
