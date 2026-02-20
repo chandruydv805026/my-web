@@ -311,7 +311,7 @@
         }).join('');
     }
 
-    // --- [JALDI POPUP LOGIC ADDED HERE] ---
+    // --- [JALDI POPUP LOGIC] ---
     async function addToCart(id) {
         const token = localStorage.getItem('token');
         const p = products.find(i => i.id === id); 
@@ -320,11 +320,10 @@
         const totalP = currentPrice * q;
         const unitLabel = p.unit === 'pc' ? (q > 1 ? 'pcs' : 'pc') : 'kg';
 
-        // 🚀 [STEP 1] सर्वर रिक्वेस्ट से पहले ही पॉपअप दिखाओ ताकि यूजर को "Fast" महसूस हो
+        // 🚀 तुरंत पॉपअप दिखाओ
         showAlert('Success!', `Added ${q} ${unitLabel} ${p.name} to cart. <br><b>Total: ₹${totalP.toFixed(0)}</b>`, 'success');
 
         try {
-            // 🚀 [STEP 2] बैकग्राउंड में सर्वर को डेटा भेजो
             const res = await fetch(`${API_URL}/cart/sync`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -332,13 +331,9 @@
             });
             if(res.ok) {
                 const data = await res.json();
-                // 🚀 [STEP 3] डेटा आने के बाद चुपचाप कार्ट का नंबर बदल दो
                 updateCartBadge(data.cart.items.length);
             }
-        } catch (err) { 
-            console.log("Silent sync failed"); 
-            // यूजर को परेशान नहीं करेंगे, बैकग्राउंड एरर सिर्फ कंसोल में दिखेगा
-        }
+        } catch (err) { console.log("Background sync error"); }
     }
 
     function updateCartBadge(count) {
@@ -465,7 +460,18 @@
                 list.innerHTML = `<div style="text-align:center; margin-top:50px; color:#bbb;"><p>No orders yet!</p></div>`;
                 return;
             }
+
+            // --- [STATUS CONFIG LOGIC] ---
+            const statusColors = {
+                'Pending': '#ffa500',
+                'Confirmed': '#2196f3',
+                'Out for Delivery': '#9c27b0',
+                'Delivered': '#2e7d32',
+                'Cancelled': '#f44336'
+            };
+
             list.innerHTML = orders.map(o => {
+                const col = statusColors[o.status] || '#888';
                 const itemsDetails = o.items.map(item => `
                     <div class="order-item-row">
                         <span>• ${item.name}</span>
@@ -477,7 +483,9 @@
                         <div class="cart-item-details" style="margin-left: 0;">
                             <p style="font-size: 10px; color: #aaa; font-weight: 800;">ORDER ID: #${o._id.substring(0,8)}</p>
                             <h4 style="margin: 3px 0;">${o.items.length} Items Purchased</h4>
-                            <span style="font-size:11px; background:${o.status === 'Cancelled' ? '#ffebee' : '#e8f5e9'}; color:${o.status === 'Cancelled' ? '#ff4444' : 'var(--primary)'}; padding:3px 10px; border-radius:10px; font-weight:700;">${o.status}</span>
+                            <span style="background:${col}22; color:${col}; padding:4px 10px; border-radius:10px; font-weight:800; font-size:11px; border: 1px solid ${col}44;">
+                                ● ${o.status.toUpperCase()}
+                            </span>
                         </div>
                         <div class="cart-price-tag">₹${o.totalAmount}</div>
                     </div>
