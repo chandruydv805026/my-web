@@ -14,14 +14,10 @@
     :root { --primary: #2e7d32; --bg: #f4f7f6; --white: #ffffff; --shadow: 0 4px 20px rgba(0,0,0,0.08); }
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
     body { background: var(--bg); color: #333; padding-bottom: 100px; overflow-x: hidden; }
-
-    /* Header */
     .header { background: linear-gradient(135deg, #1b5e20, #2e7d32); color: white; padding: 20px 15px; position: sticky; top: 0; z-index: 1000; border-radius: 0 0 25px 25px; }
     .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
     .brand { font-size: 1.5rem; font-weight: 800; letter-spacing: -1px; }
     .search-bar { width: 100%; padding: 14px; border: none; border-radius: 15px; outline: none; box-shadow: var(--shadow); font-size: 15px; }
-
-    /* Slider */
     .slider-container { width: 100%; overflow: hidden; margin: 15px 0; border-radius: 20px; height: 130px; position: relative; box-shadow: var(--shadow); }
     .slider { display: flex; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); height: 100%; }
     .slide { min-width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; padding: 20px; }
@@ -30,20 +26,9 @@
     .slide3 { background: linear-gradient(45deg, #1d976c, #93f9b9); color: #1b5e20; }
     .slide h2 { font-size: 1.4rem; font-weight: 800; }
     .banner-img { width: 100%; height: 100%; object-fit: cover; border-radius: 20px; }
-
-    /* Views */
     .view-section { display: none; padding: 15px; animation: fadeIn 0.4s ease; }
     .active-view { display: block !important; }
-
-    /* --- MOBILE 2 COLUMN GRID START --- */
-    #product-grid { 
-        display: grid; 
-        grid-template-columns: repeat(2, 1fr); 
-        gap: 12px; 
-    }
-    /* --- MOBILE 2 COLUMN GRID END --- */
-
-    /* Shop Cards UI Updates */
+    #product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
     .card { background: var(--white); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); margin-bottom: 0px; border: 1px solid rgba(0,0,0,0.02); display: flex; flex-direction: column; }
     .card-img { width: 100%; height: 130px; object-fit: cover; }
     .card-body { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
@@ -53,8 +38,6 @@
     .qty-select-style { width: 100%; border: 1px solid #edf2f7; border-radius: 8px; padding: 6px; font-size: 11px; font-weight: 700; background: #f8fafc; color: #444; outline: none; }
     .add-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; transition: 0.2s; }
     .add-btn:active { transform: scale(0.95); }
-
-    /* Cart UI */
     .cart-item-modern { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; display: flex; align-items: center; box-shadow: var(--shadow); border: 1px solid #f0f0f0; }
     .cart-img-small { width: 65px; height: 65px; border-radius: 12px; object-fit: cover; }
     .cart-item-details { flex: 1; margin-left: 15px; }
@@ -63,41 +46,27 @@
     .cart-price-tag { font-weight: 800; color: var(--primary); font-size: 16px; margin-top: 4px; }
     .delete-btn-text { background: #fff5f5; color: #ff4444; border: none; padding: 8px 12px; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 800; }
     .cancel-btn { background: #fff5f5; color: #ff4444; border: 1px solid #ffebeb; padding: 10px; border-radius: 12px; cursor: pointer; font-size: 12px; font-weight: 800; width: 100%; margin-top: 10px; }
-
-    /* Profile UI */
     .avatar-circle { width: 85px; height: 85px; background: var(--primary); color: white; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 800; border: 4px solid #fff; box-shadow: var(--shadow); }
     .profile-card { background: white; padding: 25px; border-radius: 30px; box-shadow: var(--shadow); }
     .input-group { margin-bottom: 15px; text-align: left; }
     .input-group label { font-size: 10px; font-weight: 800; color: #aaa; margin-left: 5px; }
     .profile-input { width: 100%; padding: 12px; border-radius: 12px; border: 1.5px solid #f0f0f0; outline: none; margin-top: 5px; font-weight: 600; background: #fafafa; }
-    
     .detect-btn { background: #e8f5e9; color: var(--primary); border: 1.5px solid var(--primary); padding: 8px 15px; border-radius: 12px; font-size: 12px; font-weight: 800; cursor: pointer; margin-bottom: 15px; display: block; width: 100%; }
-
     .bill-card { background: white; border-radius: 25px; padding: 20px; margin-top: 20px; box-shadow: var(--shadow); border: 1px dashed #ddd; }
     .bill-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; font-weight: 600; color: #666; }
     .bill-total { border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; color: #000; font-size: 18px; font-weight: 800; }
     .min-order-msg { color: #f44336; font-size: 11px; font-weight: 800; text-align: center; margin-bottom: 10px; display: none; }
-
-    /* Modals & OTP Styling */
     #custom-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 5000; display: none; align-items: center; justify-content: center; padding: 25px; }
     .modal-box { background: white; padding: 30px; border-radius: 25px; width: 100%; max-width: 340px; text-align: center; animation: pop 0.3s ease; }
     #success-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 6000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-    
-    .otp-field { width: 40px; height: 50px; border: 2px solid #f0f0f0; border-radius: 10px; text-align: center; font-size: 20px; font-weight: 800; margin: 0 5px; outline: none; background: #fafafa; }
-    .otp-field:focus { border-color: var(--primary); background: #fff; }
-
-    /* Nav */
     .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #eee; z-index: 2000; }
     .nav-icon { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #bbb; border: none; background: none; outline: none; cursor: pointer; position: relative; }
     .nav-icon.active { color: var(--primary); }
     .nav-icon img { width: 24px; height: 24px; opacity: 0.4; }
     .nav-icon.active img { opacity: 1; }
-
     .cart-badge { background: #ff3b30; color: white; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 10px; font-size: 9px; font-weight: 800; position: absolute; top: -2px; right: -4px; display: none; align-items: center; justify-content: center; border: 1.5px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-
     .order-items-summary { margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; width: 100%; }
     .order-item-row { display: flex; justify-content: space-between; font-size: 12px; color: #555; margin-bottom: 4px; font-weight: 600; }
-
     @media (min-width: 768px) { #product-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; } .card-img { height: 200px; } }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
     @keyframes pop { from { transform: scale(0.8); } to { transform: scale(1); } }
@@ -180,7 +149,6 @@
                     ? 'http://localhost:4000' 
                     : 'https://my-web-xrr5.onrender.com';
 
-    const token = localStorage.getItem('token');
     let currentView = 'shop';
     let currentCartTotal = 0;
     let tempCoords = { lat: null, lng: null };
@@ -189,7 +157,25 @@
     let totalBanners = 3; 
     let currentSlide = 0;
 
-    // --- [BACK BUTTON FIX START] ---
+    // --- [TOKEN LOGIC ADDED - NO LINES REMOVED] ---
+    window.onload = async () => { 
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlToken = urlParams.get('token');
+        if (urlToken) { localStorage.setItem('token', urlToken); }
+        
+        const token = localStorage.getItem('token');
+        if(token) { 
+            await syncEverything(); 
+            setInterval(syncEverything, 5000); 
+            updateHeaderName(); 
+            initialCartLoad(); 
+            const isVerified = urlParams.get('verified');
+            if (isVerified === 'true') {
+                showAlert('Verified! ✅', 'Welcome to Ratu Fresh.', 'success');
+            }
+        } else window.location.href = 'main.html'; 
+    };
+
     window.history.replaceState({ view: 'shop' }, 'shop', "");
 
     window.addEventListener('popstate', function(event) {
@@ -218,9 +204,8 @@
         const header = document.getElementById('app-header');
         if(header) header.style.display = (viewId === 'shop') ? 'block' : 'none';
         
-        // [MODIFIED] Force Price Sync on Home Click
         if(viewId === 'shop') {
-            products = []; // Clear current list to force fresh fetch
+            products = []; 
             await syncEverything();
         }
         if(viewId === 'cart') await fetchCartFromDB();
@@ -228,7 +213,6 @@
         if(viewId === 'profile') loadProfile();
         updateHeaderName();
     }
-    // --- [BACK BUTTON FIX END] ---
 
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
@@ -326,6 +310,7 @@
         const currentPrice = p.price; 
         const totalP = currentPrice * q;
         const unitLabel = p.unit === 'pc' ? (q > 1 ? 'pcs' : 'pc') : 'kg';
+        const token = localStorage.getItem('token');
 
         try {
             const res = await fetch(`${API_URL}/cart/sync`, {
@@ -353,6 +338,7 @@
     }
 
     async function fetchCartFromDB() {
+        const token = localStorage.getItem('token');
         const list = document.getElementById('cart-items-list');
         const summary = document.getElementById('cart-summary-section');
         const empty = document.getElementById('cart-empty');
@@ -402,6 +388,7 @@
     }
 
     async function removeFromCart(productId) {
+        const token = localStorage.getItem('token');
         await fetch(`${API_URL}/cart/remove/${productId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
         await fetchCartFromDB();
     }
@@ -412,6 +399,7 @@
     }
 
     async function processOrder() {
+        const token = localStorage.getItem('token');
         const btn = document.getElementById('place-order-btn');
         const originalText = btn ? btn.innerText : 'Place Order';
         try {
@@ -451,6 +439,7 @@
     }
 
     async function fetchOrdersFromDB() {
+        const token = localStorage.getItem('token');
         const list = document.getElementById('order-history-list');
         if(!list) return;
         try {
@@ -485,6 +474,7 @@
 
     function cancelOrder(orderId) {
         showAlert('Cancel?', 'Are you sure you want to cancel?', 'cancel-ask', async () => {
+            const token = localStorage.getItem('token');
             await fetch(`${API_URL}/orders/cancel/${orderId}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
             fetchOrdersFromDB();
         });
@@ -545,6 +535,7 @@
     }
 
     async function updateProfileDB() {
+        const token = localStorage.getItem('token');
         const user = JSON.parse(localStorage.getItem('user'));
         const payload = { 
             name: document.getElementById('upd-name')?.value || user.name, 
@@ -578,44 +569,20 @@
         }); 
     }
 
-    function setupOtpListeners() {
-        const otpFields = document.querySelectorAll('.otp-field');
-        otpFields.forEach((field, index) => {
-            field.addEventListener('input', (e) => {
-                if (e.target.value.length === 1 && index < otpFields.length - 1) { otpFields[index + 1].focus(); }
-            });
-            field.addEventListener('keydown', (e) => {
-                if (e.key === 'Backspace' && !e.target.value && index > 0) { otpFields[index - 1].focus(); }
-            });
-        });
-    }
-
+    // --- [OTP BOX REMOVED - ONLY THIS PART CHANGED] ---
     function showAlert(title, msg, type = 'info', action = null) {
         const box = document.getElementById('modal-content');
         if(!box) return;
-        let extraContent = '';
-        if (title.toLowerCase().includes("verify") || title.toLowerCase().includes("otp")) {
-            extraContent = `
-                <div style="display:flex; justify-content:center; margin: 20px 0;">
-                    <input type="text" class="otp-field" maxlength="1" inputmode="numeric">
-                    <input type="text" class="otp-field" maxlength="1" inputmode="numeric">
-                    <input type="text" class="otp-field" maxlength="1" inputmode="numeric">
-                    <input type="text" class="otp-field" maxlength="1" inputmode="numeric">
-                    <input type="text" class="otp-field" maxlength="1" inputmode="numeric">
-                    <input type="text" class="otp-field" maxlength="1" inputmode="numeric">
-                </div>`;
-        }
+        
         box.innerHTML = `
             <div style="font-size: 50px; margin-bottom: 15px;">${type === 'confirm' ? '🛒' : (type === 'error' ? '❌' : (type === 'cancel-ask' ? '⚠️' : '✅'))}</div>
             <h3 style="margin-bottom: 10px;">${title}</h3>
             <p style="color: #666; font-size: 14px;">${msg}</p>
-            ${extraContent}
             <div style="display: flex; gap: 10px; margin-top: 25px;">
                 ${(type === 'confirm' || type === 'cancel-ask') ? `<button onclick="closeModal()" style="flex:1; padding:12px; background:#f5f5f5; border-radius:12px; border:none; font-weight:700;">No</button>` : ''}
                 <button id="modal-ok" style="flex:1; padding:12px; background:var(--primary); color:white; border-radius:12px; border:none; font-weight:700;">Continue</button>
             </div>`;
         document.getElementById('custom-modal').style.display = 'flex';
-        if (extraContent) setupOtpListeners();
         document.getElementById('modal-ok').onclick = () => { closeModal(); if(action) action(); };
     }
     
@@ -635,7 +602,6 @@
         }
     }, 4000);
 
-    // [ADDED] Cart Live Sync Interval
     setInterval(() => {
         if(currentView === 'cart') {
             fetchCartFromDB();
@@ -643,21 +609,13 @@
     }, 5000);
 
     async function initialCartLoad() {
+        const token = localStorage.getItem('token');
         try {
             const res = await fetch(`${API_URL}/cart/get`, { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             if(data.items) updateCartBadge(data.items.length);
         } catch(e) {}
     }
-
-    window.onload = async () => { 
-        if(token) { 
-            await syncEverything(); 
-            setInterval(syncEverything, 5000); 
-            updateHeaderName(); 
-            initialCartLoad(); 
-        } else window.location.href = 'main.html'; 
-    };
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
