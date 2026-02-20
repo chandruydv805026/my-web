@@ -91,6 +91,7 @@ function getDistance(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
+const signupTempStore = {};
 const loginOtpStore = {};
 
 // --- 1. PRODUCT ROUTES ---
@@ -223,7 +224,7 @@ app.post("/reverse-geocode", async (req, res) => {
     }
 });
 
-// --- 3. [MAGIC LINK UPDATED HERE] - NEW SIGNUP MAGIC LINK ---
+// --- 3. [MAGIC LINK NEW SIGNUP ROUTE] ---
 
 app.post("/api/signup/magic-link", async (req, res) => {
     const { name, email, phone, address, pincode, area, lat, lng } = req.body;
@@ -237,41 +238,34 @@ app.post("/api/signup/magic-link", async (req, res) => {
         const newUser = new User({
             name, email, phone, address, pincode, area, lat, lng,
             verificationToken: token,
-            tokenExpiry: Date.now() + 3600000 // 1 Hour
+            tokenExpiry: Date.now() + 3600000 
         });
 
         await newUser.save();
 
         const verifyUrl = `https://my-web-xrr5.onrender.com/api/verify-email?token=${token}`;
-        const uniqueID = Date.now();
-
+        
         await resend.emails.send({
             from: 'Ratu Fresh <otp@ratufresh.me>',
             to: email,
-            subject: `नमस्ते ${name}, Verify your Ratu Fresh account! 🥦`,
+            subject: `Verify Your Account - ${name}`,
             html: `
-                <div style="font-family: sans-serif; max-width: 500px; margin: auto; border: 2px solid #24b637; border-radius: 20px; padding: 25px; text-align: center;">
-                    <h1 style="color: #24b637;">Ratu Fresh</h1>
-                    <p>नमस्ते <b>${name}</b>, अपना अकाउंट वेरीफाई करने के लिए नीचे दिए गए बटन पर क्लिक करें:</p>
-                    <div style="margin: 30px 0;">
-                        <a href="${verifyUrl}" style="background: #24b637; color: white; padding: 15px 30px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: bold; font-size: 16px;">
-                            Verify My Account ✨
-                        </a>
-                    </div>
-                    <p style="font-size: 12px; color: #999;">यदि आपने यह रिक्वेस्ट नहीं की है, तो कृपया इसे इग्नोर करें।</p>
-                    <p style="color: #ffffff; font-size: 1px; display: none !important;">Reference ID: ${uniqueID}</p>
+                <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; border: 1px solid #24b637; border-radius: 15px;">
+                    <h2 style="color: #24b637;">Welcome to Ratu Fresh!</h2>
+                    <p>नमस्ते <b>${name}</b>, अकाउंट वेरीफाई करने के लिए नीचे बटन दबाएं:</p>
+                    <a href="${verifyUrl}" style="background: #24b637; color: white; padding: 12px 25px; text-decoration: none; border-radius: 10px; display: inline-block; font-weight: bold; margin-top: 15px;">Verify My Account ✨</a>
+                    <p style="font-size: 10px; color: #999; margin-top: 20px;">Ref: ${Date.now()}</p>
                 </div>
             `
         });
 
         res.json({ success: true, message: "Magic Link sent to Gmail" });
     } catch (err) { 
-        console.error(err);
         res.status(500).json({ error: "Server Error" }); 
     }
 });
 
-// Email Verification Handler
+// Verification Link Handler
 app.get("/api/verify-email", async (req, res) => {
     const { token } = req.query;
     try {
@@ -289,8 +283,7 @@ app.get("/api/verify-email", async (req, res) => {
         user.tokenExpiry = undefined;
         await user.save();
 
-        const existingCart = await Cart.findOne({ user: user._id });
-        if (!existingCart) {
+        if (!(await Cart.findOne({ user: user._id }))) {
             await new Cart({ user: user._id, items: [] }).save();
         }
 
@@ -301,7 +294,7 @@ app.get("/api/verify-email", async (req, res) => {
     }
 });
 
-// Login route
+// --- LOGIN (REMAINED SAME) ---
 app.post("/login", async (req, res) => {
     const { phone } = req.body;
     try {
@@ -309,26 +302,19 @@ app.post("/login", async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
-        
         const otp = Math.floor(100000 + Math.random() * 900000);
         loginOtpStore[phone] = { otp, expires: Date.now() + 300000 };
-        
+
         await resend.emails.send({
             from: 'Ratu Fresh <otp@ratufresh.me>',
             to: user.email,
-            subject: `Login OTP: ${otp} - Ratu Fresh`,
-            html: `
-                <div style="font-family: sans-serif; padding: 20px; text-align: center;">
-                    <h2>Your Login OTP</h2>
-                    <h1 style="color: #24b637; letter-spacing: 5px;">${otp}</h1>
-                    <p style="display:none;">${Date.now()}</p>
-                </div>
-            `
+            subject: `Login OTP: ${otp}`,
+            html: `Your OTP is: <h1>${otp}</h1><p style="display:none;">${Date.now()}</p>`
         });
 
         const [userPart, domain] = user.email.split("@");
         const maskedEmail = userPart.substring(0, 2) + "******" + userPart.slice(-2) + "@" + domain;
-        res.json({ success: true, message: "OTP Sent to registered email", maskedEmail: maskedEmail });
+        res.json({ success: true, message: "OTP Sent", maskedEmail });
     } catch (err) {
         res.status(500).json({ error: "Login failed" });
     }
@@ -350,15 +336,14 @@ app.post("/verify-login", async (req, res) => {
 app.get("/cart/get", authenticate, async (req, res) => {
     try {
         let userCart = await Cart.findOne({ user: req.user.userId });
-        
         if (userCart && userCart.items.length > 0) {
             let updatedTotal = 0;
             let isChanged = false;
             for (let item of userCart.items) {
-                const dbProduct = await Product.findOne({ id: item.productId });
-                if (dbProduct && item.price !== dbProduct.price) {
-                    item.price = dbProduct.price;
-                    item.subtotal = dbProduct.price * item.quantity;
+                const dbP = await Product.findOne({ id: item.productId });
+                if (dbP && item.price !== dbP.price) {
+                    item.price = dbP.price;
+                    item.subtotal = dbP.price * item.quantity;
                     isChanged = true;
                 }
                 updatedTotal += (item.price * item.quantity);
@@ -368,7 +353,6 @@ app.get("/cart/get", authenticate, async (req, res) => {
                 await userCart.save();
             }
         }
-        
         res.json(userCart || { items: [], totalPrice: 0 });
     } catch (err) {
         res.status(500).json({ error: "Cart fetch failed" });
@@ -377,22 +361,21 @@ app.get("/cart/get", authenticate, async (req, res) => {
 
 app.post("/cart/sync", authenticate, async (req, res) => {
     try {
-        const { item } = req.body; 
-        const userId = req.user.userId;
+        const { item } = req.body;
         const dbProduct = await Product.findOne({ id: item.productId });
         if (dbProduct) {
             item.price = dbProduct.price;
             item.subtotal = dbProduct.price * item.quantity;
         }
-        let userCart = await Cart.findOne({ user: userId });
+        let userCart = await Cart.findOne({ user: req.user.userId });
         if (!userCart) {
-            userCart = new Cart({ user: userId, items: [item], totalPrice: item.subtotal });
+            userCart = new Cart({ user: req.user.userId, items: [item], totalPrice: item.subtotal });
         } else {
-            const itemIndex = userCart.items.findIndex(p => p.productId === item.productId);
-            if (itemIndex > -1) {
-                userCart.items[itemIndex].quantity = item.quantity;
-                userCart.items[itemIndex].price = item.price;
-                userCart.items[itemIndex].subtotal = item.subtotal;
+            const idx = userCart.items.findIndex(p => p.productId === item.productId);
+            if (idx > -1) {
+                userCart.items[idx].quantity = item.quantity;
+                userCart.items[idx].price = item.price;
+                userCart.items[idx].subtotal = item.subtotal;
             } else {
                 userCart.items.push(item);
             }
@@ -407,8 +390,7 @@ app.post("/cart/sync", authenticate, async (req, res) => {
 
 app.delete("/cart/remove/:productId", authenticate, async (req, res) => {
     try {
-        const userId = req.user.userId;
-        let userCart = await Cart.findOne({ user: userId });
+        let userCart = await Cart.findOne({ user: req.user.userId });
         if (userCart) {
             userCart.items = userCart.items.filter(i => i.productId !== req.params.productId);
             userCart.totalPrice = userCart.items.reduce((acc, curr) => acc + curr.subtotal, 0);
@@ -438,7 +420,6 @@ app.post("/orders/place", authenticate, async (req, res) => {
         if (!userCart || userCart.items.length === 0) {
             return res.status(400).json({ error: "Cart is empty" });
         }
-
         let verifiedTotal = 0;
         for (let item of userCart.items) {
             const dbP = await Product.findOne({ id: item.productId });
@@ -448,7 +429,6 @@ app.post("/orders/place", authenticate, async (req, res) => {
             }
             verifiedTotal += item.subtotal;
         }
-
         const newOrder = new Order({
             userId: req.user.userId,
             phone: user.phone,
@@ -458,19 +438,15 @@ app.post("/orders/place", authenticate, async (req, res) => {
             lat: user.lat,
             lng: user.lng,
             status: "Pending",
-            orderDate: new Date() 
+            orderDate: new Date()
         });
-
         const savedOrder = await newOrder.save();
-        const mapsLink = user.lat && user.lng ? `https://www.google.com/maps?q=${user.lat},${user.lng}` : "Location not detected";
-
         await resend.emails.send({
             from: 'Ratu Fresh Admin <otp@ratufresh.me>',
             to: ADMIN_EMAIL,
             subject: `New Order! - #${savedOrder._id.toString().substring(0,8)}`,
-            text: `Customer: ${user.name}\nAddress: ${req.body.address}\n📍 Maps Link: ${mapsLink}\nTotal: ₹${verifiedTotal}`
+            text: `Customer: ${user.name}\nTotal: ₹${verifiedTotal}`
         });
-
         await Cart.findOneAndUpdate({ user: req.user.userId }, { items: [], totalPrice: 0 });
         res.status(201).json({ success: true });
     } catch (err) {
@@ -478,7 +454,6 @@ app.post("/orders/place", authenticate, async (req, res) => {
     }
 });
 
-// CANCEL ORDER ROUTE
 app.post("/orders/cancel/:orderId", authenticate, async (req, res) => {
     try {
         const order = await Order.findOneAndUpdate(
@@ -486,38 +461,32 @@ app.post("/orders/cancel/:orderId", authenticate, async (req, res) => {
             { status: "Cancelled" },
             { new: true }
         );
-
         if (!order) {
-            return res.status(400).json({ error: "Order cannot be cancelled. It might be processed or not found." });
+            return res.status(400).json({ error: "Order cannot be cancelled." });
         }
-
         await resend.emails.send({
             from: 'Ratu Fresh <otp@ratufresh.me>',
             to: ADMIN_EMAIL,
-            subject: `Order Cancelled - #${order._id.toString().substring(0,8)}`,
-            text: `Order #${order._id} has been cancelled by the customer.`
+            subject: `Order Cancelled`,
+            text: `Order cancelled by customer.`
         });
-
         res.json({ success: true, message: "Order cancelled successfully" });
     } catch (err) {
         res.status(500).json({ error: "Cancellation failed" });
     }
 });
 
-// --- 5. NOTIFICATION & PROFILE ---
+// --- BROADCAST & PROFILE ---
 app.post("/admin/send-broadcast", authenticate, async (req, res) => {
     const { title, message } = req.body;
     try {
         await axios.post("https://onesignal.com/api/v1/notifications", {
             app_id: ONESIGNAL_APP_ID,
-            included_segments: ["Total Subscriptions"], 
+            included_segments: ["Total Subscriptions"],
             headings: { "en": title },
-            contents: { "en": message },
+            contents: { "en": message }
         }, {
-            headers: { 
-                "Content-Type": "application/json; charset=utf-8", 
-                "Authorization": `Basic ${ONESIGNAL_REST_KEY}` 
-            }
+            headers: { "Authorization": `Basic ${ONESIGNAL_REST_KEY}` }
         });
         res.json({ success: true });
     } catch (err) {
@@ -529,8 +498,8 @@ app.put("/user/update", authenticate, async (req, res) => {
     try {
         const { name, phone, address, area, lat, lng } = req.body;
         const updatedUser = await User.findByIdAndUpdate(
-            req.user.userId, 
-            { name, phone, address, area, lat, lng }, 
+            req.user.userId,
+            { name, phone, address, area, lat, lng },
             { new: true }
         );
         res.json({ success: true, user: updatedUser });
@@ -549,8 +518,7 @@ app.get("/api/user-profile", authenticate, async (req, res) => {
 });
 
 app.post("/api/admin/verify", (req, res) => {
-    const { password } = req.body;
-    if (password === process.env.ADMIN_PASSWORD) {
+    if (req.body.password === process.env.ADMIN_PASSWORD) {
         res.json({ success: true });
     } else {
         res.status(401).json({ error: "Invalid Key" });
@@ -561,16 +529,14 @@ app.get("/ping", (req, res) => {
     res.status(200).send("I am alive!");
 });
 
-// DATABASE CONNECTION
+// DATABASE CONNECTION & INITIAL SEEDING
 mongoose.connect(process.env.DBurl)
     .then(async () => {
         console.log("🚀 MongoDB Connected");
         try {
             await mongoose.connection.db.collection('orders').createIndex({ "orderDate": 1 }, { expireAfterSeconds: 7200 });
-        } catch (e) {
-            console.log("Index error");
-        }
-        
+        } catch (e) {}
+
         const count = await Product.countDocuments();
         if (count === 0) {
             const initialProducts = [
@@ -585,17 +551,16 @@ mongoose.connect(process.env.DBurl)
                 { id: 'baingan', name: 'Brinjal (Baingan)', price: 26, img: 'https://images.unsplash.com/photo-1613881553903-4543f5f2cac9?auto=format&fit=crop&q=60&w=600', unit: 'kg' },
                 { id: 'shimla', name: 'Capsicum (Shimla Mirch)', price: 40, img: 'https://media.istockphoto.com/id/137350104/photo/green-peppers.webp?a=1&b=1&s=612x612&w=0&k=20&c=7u2DZpZoSZIWkSDyvAbxkvNU09BrvPdQCPzM4LcsxvU=', unit: 'kg' },
                 { id: 'palak', name: 'Spinach (Palak)', price: 20, img: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=600', unit: 'kg' },
-                { id: 'phool', name: 'Cauliflower (Phool Gobhi)', price: 30, img: 'https://media.istockphoto.com/id/1372304664/photo/group-of-cauliflower-fresh-cauliflower-for-sale-at-a-market.webp?a=1&b=1&s=612x612&w=0&k=20&c=lEwN90TtHLVx-r3U9GRyRKmXKzfW4tdeUWRWAcOCX7k=', unit: 'kg' },
+                { id: 'phool', name: 'Cauliflower (Phool Gobhi)', price: 30, img: 'https://media.istockphoto.com/id/1372304664/photo/group-of-cauliflower-fresh-cauliflower-for-sale-at-a-market.webp?a=1&b=1&s=612x612&w=0&k=20&c=LEwN90TtHLVx-r3U9GRyRKmXKzfW4tdeUWRWAcOCX7k=', unit: 'kg' },
                 { id: 'lemon', name: 'Lemon (Nimbu)', price: 10, img: 'https://media.istockphoto.com/id/871706470/photo/group-of-fresh-lemon-on-an-old-vintage-wooden-table.webp?a=1&b=1&s=612x612&w=0&k=20&c=y-meMhMc9CK-Mtz8vM6JRaIOEeiXPcnbdsGca-KCogM=', unit: 'pc' },
                 { id: 'lahsoon', name: 'Garlic (Lahsoon)', price: 21, img: 'https://media.istockphoto.com/id/531644839/photo/garlic.webp?a=1&b=1&s=612x612&w=0&k=20&c=kABuNBJXIiwWun2GETzq_Gn_u3M9MlxgTfBFLOZYrnU=', unit: 'kg' },
                 { id: 'mirch', name: 'Green Chilli (Hari Mirch)', price: 45, img: 'https://media.istockphoto.com/id/942849220/photo/ripe-green-chilli-pepper.webp?a=1&b=1&s=612x612&w=0&k=20&c=qsUq5pSQ7j7T4O8UMEUiSgdSSt5DlKybwc7QS_o9Oao=', unit: 'kg' },
                 { id: 'chana', name: 'Green Chickpeas (Hara Chana)', price: 32, img: 'https://media.istockphoto.com/id/899854420/photo/fresh-green-chickpeas-or-chick-peas-also-known-as-harbara-or-harbhara-in-hindi-and-cicer-is.webp?a=1&b=1&s=612x612&w=0&k=20&c=B_zR-xU5c5WDsJTvZKJAq2MkTJwJ--autmPGFPPoQ3w=', unit: 'kg' }
             ];
             await Product.insertMany(initialProducts);
-            console.log("✅ 16 Initial Products Seeded Successfully");
+            console.log("✅ Initial Products Seeded");
         }
-        
         const PORT = process.env.PORT || 10000;
-        app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+        app.listen(PORT, () => console.log(`🚀 Server ready on ${PORT}`));
     })
     .catch(err => console.error("DB error:", err));
