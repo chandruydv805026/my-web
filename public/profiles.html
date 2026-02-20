@@ -160,30 +160,43 @@
     window.onload = async () => { 
         const urlParams = new URLSearchParams(window.location.search);
         const urlToken = urlParams.get('token');
-        if (urlToken) { localStorage.setItem('token', urlToken); }
+        
+        if (urlToken) { 
+            localStorage.setItem('token', urlToken); 
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
         
         const token = localStorage.getItem('token');
-        if(token && token !== "null" && token !== "undefined") { 
-            try {
-                const res = await fetch(`${API_URL}/api/user-profile`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await res.json();
-                if(data.success) {
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    updateHeaderName();
-                    loadProfile();
-                    await syncEverything();
-                    setInterval(syncEverything, 5000); 
-                    initialCartLoad();
-                    if (urlParams.get('verified') === 'true') {
-                        showAlert('Verified! ✅', 'Welcome to Ratu Fresh.', 'success');
-                    }
-                } else {
-                    window.location.href = 'main.html';
+
+        if(!token || token === "null" || token === "undefined") { 
+            window.location.href = 'main.html';
+            return;
+        }
+        
+        try {
+            const res = await fetch(`${API_URL}/api/user-profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            
+            if(data.success) {
+                localStorage.setItem('user', JSON.stringify(data.user));
+                updateHeaderName();
+                loadProfile();
+                await syncEverything();
+                
+                // 🕒 [3 SECONDS REFRESH FOR SHOP DATA]
+                setInterval(syncEverything, 3000); 
+                initialCartLoad();
+                
+                if (urlParams.get('verified') === 'true') {
+                    showAlert('Verified! ✅', 'Welcome to Ratu Fresh.', 'success');
                 }
-            } catch(e) { window.location.href = 'main.html'; }
-        } else window.location.href = 'main.html'; 
+            } else {
+                localStorage.clear();
+                window.location.href = 'main.html';
+            }
+        } catch(e) { console.log("Load Error"); }
     };
 
     window.history.replaceState({ view: 'shop' }, 'shop', "");
@@ -214,9 +227,7 @@
         const header = document.getElementById('app-header');
         if(header) header.style.display = (viewId === 'shop') ? 'block' : 'none';
         
-        if(viewId === 'shop') {
-            await syncEverything(); 
-        }
+        if(viewId === 'shop') await syncEverything(); 
         if(viewId === 'cart') await fetchCartFromDB();
         if(viewId === 'orders') await fetchOrdersFromDB();
         if(viewId === 'profile') loadProfile();
@@ -226,17 +237,13 @@
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
         if (window.location.hostname !== 'ratufresh.me' && window.location.hostname !== 'localhost') return;
-
         await OneSignal.init({
             appId: "bcfc9f9f-7c9c-43e6-9b75-8d10bdb1a06b",
             allowLocalhostAsSecureOrigin: false,
             notifyButton: { enable: true },
         });
-
         const user = JSON.parse(localStorage.getItem('user'));
-        if (user && user.phone) { 
-            await OneSignal.login(user.phone); 
-        }
+        if (user && user.phone) await OneSignal.login(user.phone); 
     });
 
     async function syncEverything() {
@@ -247,7 +254,6 @@
                 products = newProducts;
                 render(); 
             }
-
             const bRes = await fetch(`${API_URL}/api/banners?t=${Date.now()}`);
             const newBanners = await bRes.json();
             if (JSON.stringify(banners) !== JSON.stringify(newBanners)) {
@@ -260,16 +266,9 @@
     function updateBannersUI() {
         const slider = document.getElementById('offerSlider');
         if(!slider) return;
-        let bannersHTML = `
-            <div class="slide slide1"><h2>10% DISCOUNT</h2><p>Limited time offer!</p></div>
-            <div class="slide slide2"><h2>FREE DELIVERY</h2><p>Above ₹50</p></div>
-            <div class="slide slide3"><h2>100% HEALTHY</h2><p>Organic for you</p></div>
-        `;
+        let bannersHTML = `<div class="slide slide1"><h2>10% DISCOUNT</h2><p>Limited time offer!</p></div><div class="slide slide2"><h2>FREE DELIVERY</h2><p>Above ₹50</p></div><div class="slide slide3"><h2>100% HEALTHY</h2><p>Organic for you</p></div>`;
         banners.forEach(b => {
-            bannersHTML += `
-                <div class="slide">
-                    <img src="${API_URL}${b.img}" class="banner-img" alt="Offer">
-                </div>`;
+            bannersHTML += `<div class="slide"><img src="${API_URL}${b.img}" class="banner-img" alt="Offer"></div>`;
         });
         slider.innerHTML = bannersHTML;
         totalBanners = 3 + banners.length;
@@ -291,7 +290,6 @@
         if (!grid || currentView !== 'shop') return; 
         const filtered = products.filter(p => p.name.toLowerCase().includes(searchTerm));
         grid.innerHTML = filtered.map(p => {
-            // [LIVE STOCK LOGIC]
             const isOutOfStock = p.inStock === false;
             const cardOpacity = isOutOfStock ? 'opacity: 0.7; filter: grayscale(100%); background: #fff;' : '';
             const statusBadge = isOutOfStock 
@@ -307,9 +305,7 @@
             return `<div class="card" style="${cardOpacity}">
                 <div style="position: relative;">
                     <img src="${imgSrc}" class="card-img" onerror="this.src='https://via.placeholder.com/200x150?text=Fresh'">
-                    <div style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.9); padding: 2px 8px; border-radius: 8px; box-shadow: var(--shadow);">
-                        ${statusBadge}
-                    </div>
+                    <div style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.9); padding: 2px 8px; border-radius: 8px; box-shadow: var(--shadow);">${statusBadge}</div>
                 </div>
                 <div class="card-body">
                     <h3>${p.name}</h3>
@@ -317,18 +313,12 @@
                         <h3 id="price-label-${p.id}">₹${p.price}</h3>
                         <select id="qty-${p.id}" class="qty-select-style" ${isOutOfStock ? 'disabled' : ''} onchange="updatePriceUI('${p.id}', ${p.price})">${opts}</select>
                     </div>
-                    <button class="add-btn" 
-                        style="${isOutOfStock ? 'background: #ccc; cursor: not-allowed;' : ''}"
-                        onclick="${isOutOfStock ? "showAlert('Sorry', 'Item not available', 'error')" : `addToCart('${p.id}')`}"
-                        ${isOutOfStock ? 'disabled' : ''}>
-                        ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
-                    </button>
+                    <button class="add-btn" style="${isOutOfStock ? 'background: #ccc; cursor: not-allowed;' : ''}" onclick="${isOutOfStock ? "showAlert('Sorry', 'Item not available', 'error')" : `addToCart('${p.id}')`}" ${isOutOfStock ? 'disabled' : ''}>${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</button>
                 </div>
             </div>`;
         }).join('');
     }
 
-    // --- [JALDI POPUP LOGIC] ---
     async function addToCart(id) {
         const token = localStorage.getItem('token');
         const p = products.find(i => i.id === id); 
@@ -337,7 +327,6 @@
         const totalP = currentPrice * q;
         const unitLabel = p.unit === 'pc' ? (q > 1 ? 'pcs' : 'pc') : 'kg';
 
-        // 🚀 तुरंत पॉपअप दिखाओ
         showAlert('Success!', `Added ${q} ${unitLabel} ${p.name} to cart. <br><b>Total: ₹${totalP.toFixed(0)}</b>`, 'success');
 
         try {
@@ -350,18 +339,14 @@
                 const data = await res.json();
                 updateCartBadge(data.cart.items.length);
             }
-        } catch (err) { console.log("Background sync error"); }
+        } catch (err) { console.log("Sync error"); }
     }
 
     function updateCartBadge(count) {
         const badge = document.getElementById('cart-count');
         if(!badge) return;
-        if(count > 0) {
-            badge.innerText = count;
-            badge.style.display = 'flex';
-        } else {
-            badge.style.display = 'none';
-        }
+        if(count > 0) { badge.innerText = count; badge.style.display = 'flex'; } 
+        else { badge.style.display = 'none'; }
     }
 
     async function fetchCartFromDB() {
@@ -394,16 +379,7 @@
               list.innerHTML = data.items.map(item => {
                   const product = products.find(p => p.id === item.productId);
                   const finalImg = product ? (product.img.startsWith('http') ? product.img : API_URL + product.img) : '';
-                  return `
-                  <div class="cart-item-modern">
-                      <img src="${finalImg}" class="cart-img-small">
-                      <div class="cart-item-details">
-                          <h4>${item.name}</h4>
-                          <p>${item.quantity}${item.unit === 'pc' ? ' pcs' : 'kg'} • ₹${item.price}/${item.unit === 'pc' ? 'pc' : 'kg'}</p>
-                          <div class="cart-price-tag">₹${item.subtotal}</div>
-                      </div>
-                      <button class="delete-btn-text" onclick="removeFromCart('${item.productId}')">Delete</button>
-                  </div>`;
+                  return `<div class="cart-item-modern"><img src="${finalImg}" class="cart-img-small"><div class="cart-item-details"><h4>${item.name}</h4><p>${item.quantity}${item.unit === 'pc' ? ' pcs' : 'kg'} • ₹${item.price}/${item.unit === 'pc' ? 'pc' : 'kg'}</p><div class="cart-price-tag">₹${item.subtotal}</div></div><button class="delete-btn-text" onclick="removeFromCart('${item.productId}')">Delete</button></div>`;
               }).join('');
             }
             
@@ -429,13 +405,8 @@
         const token = localStorage.getItem('token');
         const btn = document.getElementById('place-order-btn');
         const originalText = btn ? btn.innerText : 'Place Order';
-        
         try {
-            if(btn) {
-              btn.disabled = true;
-              btn.style.opacity = '0.7';
-              btn.innerText = 'Processing... ⏳';
-            }
+            if(btn) { btn.disabled = true; btn.style.opacity = '0.7'; btn.innerText = 'Processing... ⏳'; }
             const user = JSON.parse(localStorage.getItem('user'));
             const res = await fetch(`${API_URL}/orders/place`, {
                 method: 'POST',
@@ -449,28 +420,23 @@
                     document.getElementById('success-overlay').style.display = 'none'; 
                     const orderBtn = document.querySelectorAll('.nav-icon')[2];
                     changeViewOnlyUI('orders', orderBtn); 
-                    if(btn) {
-                      btn.disabled = false;
-                      btn.style.opacity = '1';
-                      btn.innerText = originalText;
-                    }
+                    if(btn) { btn.disabled = false; btn.style.opacity = '1'; btn.innerText = originalText; }
                 }, 4000);
             } else { throw new Error("Order Failed"); }
         } catch (err) {
-            if(btn) {
-              btn.disabled = false;
-              btn.style.opacity = '1';
-              btn.innerText = originalText;
-            }
+            if(btn) { btn.disabled = false; btn.style.opacity = '1'; btn.innerText = originalText; }
             showAlert('Error', 'Order failed. Please login again.', 'error');
         }
     }
 
-    // --- [LIVE STATUS AUTO REFRESH] ---
+    // 🕒 [3 SECONDS REFRESH FOR ORDERS]
     setInterval(() => {
-        if (currentView === 'orders') {
-            fetchOrdersFromDB(); 
-        }
+        if (currentView === 'orders') fetchOrdersFromDB(); 
+    }, 3000); 
+
+    // 🕒 [3 SECONDS REFRESH FOR CART]
+    setInterval(() => {
+        if (currentView === 'cart') fetchCartFromDB();
     }, 3000); 
 
     async function fetchOrdersFromDB() {
@@ -478,45 +444,17 @@
         const list = document.getElementById('order-history-list');
         if(!list) return;
         try {
-            const res = await fetch(`${API_URL}/orders/my-orders?t=${Date.now()}`, { 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            });
+            const res = await fetch(`${API_URL}/orders/my-orders?t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` } });
             const orders = await res.json();
             if(!orders || orders.length === 0) {
                 list.innerHTML = `<div style="text-align:center; margin-top:50px; color:#bbb;"><p>No orders yet!</p></div>`;
                 return;
             }
-
-            const statusColors = {
-                'Pending': '#ffa500',
-                'Confirmed': '#2196f3',
-                'Out for Delivery': '#9c27b0',
-                'Delivered': '#2e7d32',
-                'Cancelled': '#f44336'
-            };
-
+            const statusColors = { 'Pending': '#ffa500', 'Confirmed': '#2196f3', 'Out for Delivery': '#9c27b0', 'Delivered': '#2e7d32', 'Cancelled': '#f44336' };
             list.innerHTML = orders.map(o => {
                 const col = statusColors[o.status] || '#888';
-                const itemsDetails = o.items.map(item => `
-                    <div class="order-item-row">
-                        <span>• ${item.name}</span>
-                        <span>${item.quantity}${item.unit === 'pc' ? 'pc' : 'kg'}</span>
-                    </div>`).join('');
-                return `
-                <div class="cart-item-modern" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-                    <div style="display: flex; width: 100%; align-items: center; justify-content: space-between;">
-                        <div class="cart-item-details" style="margin-left: 0;">
-                            <p style="font-size: 10px; color: #aaa; font-weight: 800;">ORDER ID: #${o._id.substring(0,8)}</p>
-                            <h4 style="margin: 3px 0;">${o.items.length} Items Purchased</h4>
-                            <span style="background:${col}22; color:${col}; padding:4px 10px; border-radius:10px; font-weight:800; font-size:11px; border: 1px solid ${col}44;">
-                                ● ${o.status.toUpperCase()}
-                            </span>
-                        </div>
-                        <div class="cart-price-tag">₹${o.totalAmount}</div>
-                    </div>
-                    <div class="order-items-summary">${itemsDetails}</div>
-                    ${o.status === 'Pending' ? `<button class="cancel-btn" onclick="cancelOrder('${o._id}')">CANCEL ORDER</button>` : ''}
-                </div>`;
+                const itemsDetails = o.items.map(item => `<div class="order-item-row"><span>• ${item.name}</span><span>${item.quantity}${item.unit === 'pc' ? 'pc' : 'kg'}</span></div>`).join('');
+                return `<div class="cart-item-modern" style="flex-direction: column; align-items: flex-start; gap: 8px;"><div style="display: flex; width: 100%; align-items: center; justify-content: space-between;"><div class="cart-item-details" style="margin-left: 0;"><p style="font-size: 10px; color: #aaa; font-weight: 800;">ORDER ID: #${o._id.substring(0,8)}</p><h4 style="margin: 3px 0;">${o.items.length} Items Purchased</h4><span style="background:${col}22; color:${col}; padding:4px 10px; border-radius:10px; font-weight:800; font-size:11px; border: 1px solid ${col}44;">● ${o.status.toUpperCase()}</span></div><div class="cart-price-tag">₹${o.totalAmount}</div></div><div class="order-items-summary">${itemsDetails}</div>${o.status === 'Pending' ? `<button class="cancel-btn" onclick="cancelOrder('${o._id}')">CANCEL ORDER</button>` : ''}</div>`;
             }).join('');
         } catch (err) { }
     }
@@ -531,33 +469,19 @@
 
     function detectMyLocation() {
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    tempCoords.lat = lat;
-                    tempCoords.lng = lng;
-                    try {
-                        const res = await fetch(`${API_URL}/reverse-geocode`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ lat, lng })
-                        });
-                        const data = await res.json();
-                        if(res.ok) {
-                            if(document.getElementById('upd-addr')) document.getElementById('upd-addr').value = data.displayName;
-                            if(document.getElementById('upd-area')) document.getElementById('upd-area').value = data.area || data.pincode;
-                            await updateProfileDB();
-                        } else {
-                            showAlert('Area Error', data.error, 'error');
-                        }
-                    } catch (err) {
-                        showAlert('Error', 'Failed to get address details.', 'error');
-                    }
-                },
-                (error) => { showAlert('Permission Denied', 'Please allow location access.', 'error'); },
-                { enableHighAccuracy: true }
-            );
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude; const lng = position.coords.longitude;
+                tempCoords.lat = lat; tempCoords.lng = lng;
+                try {
+                    const res = await fetch(`${API_URL}/reverse-geocode`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat, lng }) });
+                    const data = await res.json();
+                    if(res.ok) {
+                        if(document.getElementById('upd-addr')) document.getElementById('upd-addr').value = data.displayName;
+                        if(document.getElementById('upd-area')) document.getElementById('upd-area').value = data.area || data.pincode;
+                        await updateProfileDB();
+                    } else { showAlert('Area Error', data.error, 'error'); }
+                } catch (err) { showAlert('Error', 'Failed to get address details.', 'error'); }
+            }, (error) => { showAlert('Permission Denied', 'Please allow location access.', 'error'); }, { enableHighAccuracy: true });
         } else { showAlert('Not Supported', 'Location not supported.', 'error'); }
     }
 
@@ -567,69 +491,30 @@
         const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0,2);
         const profileView = document.getElementById('profile-view');
         if(profileView) {
-          profileView.innerHTML = `
-              <div class="profile-card">
-                  <div class="avatar-circle">${initials}</div>
-                  <h3 style="text-align: center; margin-bottom: 25px;">Account Details</h3>
-                  <button class="detect-btn" onclick="detectMyLocation()">📍 Detect & Save Location</button>
-                  <div class="input-group"><label>NAME</label><input type="text" id="upd-name" class="profile-input" value="${user.name}"></div>
-                  <div class="input-group"><label>PHONE</label><input type="tel" id="upd-phone" class="profile-input" value="${user.phone}"></div>
-                  <div class="input-group"><label>ADDRESS</label><input type="text" id="upd-addr" class="profile-input" value="${user.address}"></div>
-                  <div class="input-group"><label>AREA / PINCODE</label><input type="text" id="upd-area" class="profile-input" value="${user.area || ''}"></div>
-                  <div class="input-group"><label>EMAIL (READ ONLY)</label><input type="text" class="profile-input" value="${user.email}" disabled style="color:#aaa;"></div>
-                  <button class="add-btn" style="margin-top: 15px;" onclick="updateProfileDB()">Save Changes</button>
-                  <button onclick="logout()" style="width: 100%; margin-top: 25px; background: none; border: none; color: #ff4444; font-weight: 800; font-size: 13px; cursor:pointer;">LOGOUT ACCOUNT</button>
-              </div>`;
+          profileView.innerHTML = `<div class="profile-card"><div class="avatar-circle">${initials}</div><h3 style="text-align: center; margin-bottom: 25px;">Account Details</h3><button class="detect-btn" onclick="detectMyLocation()">📍 Detect & Save Location</button><div class="input-group"><label>NAME</label><input type="text" id="upd-name" class="profile-input" value="${user.name}"></div><div class="input-group"><label>PHONE</label><input type="tel" id="upd-phone" class="profile-input" value="${user.phone}"></div><div class="input-group"><label>ADDRESS</label><input type="text" id="upd-addr" class="profile-input" value="${user.address}"></div><div class="input-group"><label>AREA / PINCODE</label><input type="text" id="upd-area" class="profile-input" value="${user.area || ''}"></div><div class="input-group"><label>EMAIL (READ ONLY)</label><input type="text" class="profile-input" value="${user.email}" disabled style="color:#aaa;"></div><button class="add-btn" style="margin-top: 15px;" onclick="updateProfileDB()">Save Changes</button><button onclick="logout()" style="width: 100%; margin-top: 25px; background: none; border: none; color: #ff4444; font-weight: 800; font-size: 13px; cursor:pointer;">LOGOUT ACCOUNT</button></div>`;
         }
     }
 
     async function updateProfileDB() {
         const token = localStorage.getItem('token');
         const user = JSON.parse(localStorage.getItem('user'));
-        const payload = { 
-            name: document.getElementById('upd-name')?.value || user.name, 
-            phone: document.getElementById('upd-phone')?.value || user.phone, 
-            address: document.getElementById('upd-addr')?.value || user.address, 
-            area: document.getElementById('upd-area')?.value || user.area,
-            lat: tempCoords.lat || user.lat,
-            lng: tempCoords.lng || user.lng
-        };
+        const payload = { name: document.getElementById('upd-name')?.value || user.name, phone: document.getElementById('upd-phone')?.value || user.phone, address: document.getElementById('upd-addr')?.value || user.address, area: document.getElementById('upd-area')?.value || user.area, lat: tempCoords.lat || user.lat, lng: tempCoords.lng || user.lng };
         try {
-            const res = await fetch(`${API_URL}/user/update`, { 
-                method: 'PUT', 
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-                body: JSON.stringify(payload) 
-            });
+            const res = await fetch(`${API_URL}/user/update`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
             if(res.ok) {
-                const data = await res.json();
-                localStorage.setItem('user', JSON.stringify(data.user));
-                updateHeaderName();
-                loadProfile();
-                tempCoords = { lat: null, lng: null };
+                const data = await res.json(); localStorage.setItem('user', JSON.stringify(data.user));
+                updateHeaderName(); loadProfile(); tempCoords = { lat: null, lng: null };
                 showAlert('Profile Updated!', 'Your changes have been saved successfully.', 'success');
             }
         } catch (err) { showAlert('Error', 'Failed to save changes.', 'error'); }
     }
 
-    function logout() { 
-        showAlert('Logout?', 'Sign out from Ratu Fresh?', 'cancel-ask', () => { 
-            localStorage.clear(); 
-            window.location.href = 'main.html'; 
-        }); 
-    }
+    function logout() { showAlert('Logout?', 'Sign out from Ratu Fresh?', 'cancel-ask', () => { localStorage.clear(); window.location.href = 'main.html'; }); }
 
     function showAlert(title, msg, type = 'info', action = null) {
         const box = document.getElementById('modal-content');
         if(!box) return;
-        
-        box.innerHTML = `
-            <div style="font-size: 50px; margin-bottom: 15px;">${type === 'confirm' ? '🛒' : (type === 'error' ? '❌' : (type === 'cancel-ask' ? '⚠️' : '✅'))}</div>
-            <h3 style="margin-bottom: 10px;">${title}</h3>
-            <p style="color: #666; font-size: 14px;">${msg}</p>
-            <div style="display: flex; gap: 10px; margin-top: 25px;">
-                ${(type === 'confirm' || type === 'cancel-ask') ? `<button onclick="closeModal()" style="flex:1; padding:12px; background:#f5f5f5; border-radius:12px; border:none; font-weight:700;">No</button>` : ''}
-                <button id="modal-ok" style="flex:1; padding:12px; background:var(--primary); color:white; border-radius:12px; border:none; font-weight:700;">Continue</button>
-            </div>`;
+        box.innerHTML = `<div style="font-size: 50px; margin-bottom: 15px;">${type === 'confirm' ? '🛒' : (type === 'error' ? '❌' : (type === 'cancel-ask' ? '⚠️' : '✅'))}</div><h3 style="margin-bottom: 10px;">${title}</h3><p style="color: #666; font-size: 14px;">${msg}</p><div style="display: flex; gap: 10px; margin-top: 25px;">${(type === 'confirm' || type === 'cancel-ask') ? `<button onclick="closeModal()" style="flex:1; padding:12px; background:#f5f5f5; border-radius:12px; border:none; font-weight:700;">No</button>` : ''}<button id="modal-ok" style="flex:1; padding:12px; background:var(--primary); color:white; border-radius:12px; border:none; font-weight:700;">Continue</button></div>`;
         document.getElementById('custom-modal').style.display = 'flex';
         document.getElementById('modal-ok').onclick = () => { closeModal(); if(action) action(); };
     }
@@ -644,17 +529,8 @@
 
     setInterval(() => {
         const slider = document.getElementById('offerSlider');
-        if(slider) { 
-            currentSlide = (currentSlide + 1) % totalBanners; 
-            slider.style.transform = `translateX(-${currentSlide * 100}%)`; 
-        }
+        if(slider) { currentSlide = (currentSlide + 1) % totalBanners; slider.style.transform = `translateX(-${currentSlide * 100}%)`; }
     }, 4000);
-
-    setInterval(() => {
-        if(currentView === 'cart') {
-            fetchCartFromDB();
-        }
-    }, 5000);
 
     async function initialCartLoad() {
         const token = localStorage.getItem('token');
@@ -669,9 +545,7 @@
       window.addEventListener('load', function() {
         navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
           console.log('PWA Registered');
-        }).catch(function(err) {
-          console.log('PWA Registration failed: ', err);
-        });
+        }).catch(function(err) { console.log('PWA Registration failed: ', err); });
       });
     }
 </script>
