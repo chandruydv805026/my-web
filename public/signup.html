@@ -190,10 +190,20 @@
         const data = await res.json();
         
         if (res.ok) {
-          showStatus("Opening Gmail... Please check your Inbox! 📩");
+          showStatus("Opening Gmail App... Please check your Inbox! 📩");
+          
           setTimeout(() => {
-            window.location.href = "https://mail.google.com/mail/u/0/#inbox";
+            // [DEEP LINK] मोबाइल पर सीधा Gmail App खोलने का तरीका
+            const gmailAppUrl = "googlegmail:///co?to="; 
+            const webUrl = "https://mail.google.com/mail/u/0/#inbox";
+            
+            // ऐप खोलने की कोशिश, वरना वेब वर्जन
+            window.location.href = gmailAppUrl;
+            setTimeout(() => {
+                window.location.href = webUrl;
+            }, 500);
           }, 2000);
+          
         } else {
           showStatus(data.error, true);
           signupBtn.disabled = false;
