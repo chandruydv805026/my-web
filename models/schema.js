@@ -38,7 +38,7 @@ const userSchema = new Schema({
     trim: true
   },
 
-  // 📍 Geolocation fields (Naya Add kiya gaya hai)
+  // 📍 Geolocation fields
   lat: {
     type: Number,
     default: null
@@ -52,6 +52,20 @@ const userSchema = new Schema({
   cart: {
     type: Schema.Types.ObjectId,
     ref: 'Cart',
+    default: null
+  },
+
+  // ✨ Email Verification Fields (Naya Add kiya gaya hai)
+  isVerified: {
+    type: Boolean,
+    default: false // Signup ke samay user verify nahi hoga
+  },
+  verificationToken: {
+    type: String,
+    default: null
+  },
+  tokenExpiry: {
+    type: Date,
     default: null
   }
 
