@@ -23,10 +23,6 @@ const orderSchema = new mongoose.Schema({
       price: {
         type: Number,
         required: true
-      },
-      unit: {      // [MUST ADD] क्योंकि server.js इसे भेज रहा है
-        type: String,
-        default: 'kg'
       }
     }
   ],
@@ -47,7 +43,15 @@ const orderSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  
+  orderDate: {
+    type: Date,
+    default: Date.now
+  },
+  paymentMode: {
+    type: String,
+    enum: ['Cash on Delivery', 'UPI', 'Card'],
+    default: 'Cash on Delivery'
+  }
+});
 
 module.exports = mongoose.model('Order', orderSchema);
-
