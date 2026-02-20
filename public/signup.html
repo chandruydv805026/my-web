@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Ratu Fresh | Signup</title>
@@ -25,16 +27,24 @@
     .toast.show { transform: translateY(0); }
     .toast.error { background: #e74c3c; }
 
+    /* [STYLE] Google Button inside Email Box */
+    .email-input-wrapper { position: relative; display: flex; align-items: center; }
+    .google-icon-btn { 
+      position: absolute; right: 8px; height: 40px; width: 40px; 
+      background: #fff; border: 1px solid #eee; border-radius: 12px; 
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: 0.2s; z-index: 5;
+    }
+    .google-hidden-btn { 
+      opacity: 0; position: absolute; right: 0; width: 100%; height: 56px; z-index: 10; cursor: pointer; 
+    }
+
     .overlay { 
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
       backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 2000; padding: 20px;
     }
     .modal-card { 
       background: #fff; padding: 30px; border-radius: 24px; width: 100%; max-width: 360px; text-align: center; 
-    }
-    .otp-input { 
-      width: 100%; text-align: center; font-size: 30px; letter-spacing: 10px; font-weight: 800; 
-      margin: 20px 0; border: 1.5px solid #eee; background: #f9f9f9; border-radius: 16px; height: 60px; outline: none;
     }
     .success-icon { font-size: 50px; color: var(--brand-green); margin-bottom: 10px; }
   </style>
@@ -51,7 +61,26 @@
     <form id="signupForm">
       <div class="form-group"><label>Full Name</label><input type="text" id="fullName" required></div>
       <div class="form-group"><label>Mobile Number</label><input type="tel" id="phone" maxlength="10" required></div>
-      <div class="form-group"><label>Email Address</label><input type="email" id="email" required></div>
+      
+      <div class="form-group">
+        <label>Email Address</label>
+        <div class="email-input-wrapper">
+          <input type="email" id="email" placeholder="example@gmail.com" required style="padding-right: 60px;">
+          
+          <div id="g_id_onload"
+               data-client_id="7338045042-h6edgesc81p3gkj1spq9mgl382nmpv7o.apps.googleusercontent.com"
+               data-callback="handleGoogleResponse"
+               data-auto_prompt="false">
+          </div>
+          
+          <div class="google-icon-btn">
+            <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" width="20" height="20" alt="G">
+          </div>
+          
+          <div class="g_id_signin google-hidden-btn" data-type="standard" data-shape="rectangular" data-width="400"></div>
+        </div>
+      </div>
+
       <div class="form-group">
         <label>Delivery Address</label>
         <div class="address-row">
@@ -67,16 +96,6 @@
     </form>
   </div>
 
-  <div id="otpOverlay" class="overlay">
-    <div class="modal-card">
-      <h3 style="margin:0;">Verify Email</h3>
-      <p style="color:#666; font-size:14px; margin-top:8px;">Enter the OTP sent to: <br><b id="displayEmail" style="color:var(--brand-green);"></b></p>
-      <input type="text" id="otpVal" class="otp-input" maxlength="6" placeholder="000000">
-      <button type="button" class="submit-btn" id="verifyOtpBtn">Verify & Signup</button>
-      <p id="closeOtp" style="margin-top:15px; font-size:13px; color:#999; cursor:pointer;">Cancel</p>
-    </div>
-  </div>
-
   <div id="successOverlay" class="overlay">
     <div class="modal-card">
       <div class="success-icon">✅</div>
@@ -89,16 +108,24 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    // [IMPROVED] Automatically detect server URL (Localhost vs Render)
+    // [IMPROVED] Automatically detect server URL
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                      ? 'http://localhost:4000' 
-                     : ''; // Render handles paths relatively when serving static files
+                     : 'https://ratufresh.me'; 
 
     const toast = document.getElementById('toast');
-    const otpOverlay = document.getElementById('otpOverlay');
     const successOverlay = document.getElementById('successOverlay');
     
     let signupCoords = { lat: null, lng: null };
+
+    // --- [NEW] Google Detection Handler ---
+    function handleGoogleResponse(response) {
+        const payload = JSON.parse(atob(response.credential.split('.')[1]));
+        document.getElementById('fullName').value = payload.name;
+        document.getElementById('email').value = payload.email;
+        showStatus("Gmail detected! Now capture your location. ✨");
+        document.getElementById('phone').focus();
+    }
 
     function showStatus(msg, isError = false) {
       toast.textContent = msg;
@@ -106,7 +133,7 @@
       setTimeout(() => toast.classList.remove('show'), 4000);
     }
 
-    // --- GPS Logic (Forces Browser Prompt) ---
+    // --- GPS Logic ---
     document.getElementById('locBtn').addEventListener('click', () => {
       if (!navigator.geolocation) return showStatus("GPS not supported", true);
       showStatus("Please allow location access...");
@@ -133,7 +160,7 @@
       }, { enableHighAccuracy: true, timeout: 15000 });
     });
 
-    // --- Step 1: Send OTP ---
+    // --- Magic Link Signup Logic ---
     document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!signupCoords.lat) return showStatus("Please detect location first!", true);
@@ -154,15 +181,19 @@
       };
 
       try {
-        const res = await fetch(`${API_URL}/send-signup-otp`, {
+        const res = await fetch(`${API_URL}/api/signup/magic-link`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData)
         });
+        
         const data = await res.json();
+        
         if (res.ok) {
-          document.getElementById('displayEmail').innerText = data.maskedEmail;
-          otpOverlay.style.display = 'flex';
+          showStatus("Opening Gmail... Please check your Inbox! 📩");
+          setTimeout(() => {
+            window.location.href = "https://mail.google.com/mail/u/0/#inbox";
+          }, 2000);
         } else {
           showStatus(data.error, true);
           signupBtn.disabled = false;
@@ -173,44 +204,6 @@
         signupBtn.disabled = false;
         signupBtn.innerText = "Create Account";
       }
-    });
-
-    // --- Step 2: Verify OTP & Show Congratulations ---
-    document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
-      const otp = document.getElementById('otpVal').value;
-      const email = document.getElementById('email').value;
-      const verifyBtn = document.getElementById('verifyOtpBtn');
-
-      try {
-        verifyBtn.disabled = true;
-        verifyBtn.innerText = "Verifying...";
-
-        const res = await fetch(`${API_URL}/verify-signup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, otp })
-        });
-
-        if (res.ok) {
-          otpOverlay.style.display = 'none'; // OTP डब्बा बंद
-          successOverlay.style.display = 'flex'; // बधाई वाला डब्बा चालू
-          console.log("Success! Showing Congratulations.");
-        } else {
-          showStatus("Invalid OTP. Try again.", true);
-          verifyBtn.disabled = false;
-          verifyBtn.innerText = "Verify & Signup";
-        }
-      } catch (err) {
-        showStatus("Verification failed", true);
-        verifyBtn.disabled = false;
-        verifyBtn.innerText = "Verify & Signup";
-      }
-    });
-
-    document.getElementById('closeOtp').addEventListener('click', () => {
-      otpOverlay.style.display = 'none';
-      document.getElementById('signupBtn').disabled = false;
-      document.getElementById('signupBtn').innerText = "Create Account";
     });
   </script>
 </body>
