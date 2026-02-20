@@ -38,7 +38,7 @@
     .content-section { display: none; animation: fadeIn 0.4s ease; }
     .content-section.active { display: block; }
 
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
 
     /* Cards Styling */
     .glass-card { background: var(--card-bg); border-radius: 24px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; backdrop-filter: blur(10px); }
@@ -55,14 +55,20 @@
     .btn-primary { background: linear-gradient(135deg, #22d3ee, #2563eb); color: white; width: 100%; margin-top: 15px; }
     .btn-success { background: var(--success); color: #064e3b; width: 100%; margin-top: 10px; }
     .btn-danger { background: var(--danger); color: white; width: 100%; margin-top: 10px; }
+    .btn-warning { background: var(--warning); color: #000; width: 100%; margin-top: 10px; }
     .btn-logout { background: rgba(248, 113, 113, 0.1); color: var(--danger); padding: 8px 12px; font-size: 11px; border: 1.5px solid var(--danger); }
     .btn:active { transform: scale(0.96); filter: brightness(1.2); }
 
     /* Product Item List */
-    .product-list-card { padding: 18px; margin-bottom: 15px; }
+    .product-list-card { padding: 18px; margin-bottom: 15px; position: relative; }
     .product-header { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
     .product-header img { width: 45px; height: 45px; border-radius: 10px; object-fit: cover; background: #334155; }
     .product-header input { margin-top: 0; padding: 10px; font-size: 14px; }
+
+    /* Stock Toggle Switch */
+    .stock-badge { position: absolute; top: 20px; right: 20px; padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+    .badge-in { background: rgba(52, 211, 153, 0.2); color: var(--success); border: 1px solid var(--success); }
+    .badge-out { background: rgba(248, 113, 113, 0.2); color: var(--danger); border: 1px solid var(--danger); }
 
     /* Banner Thumbnail Grid */
     #banner-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -132,7 +138,7 @@
         </div>
 
         <div id="product-list-container">
-          <h3 style="padding-left: 10px; margin-bottom: 10px;">Current Inventory</h3>
+          <h3 style="padding-left: 10px; margin-bottom: 10px;">Current Inventory & Stock</h3>
           <div id="product-list">
             <p style="text-align: center; color: #64748b; padding: 20px;">Loading items...</p>
           </div>
@@ -171,7 +177,7 @@
   <script>
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                     ? 'http://localhost:4000' 
-                    : '';
+                    : 'https://my-web-xrr5.onrender.com';
 
     let adminPass = sessionStorage.getItem('adminAuthKey');
 
@@ -225,7 +231,6 @@
       loadAllProducts();
     }
 
-    // Auto-login logic
     window.onload = async () => { 
         if (adminPass) {
             const res = await fetch(`${API_URL}/api/admin/verify`, {
@@ -258,23 +263,41 @@
       try {
         const res = await fetch(`${API_URL}/api/products?t=${Date.now()}`);
         const data = await res.json();
-        listDiv.innerHTML = data.map(p => `
+        listDiv.innerHTML = data.map(p => {
+          const isOut = p.inStock === false;
+          return `
           <div class="glass-card product-list-card">
+            <span class="stock-badge ${isOut ? 'badge-out' : 'badge-in'}">${isOut ? 'Out of Stock' : 'In Stock'}</span>
             <div class="product-header">
               <img src="${p.img.startsWith('http') ? p.img : API_URL + p.img}" onerror="this.src='https://via.placeholder.com/50'">
               <input type="text" id="n-${p.id}" value="${p.name}">
             </div>
             <div class="input-row">
-              <div style="flex: 1;"><label>Price</label><input type="number" id="p-${p.id}" value="${p.price}"></div>
+              <div style="flex: 1;"><label>Price (₹)</label><input type="number" id="p-${p.id}" value="${p.price}"></div>
               <div style="flex: 2;"><label>Image Path</label><input type="text" id="i-${p.id}" value="${p.img}"></div>
             </div>
             <div class="input-row" style="margin-top:10px;">
                 <button class="btn btn-success" style="flex:2" onclick="updateItem('${p.id}', this)">💾 SAVE</button>
-                <button class="btn btn-danger" style="flex:1" onclick="deleteItem('${p.id}')">🗑️ DELETE</button>
+                <button class="btn btn-warning" style="flex:2" onclick="toggleStock('${p.id}', ${!isOut})">${isOut ? '✅ SET IN-STOCK' : '🚫 SET OUT-STOCK'}</button>
+                <button class="btn btn-danger" style="flex:1" onclick="deleteItem('${p.id}')">🗑️</button>
             </div>
           </div>
-        `).join('');
+        `}).join('');
       } catch (e) { listDiv.innerHTML = "<p style='text-align:center'>Connection Error</p>"; }
+    }
+
+    async function toggleStock(productId, currentStatus) {
+        const res = await fetch(`${API_URL}/api/admin/update-stock`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                productId, 
+                inStock: !currentStatus, 
+                password: adminPass 
+            })
+        });
+        if(res.ok) loadAllProducts();
+        else alert("Stock update failed");
     }
 
     async function updateItem(id, btn) {
@@ -300,17 +323,14 @@
     }
 
     async function deleteItem(id) {
-        if(!confirm("क्या आप वाकई इस सब्जी को हटाना चाहते हैं?")) return;
+        if(!confirm("Delete this item?")) return;
         try {
             const res = await fetch(`${API_URL}/api/products/delete/${id}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: adminPass })
             });
-            if(res.ok) {
-                alert("सब्जी हटा दी गई!");
-                loadAllProducts(); 
-            } else { alert("Error deleting product"); }
+            if(res.ok) loadAllProducts(); 
         } catch (err) { alert("Server error"); }
     }
 
