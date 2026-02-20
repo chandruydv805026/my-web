@@ -168,26 +168,42 @@ app.post("/reverse-geocode", async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Location error" }); }
 });
 
-// --- 4. AUTH & MAGIC LINK ---
+// --- 4. AUTH & MAGIC LINK (UPDATED FOR DUPLICATE FIX) ---
 app.post("/api/signup/magic-link", async (req, res) => {
     const { name, email, phone, address, pincode, area, lat, lng } = req.body;
     try {
-        const existing = await User.findOne({ $or: [{ email }, { phone }] });
-        if (existing) return res.status(400).json({ error: "Already registered." });
+        let user = await User.findOne({ $or: [{ email }, { phone }] });
+
+        // अगर यूजर है और Verified है, तभी "Already Registered" बोलें
+        if (user && user.isVerified === true) {
+            return res.status(400).json({ error: "Account already verified. Please Login." });
+        }
 
         const mToken = crypto.randomBytes(32).toString("hex");
-        const newUser = new User({ name, email, phone, address, pincode, area, lat, lng, verificationToken: mToken, tokenExpiry: Date.now() + 3600000 });
-        await newUser.save();
+        const expiry = Date.now() + 3600000;
+
+        if (user && user.isVerified === false) {
+            // पुराने Unverified यूजर का डेटा अपडेट करें और नया लिंक भेजें
+            user.name = name; user.address = address; user.pincode = pincode;
+            user.area = area; user.lat = lat; user.lng = lng;
+            user.verificationToken = mToken; user.tokenExpiry = expiry;
+            await user.save();
+        } else {
+            // बिल्कुल नया यूजर
+            user = new User({ name, email, phone, address, pincode, area, lat, lng, verificationToken: mToken, tokenExpiry: expiry });
+            await user.save();
+        }
 
         const verifyUrl = `https://ratufresh.me/api/verify-email?token=${mToken}`;
         await resend.emails.send({
             from: 'Ratu Fresh <otp@ratufresh.me>', to: email,
             subject: `नमस्ते ${name}, Verify Account!`,
-            html: `<div style="text-align:center; padding:20px; border:1px solid #24b637; border-radius:15px;">
-                   <h2>Welcome!</h2><a href="${verifyUrl}" style="background:#24b637; color:white; padding:15px 25px; text-decoration:none; border-radius:10px; display:inline-block;">Verify Account ✨</a>
+            html: `<div style="text-align:center; padding:20px; border:1px solid #24b637; border-radius:15px; font-family:sans-serif;">
+                   <h2>Welcome!</h2><p>Please click below to verify your email.</p>
+                   <a href="${verifyUrl}" style="background:#24b637; color:white; padding:15px 25px; text-decoration:none; border-radius:10px; display:inline-block; font-weight:bold;">Verify Account ✨</a>
                    </div>`
         });
-        res.json({ success: true, message: "Magic Link sent" });
+        res.json({ success: true, message: "Link sent" });
     } catch (err) { res.status(500).json({ error: "Signup error" }); }
 });
 
@@ -203,8 +219,21 @@ app.get("/api/verify-email", async (req, res) => {
         if (!(await Cart.findOne({ user: user._id }))) await new Cart({ user: user._id, items: [] }).save();
 
         const loginToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "90d" });
+        // Redirecting simply to profiles.html
         res.redirect(`https://ratufresh.me/profiles.html?token=${loginToken}&verified=true`);
     } catch (err) { res.status(500).send("Error"); }
+});
+
+// [POLLING ROUTE] - यह चेक करेगा कि Gmail में बटन दबाया गया या नहीं
+app.get("/api/check-verification/:phone", async (req, res) => {
+    try {
+        const user = await User.findOne({ phone: req.params.phone });
+        if (user && user.isVerified) {
+            const loginToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "90d" });
+            return res.json({ verified: true, token: loginToken, user: user });
+        }
+        res.json({ verified: false });
+    } catch (err) { res.status(500).json({ error: "Error" }); }
 });
 
 app.post("/login", async (req, res) => {
@@ -314,32 +343,22 @@ app.post("/orders/place", authenticate, async (req, res) => {
         });
         const saved = await newOrder.save();
 
-        // [EMAIL ACTION LOGIC] - Status + Cancel Buttons
         const adminKey = process.env.ADMIN_PASSWORD;
         const statusUrl = (s) => `https://ratufresh.me/api/admin/email-status?orderId=${saved._id}&status=${encodeURIComponent(s)}&pass=${adminKey}`;
-        
         const itemsHtml = orderItems.map(i => `<li>${i.name} - ${i.quantity}</li>`).join('');
 
         await resend.emails.send({
             from: 'Ratu Fresh <otp@ratufresh.me>', to: ADMIN_EMAIL,
             subject: `New Order #${saved._id.toString().substring(0,8)} Received! 🥬`,
-            html: `
-                <div style="font-family:sans-serif; border:2px solid #2e7d32; padding:20px; border-radius:15px; max-width:500px;">
+            html: `<div style="font-family:sans-serif; border:2px solid #2e7d32; padding:20px; border-radius:15px;">
                     <h2 style="color:#2e7d32;">New Order Alert!</h2>
-                    <p><b>Customer:</b> ${user.name}</p>
-                    <p><b>Phone:</b> ${user.phone}</p>
-                    <p><b>Address:</b> ${req.body.address || user.address}</p>
-                    <p><b>Items:</b><ul>${itemsHtml}</ul></p>
-                    <p><b>Total:</b> ₹${cart.totalPrice}</p>
-                    <hr>
-                    <p><b>Quick Actions:</b></p>
-                    <div style="margin-bottom:20px;">
-                        <a href="${statusUrl('Out for Delivery')}" style="background:#9c27b0; color:white; padding:10px 15px; text-decoration:none; border-radius:8px; display:inline-block; font-weight:bold; margin-bottom:10px; margin-right:5px;">🚀 Out for Delivery</a>
-                        <a href="${statusUrl('Delivered')}" style="background:#2e7d32; color:white; padding:10px 15px; text-decoration:none; border-radius:8px; display:inline-block; font-weight:bold; margin-bottom:10px; margin-right:5px;">✅ Mark Completed</a>
-                        <a href="${statusUrl('Cancelled')}" style="background:#ff4444; color:white; padding:10px 15px; text-decoration:none; border-radius:8px; display:inline-block; font-weight:bold;">❌ Cancel Order</a>
-                    </div>
-                </div>
-            `
+                    <p><b>Customer:</b> ${user.name}</p><p><b>Phone:</b> ${user.phone}</p><p><b>Address:</b> ${req.body.address || user.address}</p>
+                    <p><b>Items:</b><ul>${itemsHtml}</ul></p><p><b>Total:</b> ₹${cart.totalPrice}</p><hr>
+                    <div style="margin-top:15px;">
+                        <a href="${statusUrl('Out for Delivery')}" style="background:#9c27b0; color:white; padding:12px 20px; text-decoration:none; border-radius:10px; display:inline-block; font-weight:bold; margin-right:10px;">🚀 Out for Delivery</a>
+                        <a href="${statusUrl('Delivered')}" style="background:#2e7d32; color:white; padding:12px 20px; text-decoration:none; border-radius:10px; display:inline-block; font-weight:bold; margin-right:10px;">✅ Mark Completed</a>
+                        <a href="${statusUrl('Cancelled')}" style="background:#ff4444; color:white; padding:12px 20px; text-decoration:none; border-radius:10px; display:inline-block; font-weight:bold;">❌ Cancel Order</a>
+                    </div></div>`
         });
 
         await Cart.findOneAndUpdate({ user: req.user.userId }, { items: [], totalPrice: 0 });
@@ -347,23 +366,18 @@ app.post("/orders/place", authenticate, async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Order failed" }); }
 });
 
-// ईमेल बटन का काम करने वाला रूट
 app.get("/api/admin/email-status", async (req, res) => {
     const { orderId, status, pass } = req.query;
     if (pass !== process.env.ADMIN_PASSWORD) return res.status(403).send("<h1>Access Denied</h1>");
     try {
         await Order.findByIdAndUpdate(orderId, { status: status });
-        res.send(`
-            <div style="text-align:center; padding:50px; font-family:sans-serif;">
-                <h1 style="color:${status === 'Cancelled' ? '#ff4444' : '#2e7d32'};">Update Successful! ✨</h1>
+        res.send(`<div style="text-align:center; padding:50px; font-family:sans-serif;">
+                <h1 style="color:#2e7d32;">Update Successful! ✨</h1>
                 <p style="font-size:18px;">Order #${orderId.toString().substring(0,8)} is now <b>${status}</b>.</p>
-                <br><a href="https://ratufresh.me" style="background:#2e7d32; color:white; padding:12px 25px; text-decoration:none; border-radius:10px; font-weight:bold;">Go to Website</a>
-            </div>
-        `);
+                <br><a href="https://ratufresh.me" style="color:#2e7d32; font-weight:bold;">Go to Website</a></div>`);
     } catch (err) { res.status(500).send("<h1>Error updating order</h1>"); }
 });
 
-// [STOCK UPDATE ROUTE] - एडमिन के लिए
 app.post("/api/admin/update-stock", async (req, res) => {
     const { productId, inStock, password } = req.body;
     if (password !== process.env.ADMIN_PASSWORD) return res.status(403).json({ error: "Invalid Key" });
