@@ -157,25 +157,7 @@
     let totalBanners = 3; 
     let currentSlide = 0;
 
-    // --- [IMPORTANT] Token & Sync Logic ---
-    window.onload = async () => { 
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlToken = urlParams.get('token');
-        if (urlToken) { localStorage.setItem('token', urlToken); }
-        
-        const token = localStorage.getItem('token');
-        if(token && token !== "null" && token !== "undefined") { 
-            await syncEverything(); 
-            setInterval(syncEverything, 5000); 
-            updateHeaderName(); 
-            initialCartLoad(); 
-            const isVerified = urlParams.get('verified');
-            if (isVerified === 'true') {
-                showAlert('Verified! ✅', 'Welcome to Ratu Fresh.', 'success');
-            }
-        } else window.location.href = 'main.html'; 
-    };
-
+    // --- [BACK BUTTON FIX START] ---
     window.history.replaceState({ view: 'shop' }, 'shop', "");
 
     window.addEventListener('popstate', function(event) {
@@ -213,14 +195,43 @@
         if(viewId === 'profile') loadProfile();
         updateHeaderName();
     }
+    // --- [BACK BUTTON FIX END] ---
+
+    window.onload = async () => { 
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlToken = urlParams.get('token');
+        if (urlToken) { localStorage.setItem('token', urlToken); }
+        
+        const token = localStorage.getItem('token');
+        if(token && token !== "null" && token !== "undefined") { 
+            await syncEverything(); 
+            setInterval(syncEverything, 5000); 
+            updateHeaderName(); 
+            initialCartLoad(); 
+            const isVerified = urlParams.get('verified');
+            if (isVerified === 'true') {
+                showAlert('Verified! ✅', 'Welcome to Ratu Fresh.', 'success');
+            }
+        } else window.location.href = 'main.html'; 
+    };
 
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
+        // [ON-SITE FIX] OneSignal check domain
+        if (window.location.hostname !== 'ratufresh.me' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            console.warn("OneSignal Domain mismatch. Skipping.");
+            return;
+        }
+
         await OneSignal.init({
             appId: "bcfc9f9f-7c9c-43e6-9b75-8d10bdb1a06b",
             allowLocalhostAsSecureOrigin: false,
             notifyButton: { enable: true },
         });
+
+        if (!OneSignal.Notifications.permission) {
+            await OneSignal.Slidedown.promptPush();
+        }
 
         const user = JSON.parse(localStorage.getItem('user'));
         if (user && user.phone) { 
@@ -398,6 +409,7 @@
         const token = localStorage.getItem('token');
         const btn = document.getElementById('place-order-btn');
         const originalText = btn ? btn.innerText : 'Place Order';
+        
         try {
             if(btn) {
               btn.disabled = true;
@@ -430,7 +442,7 @@
               btn.style.opacity = '1';
               btn.innerText = originalText;
             }
-            showAlert('Error', 'Order failed. Please check your internet or login again.', 'error');
+            showAlert('Error', 'Order failed. Please login again.', 'error');
         }
     }
 
