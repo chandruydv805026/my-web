@@ -5,7 +5,8 @@ const jwt = require("jsonwebtoken");
 const axios = require("axios");
 const path = require("path");
 const multer = require("multer"); 
-const { Resend } = require("resend"); // Nodemailer हटाकर Resend जोड़ा
+const crypto = require("crypto"); 
+const { Resend } = require("resend"); 
 require("dotenv").config();
 
 // Models
@@ -47,7 +48,8 @@ const upload = multer({ storage: storage });
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "main.html"));
 });
-// Admin Page को एक्सेस करने के लिए (अगर फाइल public के बाहर है)
+
+// Admin Page access
 app.get("/admin", (req, res) => {
     res.sendFile(path.join(__dirname, "admin.html"));
 });
@@ -64,13 +66,18 @@ const ONESIGNAL_REST_KEY = (process.env.ONESIGNAL_REST_KEY || "").trim();
 
 // Middleware for JWT Authentication
 const authenticate = (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ error: "Access Denied. Login Required." });
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(" ")[1];
+    if (!token) {
+        return res.status(401).json({ error: "Access Denied. Login Required." });
+    }
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
         next();
-    } catch (err) { res.status(403).json({ error: "Invalid Token" }); }
+    } catch (err) {
+        res.status(403).json({ error: "Invalid Token" });
+    }
 };
 
 // Distance Calculation
@@ -80,10 +87,10 @@ function getDistance(lat1, lon1, lat2, lon2) {
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
               Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
 }
 
-const signupTempStore = {};
 const loginOtpStore = {};
 
 // --- 1. PRODUCT ROUTES ---
@@ -92,7 +99,9 @@ app.get("/api/products", async (req, res) => {
     try {
         const products = await Product.find();
         res.json(products);
-    } catch (err) { res.status(500).json({ error: "Failed to fetch products" }); }
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch products" });
+    }
 });
 
 app.post("/api/products/add", upload.single('image'), async (req, res) => {
@@ -112,7 +121,9 @@ app.post("/api/products/add", upload.single('image'), async (req, res) => {
         });
         await newProduct.save();
         res.json({ success: true, message: "Product Added Successfully" });
-    } catch (err) { res.status(500).json({ error: "Failed to add product" }); }
+    } catch (err) {
+        res.status(500).json({ error: "Failed to add product" });
+    }
 });
 
 app.put("/api/products/update/:id", async (req, res) => {
@@ -127,7 +138,9 @@ app.put("/api/products/update/:id", async (req, res) => {
             { new: true }
         );
         res.json({ success: true, product: updatedProduct });
-    } catch (err) { res.status(500).json({ error: "Update failed" }); }
+    } catch (err) {
+        res.status(500).json({ error: "Update failed" });
+    }
 });
 
 app.delete("/api/products/delete/:id", async (req, res) => {
@@ -138,7 +151,9 @@ app.delete("/api/products/delete/:id", async (req, res) => {
     try {
         await Product.findOneAndDelete({ id: req.params.id });
         res.json({ success: true, message: "Product Deleted Successfully" });
-    } catch (err) { res.status(500).json({ error: "Delete failed" }); }
+    } catch (err) {
+        res.status(500).json({ error: "Delete failed" });
+    }
 });
 
 // --- BANNER ROUTES ---
@@ -155,27 +170,35 @@ app.post("/api/banners/add", upload.single('image'), async (req, res) => {
         });
         await newBanner.save();
         res.json({ success: true, message: "Banner Added Successfully" });
-    } catch (err) { res.status(500).json({ error: "Banner upload failed" }); }
+    } catch (err) {
+        res.status(500).json({ error: "Banner upload failed" });
+    }
 });
 
 app.get("/api/banners", async (req, res) => {
     try {
         const banners = await Banner.find({ active: true });
         res.json(banners);
-    } catch (err) { res.status(500).json({ error: "Failed to fetch banners" }); }
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch banners" });
+    }
 });
 
 app.delete("/api/banners/delete/:id", async (req, res) => {
     try {
         await Banner.findByIdAndDelete(req.params.id);
         res.json({ success: true, message: "Banner Deleted" });
-    } catch (err) { res.status(500).json({ error: "Delete failed" }); }
+    } catch (err) {
+        res.status(500).json({ error: "Delete failed" });
+    }
 });
 
 // --- 2. GEOLOCATION ROUTE ---
 app.post("/reverse-geocode", async (req, res) => {
     const { lat, lng } = req.body;
-    if (!lat || !lng) return res.status(400).json({ error: "Coordinates missing" });
+    if (!lat || !lng) {
+        return res.status(400).json({ error: "Coordinates missing" });
+    }
     const distance = getDistance(SHOP_LAT, SHOP_LNG, lat, lng);
     if (distance > MAX_DISTANCE_KM) {
         return res.status(400).json({ error: `Out of area. We deliver within 5km.` });
@@ -183,7 +206,7 @@ app.post("/reverse-geocode", async (req, res) => {
     try {
         const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
         const { data } = await axios.get(url, { 
-            headers: { "User-Agent": "RatuFreshApp/1.0 (ck805026@gmail.com)" },
+            headers: { "User-Agent": "RatuFreshApp/1.0" },
             timeout: 15000 
         });
         if (data && data.address) {
@@ -192,85 +215,129 @@ app.post("/reverse-geocode", async (req, res) => {
                 pincode: data.address.postcode || '', 
                 area: data.address.suburb || data.address.neighbourhood || data.address.city || 'Local Area'
             });
-        } else { res.status(404).json({ error: "Address not found" }); }
-    } catch (err) { res.status(500).json({ error: "Location service error" }); }
+        } else {
+            res.status(404).json({ error: "Address not found" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: "Location service error" });
+    }
 });
 
-// --- 3. AUTH ROUTES ---
+// --- 3. [MAGIC LINK UPDATED HERE] - NEW SIGNUP MAGIC LINK ---
 
-app.post("/send-signup-otp", async (req, res) => {
-    const { name, email, phone } = req.body;
+app.post("/api/signup/magic-link", async (req, res) => {
+    const { name, email, phone, address, pincode, area, lat, lng } = req.body;
     try {
         const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
-        if (existingUser) return res.status(400).json({ error: "Email or Phone already registered." });
-        
-        const otp = Math.floor(100000 + Math.random() * 900000);
-        signupTempStore[email] = { userData: req.body, otp, expires: Date.now() + 300000 };
-        
-        console.log(`🚀 SIGNUP OTP FOR ${name}: ${otp}`);
+        if (existingUser) {
+            return res.status(400).json({ error: "Email or Phone already registered." });
+        }
+
+        const token = crypto.randomBytes(32).toString("hex");
+        const newUser = new User({
+            name, email, phone, address, pincode, area, lat, lng,
+            verificationToken: token,
+            tokenExpiry: Date.now() + 3600000 // 1 Hour
+        });
+
+        await newUser.save();
+
+        const verifyUrl = `https://my-web-xrr5.onrender.com/api/verify-email?token=${token}`;
+        const uniqueID = Date.now();
 
         await resend.emails.send({
             from: 'Ratu Fresh <otp@ratufresh.me>',
             to: email,
-            subject: 'Verify Your Signup - Ratu Fresh',
-            html: `<strong>Welcome ${name}!</strong><br>Your OTP for Ratu Fresh is: <h1>${otp}</h1>`
+            subject: `नमस्ते ${name}, Verify your Ratu Fresh account! 🥦`,
+            html: `
+                <div style="font-family: sans-serif; max-width: 500px; margin: auto; border: 2px solid #24b637; border-radius: 20px; padding: 25px; text-align: center;">
+                    <h1 style="color: #24b637;">Ratu Fresh</h1>
+                    <p>नमस्ते <b>${name}</b>, अपना अकाउंट वेरीफाई करने के लिए नीचे दिए गए बटन पर क्लिक करें:</p>
+                    <div style="margin: 30px 0;">
+                        <a href="${verifyUrl}" style="background: #24b637; color: white; padding: 15px 30px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: bold; font-size: 16px;">
+                            Verify My Account ✨
+                        </a>
+                    </div>
+                    <p style="font-size: 12px; color: #999;">यदि आपने यह रिक्वेस्ट नहीं की है, तो कृपया इसे इग्नोर करें।</p>
+                    <p style="color: #ffffff; font-size: 1px; display: none !important;">Reference ID: ${uniqueID}</p>
+                </div>
+            `
         });
-        
-        // [ADD] ईमेल मास्किंग लॉजिक
-        const [userPart, domain] = email.split("@");
-        const maskedEmail = userPart.substring(0, 2) + "******" + userPart.slice(-2) + "@" + domain;
 
-        res.json({ success: true, message: "OTP Sent Successfully", maskedEmail: maskedEmail });
+        res.json({ success: true, message: "Magic Link sent to Gmail" });
     } catch (err) { 
-        console.error("Resend Error:", err);
-        res.status(500).json({ error: "Failed to send email. Check Render logs." }); 
+        console.error(err);
+        res.status(500).json({ error: "Server Error" }); 
     }
 });
 
-app.post("/verify-signup", async (req, res) => {
-    const { email, otp } = req.body;
-    const record = signupTempStore[email];
-    if (record?.otp == otp && Date.now() < record.expires) {
-        try {
-            const newUser = new User(record.userData);
-            const savedUser = await newUser.save();
-            await new Cart({ user: savedUser._id, items: [] }).save();
-            delete signupTempStore[email];
-            const token = jwt.sign({ userId: savedUser._id }, process.env.JWT_SECRET, { expiresIn: "90d" });
-            res.json({ success: true, token, user: savedUser });
-        } catch (err) { res.status(500).json({ error: "Save user failed" }); }
-    } else { res.status(401).json({ error: "Invalid OTP" }); }
+// Email Verification Handler
+app.get("/api/verify-email", async (req, res) => {
+    const { token } = req.query;
+    try {
+        const user = await User.findOne({ 
+            verificationToken: token, 
+            tokenExpiry: { $gt: Date.now() } 
+        });
+
+        if (!user) {
+            return res.status(400).send("Verification link invalid or expired.");
+        }
+
+        user.isVerified = true;
+        user.verificationToken = undefined;
+        user.tokenExpiry = undefined;
+        await user.save();
+
+        const existingCart = await Cart.findOne({ user: user._id });
+        if (!existingCart) {
+            await new Cart({ user: user._id, items: [] }).save();
+        }
+
+        const loginToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "90d" });
+        res.redirect(`/profiles.html?token=${loginToken}&verified=true`);
+    } catch (err) {
+        res.status(500).send("Verification Error");
+    }
 });
 
+// Login route
 app.post("/login", async (req, res) => {
     const { phone } = req.body;
     try {
         const user = await User.findOne({ phone });
-        if (!user) return res.status(404).json({ error: "User not found" });
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        
         const otp = Math.floor(100000 + Math.random() * 900000);
         loginOtpStore[phone] = { otp, expires: Date.now() + 300000 };
         
-        console.log(`🚀 LOGIN OTP FOR ${phone}: ${otp}`);
-
         await resend.emails.send({
             from: 'Ratu Fresh <otp@ratufresh.me>',
             to: user.email,
-            subject: 'Login OTP - Ratu Fresh',
-            html: `Your Login OTP for Ratu Fresh is: <h1>${otp}</h1>`
+            subject: `Login OTP: ${otp} - Ratu Fresh`,
+            html: `
+                <div style="font-family: sans-serif; padding: 20px; text-align: center;">
+                    <h2>Your Login OTP</h2>
+                    <h1 style="color: #24b637; letter-spacing: 5px;">${otp}</h1>
+                    <p style="display:none;">${Date.now()}</p>
+                </div>
+            `
         });
 
-        // [ADD] ईमेल मास्किंग लॉजिक
         const [userPart, domain] = user.email.split("@");
         const maskedEmail = userPart.substring(0, 2) + "******" + userPart.slice(-2) + "@" + domain;
-
         res.json({ success: true, message: "OTP Sent to registered email", maskedEmail: maskedEmail });
-    } catch (err) { res.status(500).json({ error: "Login failed" }); }
+    } catch (err) {
+        res.status(500).json({ error: "Login failed" });
+    }
 });
 
 app.post("/verify-login", async (req, res) => {
     const { phone, otp } = req.body;
     const record = loginOtpStore[phone];
-    if (record?.otp == otp && Date.now() < record.expires) {
+    if (record && record.otp == otp && Date.now() < record.expires) {
         const user = await User.findOne({ phone });
         delete loginOtpStore[phone];
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "90d" });
@@ -284,7 +351,6 @@ app.get("/cart/get", authenticate, async (req, res) => {
     try {
         let userCart = await Cart.findOne({ user: req.user.userId });
         
-        // [LIVE PRICE SYNC ADDED HERE]
         if (userCart && userCart.items.length > 0) {
             let updatedTotal = 0;
             let isChanged = false;
@@ -304,7 +370,9 @@ app.get("/cart/get", authenticate, async (req, res) => {
         }
         
         res.json(userCart || { items: [], totalPrice: 0 });
-    } catch (err) { res.status(500).json({ error: "Cart fetch failed" }); }
+    } catch (err) {
+        res.status(500).json({ error: "Cart fetch failed" });
+    }
 });
 
 app.post("/cart/sync", authenticate, async (req, res) => {
@@ -325,12 +393,16 @@ app.post("/cart/sync", authenticate, async (req, res) => {
                 userCart.items[itemIndex].quantity = item.quantity;
                 userCart.items[itemIndex].price = item.price;
                 userCart.items[itemIndex].subtotal = item.subtotal;
-            } else { userCart.items.push(item); }
+            } else {
+                userCart.items.push(item);
+            }
             userCart.totalPrice = userCart.items.reduce((acc, curr) => acc + curr.subtotal, 0);
         }
         await userCart.save();
         res.json({ success: true, cart: userCart });
-    } catch (err) { res.status(500).json({ error: "Cart sync failed" }); }
+    } catch (err) {
+        res.status(500).json({ error: "Cart sync failed" });
+    }
 });
 
 app.delete("/cart/remove/:productId", authenticate, async (req, res) => {
@@ -342,24 +414,31 @@ app.delete("/cart/remove/:productId", authenticate, async (req, res) => {
             userCart.totalPrice = userCart.items.reduce((acc, curr) => acc + curr.subtotal, 0);
             await userCart.save();
             res.json({ success: true, cart: userCart });
-        } else { res.status(404).json({ error: "Cart not found" }); }
-    } catch (err) { res.status(500).json({ error: "Delete failed" }); }
+        } else {
+            res.status(404).json({ error: "Cart not found" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: "Delete failed" });
+    }
 });
 
 app.get("/orders/my-orders", authenticate, async (req, res) => {
     try {
         const orders = await Order.find({ userId: req.user.userId }).sort({ orderDate: -1 });
         res.json(orders);
-    } catch (err) { res.status(500).json({ error: "Fetch orders failed" }); }
+    } catch (err) {
+        res.status(500).json({ error: "Fetch orders failed" });
+    }
 });
 
 app.post("/orders/place", authenticate, async (req, res) => {
     try {
         const userCart = await Cart.findOne({ user: req.user.userId });
         const user = await User.findById(req.user.userId);
-        if (!userCart || userCart.items.length === 0) return res.status(400).json({ error: "Cart is empty" });
+        if (!userCart || userCart.items.length === 0) {
+            return res.status(400).json({ error: "Cart is empty" });
+        }
 
-        // [FINAL PRICE VERIFICATION ADDED HERE]
         let verifiedTotal = 0;
         for (let item of userCart.items) {
             const dbP = await Product.findOne({ id: item.productId });
@@ -394,10 +473,12 @@ app.post("/orders/place", authenticate, async (req, res) => {
 
         await Cart.findOneAndUpdate({ user: req.user.userId }, { items: [], totalPrice: 0 });
         res.status(201).json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Order failed" }); }
+    } catch (err) {
+        res.status(500).json({ error: "Order failed" });
+    }
 });
 
-// ✅ नया फंक्शन: CANCEL ORDER ROUTE
+// CANCEL ORDER ROUTE
 app.post("/orders/cancel/:orderId", authenticate, async (req, res) => {
     try {
         const order = await Order.findOneAndUpdate(
@@ -410,7 +491,6 @@ app.post("/orders/cancel/:orderId", authenticate, async (req, res) => {
             return res.status(400).json({ error: "Order cannot be cancelled. It might be processed or not found." });
         }
 
-        // एडमिन को सूचना भेजें
         await resend.emails.send({
             from: 'Ratu Fresh <otp@ratufresh.me>',
             to: ADMIN_EMAIL,
@@ -440,27 +520,43 @@ app.post("/admin/send-broadcast", authenticate, async (req, res) => {
             }
         });
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Notification failed" }); }
+    } catch (err) {
+        res.status(500).json({ error: "Notification failed" });
+    }
 });
 
 app.put("/user/update", authenticate, async (req, res) => {
     try {
         const { name, phone, address, area, lat, lng } = req.body;
-        const updatedUser = await User.findByIdAndUpdate(req.user.userId, { name, phone, address, area, lat, lng }, { new: true });
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.userId, 
+            { name, phone, address, area, lat, lng }, 
+            { new: true }
+        );
         res.json({ success: true, user: updatedUser });
-    } catch (err) { res.status(500).json({ error: "Update failed" }); }
+    } catch (err) {
+        res.status(500).json({ error: "Update failed" });
+    }
 });
-// admin.html के नए लॉगिन सिस्टम के लिए
+
+app.get("/api/user-profile", authenticate, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId).select("-password");
+        res.json({ success: true, user });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch profile" });
+    }
+});
+
 app.post("/api/admin/verify", (req, res) => {
     const { password } = req.body;
-    // यह सीधे Render के Environment से पासवर्ड मैच करेगा
     if (password === process.env.ADMIN_PASSWORD) {
         res.json({ success: true });
     } else {
         res.status(401).json({ error: "Invalid Key" });
     }
 });
-// [PING ROUTE] Render को जगाए रखने के लिए
+
 app.get("/ping", (req, res) => {
     res.status(200).send("I am alive!");
 });
@@ -471,7 +567,9 @@ mongoose.connect(process.env.DBurl)
         console.log("🚀 MongoDB Connected");
         try {
             await mongoose.connection.db.collection('orders').createIndex({ "orderDate": 1 }, { expireAfterSeconds: 7200 });
-        } catch (e) {}
+        } catch (e) {
+            console.log("Index error");
+        }
         
         const count = await Product.countDocuments();
         if (count === 0) {
@@ -501,7 +599,3 @@ mongoose.connect(process.env.DBurl)
         app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
     })
     .catch(err => console.error("DB error:", err));
-
-
-
-
