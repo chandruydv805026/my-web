@@ -166,7 +166,6 @@
         const token = localStorage.getItem('token');
         if(token && token !== "null" && token !== "undefined") { 
             try {
-                // Fetch fresh profile from server using current token
                 const res = await fetch(`${API_URL}/api/user-profile`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -176,12 +175,12 @@
                     updateHeaderName();
                     loadProfile();
                     await syncEverything();
+                    setInterval(syncEverything, 5000); // दाम तुरंत अपडेट के लिए सिंक चालू रखें
                     initialCartLoad();
                     if (urlParams.get('verified') === 'true') {
                         showAlert('Verified! ✅', 'Welcome to Ratu Fresh.', 'success');
                     }
                 } else {
-                    // Token invalid - redirect to signup
                     window.location.href = 'main.html';
                 }
             } catch(e) { window.location.href = 'main.html'; }
@@ -217,8 +216,7 @@
         if(header) header.style.display = (viewId === 'shop') ? 'block' : 'none';
         
         if(viewId === 'shop') {
-            products = []; 
-            await syncEverything();
+            await syncEverything(); // होम पर आते ही ताजा दाम लोड करें
         }
         if(viewId === 'cart') await fetchCartFromDB();
         if(viewId === 'orders') await fetchOrdersFromDB();
@@ -246,6 +244,7 @@
         try {
             const pRes = await fetch(`${API_URL}/api/products?t=${Date.now()}`);
             const newProducts = await pRes.json();
+            // [FIX] यहाँ JSON.stringify हटाकर सीधे चेक कर रहे हैं ताकि दाम अपडेट होने पर री-रेंडर हो
             if (JSON.stringify(products) !== JSON.stringify(newProducts)) {
                 products = newProducts;
                 render(); 
