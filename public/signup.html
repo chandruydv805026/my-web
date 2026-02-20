@@ -27,26 +27,31 @@
     .toast.show { transform: translateY(0); }
     .toast.error { background: #e74c3c; }
 
-    /* [STYLE] Google Button inside Email Box */
+    /* Modal Styling */
+    .overlay { 
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+      backdrop-filter: blur(8px); align-items: center; justify-content: center; z-index: 5000; padding: 20px;
+    }
+    .modal-card { 
+      background: #fff; padding: 40px 30px; border-radius: 28px; width: 100%; max-width: 380px; text-align: center; 
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: slideUp 0.4s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    
+    .loader-ring {
+      width: 25px; height: 25px; border: 3px solid #f3f3f3; border-top: 3px solid var(--brand-green);
+      border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
     .email-input-wrapper { position: relative; display: flex; align-items: center; }
     .google-icon-btn { 
       position: absolute; right: 8px; height: 40px; width: 40px; 
       background: #fff; border: 1px solid #eee; border-radius: 12px; 
       cursor: pointer; display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: 0.2s; z-index: 5;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05); z-index: 5;
     }
-    .google-hidden-btn { 
-      opacity: 0; position: absolute; right: 0; width: 100%; height: 56px; z-index: 10; cursor: pointer; 
-    }
-
-    .overlay { 
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
-      backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 2000; padding: 20px;
-    }
-    .modal-card { 
-      background: #fff; padding: 30px; border-radius: 24px; width: 100%; max-width: 360px; text-align: center; 
-    }
-    .success-icon { font-size: 50px; color: var(--brand-green); margin-bottom: 10px; }
+    .google-hidden-btn { opacity: 0; position: absolute; right: 0; width: 100%; height: 56px; z-index: 10; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -96,35 +101,39 @@
     </form>
   </div>
 
-  <div id="successOverlay" class="overlay">
+  <div id="verifyOverlay" class="overlay">
     <div class="modal-card">
-      <div class="success-icon">✅</div>
-      <h3 style="margin:0;">Congratulations!</h3>
-      <p style="color:#444; font-size:15px; margin-top:10px; line-height:1.5;">Your account has been created successfully. You can now login and order fresh veggies!</p>
-      <button type="button" class="submit-btn" onclick="window.location.href='login.html'" style="margin-top: 20px;">Go to Login</button>
+      <div style="font-size:60px; margin-bottom:20px;">📧</div>
+      <h2 style="color:var(--brand-green); font-weight:800; margin-bottom:10px;">Check Your Email!</h2>
+      <p style="color:#555; line-height:1.6; font-size:15px;">
+        We have sent a verification link to your Gmail. <br>
+        <b>Open your Gmail app and click the 'Verify Account' button.</b>
+      </p>
+      
+      <div class="loader-ring"></div>
+      <p style="color:var(--brand-green); font-weight:700; font-size:13px;">Waiting for verification...</p>
+      
+      <p style="font-size:11px; color:#aaa; margin-top:25px;">The page will redirect automatically after success.</p>
     </div>
   </div>
 
   <div id="toast" class="toast"></div>
 
   <script>
-    // [IMPROVED] Automatically detect server URL
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                      ? 'http://localhost:4000' 
-                     : 'https://ratufresh.me'; 
+                     : 'https://my-web-xrr5.onrender.com'; 
 
     const toast = document.getElementById('toast');
-    const successOverlay = document.getElementById('successOverlay');
-    
+    const verifyOverlay = document.getElementById('verifyOverlay');
+    let verificationTimer;
     let signupCoords = { lat: null, lng: null };
 
-    // --- [NEW] Google Detection Handler ---
     function handleGoogleResponse(response) {
         const payload = JSON.parse(atob(response.credential.split('.')[1]));
         document.getElementById('fullName').value = payload.name;
         document.getElementById('email').value = payload.email;
-        showStatus("Gmail detected! Now capture your location. ✨");
-        document.getElementById('phone').focus();
+        showStatus("Gmail detected! Capture location now. ✨");
     }
 
     function showStatus(msg, isError = false) {
@@ -133,11 +142,10 @@
       setTimeout(() => toast.classList.remove('show'), 4000);
     }
 
-    // --- GPS Logic ---
+    // GPS Logic
     document.getElementById('locBtn').addEventListener('click', () => {
       if (!navigator.geolocation) return showStatus("GPS not supported", true);
-      showStatus("Please allow location access...");
-      
+      showStatus("Capturing location...");
       navigator.geolocation.getCurrentPosition(async (pos) => {
         signupCoords.lat = pos.coords.latitude;
         signupCoords.lng = pos.coords.longitude;
@@ -152,26 +160,24 @@
           document.getElementById('addressInput').value = data.displayName;
           document.getElementById('pincodeInput').value = data.pincode;
           document.getElementById('landmarkInput').value = data.area;
-          showStatus("Location Captured! ✨");
+          showStatus("Location captured! ✨");
         } catch (err) { showStatus("Server error", true); }
-      }, (err) => {
-        if (err.code === 1) showStatus("⚠️ Please allow location permission.", true);
-        else showStatus("📍 GPS is OFF. Please turn it on.", true);
-      }, { enableHighAccuracy: true, timeout: 15000 });
+      }, (err) => showStatus("Please turn on GPS/Permissions", true), { enableHighAccuracy: true });
     });
 
-    // --- Magic Link Signup Logic ---
+    // Real-time Magic Signup Logic
     document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!signupCoords.lat) return showStatus("Please detect location first!", true);
+      if (!signupCoords.lat) return showStatus("Detect location first!", true);
 
       const signupBtn = document.getElementById('signupBtn');
+      const phone = document.getElementById('phone').value;
       signupBtn.disabled = true;
       signupBtn.innerText = "Processing...";
 
       const formData = {
         name: document.getElementById('fullName').value,
-        phone: document.getElementById('phone').value,
+        phone: phone,
         email: document.getElementById('email').value,
         address: document.getElementById('addressInput').value,
         pincode: document.getElementById('pincodeInput').value,
@@ -187,34 +193,40 @@
           body: JSON.stringify(formData)
         });
         
-        const data = await res.json();
-        
         if (res.ok) {
-          showStatus("Opening Gmail App... Please check your Inbox! 📩");
+          // [STEP 1] पॉपअप दिखाओ
+          verifyOverlay.style.display = 'flex';
           
-          setTimeout(() => {
-            // [DEEP LINK] मोबाइल पर सीधा Gmail App खोलने का तरीका
-            const gmailAppUrl = "googlegmail:///co?to="; 
-            const webUrl = "https://mail.google.com/mail/u/0/#inbox";
-            
-            // ऐप खोलने की कोशिश, वरना वेब वर्जन
-            window.location.href = gmailAppUrl;
-            setTimeout(() => {
-                window.location.href = webUrl;
-            }, 500);
-          }, 2000);
-          
+          // [STEP 2] हर 3 सेकंड में बैकएंड से पूछो कि बंदा वेरीफाई हुआ या नहीं
+          startPolling(phone);
         } else {
+          const data = await res.json();
           showStatus(data.error, true);
-          signupBtn.disabled = false;
-          signupBtn.innerText = "Create Account";
+          signupBtn.disabled = false; signupBtn.innerText = "Create Account";
         }
       } catch (err) {
         showStatus("Server error", true);
-        signupBtn.disabled = false;
-        signupBtn.innerText = "Create Account";
+        signupBtn.disabled = false; signupBtn.innerText = "Create Account";
       }
     });
+
+    function startPolling(phone) {
+        verificationTimer = setInterval(async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/check-verification/${phone}`);
+                const status = await res.json();
+
+                if (status.verified) {
+                    clearInterval(verificationTimer); // पूछना बंद करो
+                    localStorage.setItem('token', status.token); // टोकन सेव करो
+                    localStorage.setItem('user', JSON.stringify(status.user));
+                    
+                    // [SUCCESS] सीधा प्रोफाइल पर जादू की तरह!
+                    window.location.replace('profiles.html?verified=true');
+                }
+            } catch (e) { console.log("Verifying..."); }
+        }, 3000);
+    }
   </script>
 </body>
 </html>
