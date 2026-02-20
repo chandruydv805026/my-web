@@ -314,25 +314,32 @@ app.post("/orders/place", authenticate, async (req, res) => {
         });
         const saved = await newOrder.save();
 
-        // [EMAIL ACTION LOGIC] - सीधा जीमेल में बटन भेज रहे हैं
+        // [EMAIL ACTION LOGIC] - Status + Stock Buttons
         const adminKey = process.env.ADMIN_PASSWORD;
         const statusUrl = (s) => `https://ratufresh.me/api/admin/email-status?orderId=${saved._id}&status=${encodeURIComponent(s)}&pass=${adminKey}`;
+        
+        // सामानों की लिस्ट ईमेल के लिए तैयार करें
+        const itemsHtml = orderItems.map(i => `<li>${i.name} - ${i.quantity}</li>`).join('');
 
         await resend.emails.send({
             from: 'Ratu Fresh <otp@ratufresh.me>', to: ADMIN_EMAIL,
             subject: `New Order #${saved._id.toString().substring(0,8)} Received! 🥬`,
             html: `
-                <div style="font-family:sans-serif; border:2px solid #2e7d32; padding:20px; border-radius:15px;">
+                <div style="font-family:sans-serif; border:2px solid #2e7d32; padding:20px; border-radius:15px; max-width:500px;">
                     <h2 style="color:#2e7d32;">New Order Alert!</h2>
                     <p><b>Customer:</b> ${user.name}</p>
+                    <p><b>Phone:</b> ${user.phone}</p>
                     <p><b>Address:</b> ${req.body.address || user.address}</p>
+                    <p><b>Items:</b><ul>${itemsHtml}</ul></p>
                     <p><b>Total:</b> ₹${cart.totalPrice}</p>
                     <hr>
-                    <p><b>Update Status Directly from here:</b></p>
-                    <div style="margin-top:15px;">
-                        <a href="${statusUrl('Out for Delivery')}" style="background:#9c27b0; color:white; padding:12px 20px; text-decoration:none; border-radius:10px; display:inline-block; font-weight:bold; margin-right:10px;">🚀 Out for Delivery</a>
-                        <a href="${statusUrl('Delivered')}" style="background:#2e7d32; color:white; padding:12px 20px; text-decoration:none; border-radius:10px; display:inline-block; font-weight:bold;">✅ Mark Completed</a>
+                    <p><b>Update Status:</b></p>
+                    <div style="margin-bottom:20px;">
+                        <a href="${statusUrl('Out for Delivery')}" style="background:#9c27b0; color:white; padding:10px 15px; text-decoration:none; border-radius:8px; display:inline-block; font-weight:bold; margin-bottom:10px;">🚀 Out for Delivery</a>
+                        <a href="${statusUrl('Delivered')}" style="background:#2e7d32; color:white; padding:10px 15px; text-decoration:none; border-radius:8px; display:inline-block; font-weight:bold;">✅ Complete Order</a>
                     </div>
+                    <hr>
+                    <p style="font-size:12px; color:#777;">Tip: You can manage stock levels from your Admin Dashboard if items are sold out.</p>
                 </div>
             `
         });
@@ -342,21 +349,30 @@ app.post("/orders/place", authenticate, async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Order failed" }); }
 });
 
-// [NEW ACTION ROUTE] - ईमेल बटन क्लिक होने पर यह चलेगा
+// ईमेल बटन का काम करने वाला रूट
 app.get("/api/admin/email-status", async (req, res) => {
     const { orderId, status, pass } = req.query;
-    if (pass !== process.env.ADMIN_PASSWORD) return res.status(403).send("<h1>Unauthorized Access</h1>");
+    if (pass !== process.env.ADMIN_PASSWORD) return res.status(403).send("<h1>Access Denied</h1>");
     try {
         await Order.findByIdAndUpdate(orderId, { status: status });
         res.send(`
             <div style="text-align:center; padding:50px; font-family:sans-serif;">
-                <h1 style="color:#2e7d32;">Success! ✨</h1>
-                <p style="font-size:18px;">Order is now <b>${status}</b>.</p>
-                <p>The customer's dashboard has been updated live.</p>
-                <br><a href="https://ratufresh.me" style="color:#2e7d32; font-weight:bold;">Go to Ratu Fresh</a>
+                <h1 style="color:#2e7d32;">Update Successful! ✨</h1>
+                <p style="font-size:18px;">Order #${orderId.toString().substring(0,8)} is now <b>${status}</b>.</p>
+                <br><a href="https://ratufresh.me" style="background:#2e7d32; color:white; padding:12px 25px; text-decoration:none; border-radius:10px; font-weight:bold;">Go to Website</a>
             </div>
         `);
-    } catch (err) { res.status(500).send("<h1>Error updating status</h1>"); }
+    } catch (err) { res.status(500).send("<h1>Error updating order</h1>"); }
+});
+
+// [STOCK UPDATE ROUTE] - एडमिन के लिए
+app.post("/api/admin/update-stock", async (req, res) => {
+    const { productId, inStock, password } = req.body;
+    if (password !== process.env.ADMIN_PASSWORD) return res.status(403).json({ error: "Invalid Key" });
+    try {
+        await Product.findOneAndUpdate({ id: productId }, { inStock: inStock });
+        res.json({ success: true, message: "Stock updated" });
+    } catch (err) { res.status(500).json({ error: "Failed" }); }
 });
 
 app.post("/orders/cancel/:orderId", authenticate, async (req, res) => {
