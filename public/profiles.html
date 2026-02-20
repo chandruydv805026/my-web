@@ -157,7 +157,6 @@
     let totalBanners = 3; 
     let currentSlide = 0;
 
-    // --- [IMPORTANT] Fixed Load Logic ---
     window.onload = async () => { 
         const urlParams = new URLSearchParams(window.location.search);
         const urlToken = urlParams.get('token');
@@ -175,7 +174,7 @@
                     updateHeaderName();
                     loadProfile();
                     await syncEverything();
-                    setInterval(syncEverything, 5000); // दाम तुरंत अपडेट के लिए सिंक चालू रखें
+                    setInterval(syncEverything, 5000); 
                     initialCartLoad();
                     if (urlParams.get('verified') === 'true') {
                         showAlert('Verified! ✅', 'Welcome to Ratu Fresh.', 'success');
@@ -216,7 +215,7 @@
         if(header) header.style.display = (viewId === 'shop') ? 'block' : 'none';
         
         if(viewId === 'shop') {
-            await syncEverything(); // होम पर आते ही ताजा दाम लोड करें
+            await syncEverything(); 
         }
         if(viewId === 'cart') await fetchCartFromDB();
         if(viewId === 'orders') await fetchOrdersFromDB();
@@ -244,7 +243,6 @@
         try {
             const pRes = await fetch(`${API_URL}/api/products?t=${Date.now()}`);
             const newProducts = await pRes.json();
-            // [FIX] यहाँ JSON.stringify हटाकर सीधे चेक कर रहे हैं ताकि दाम अपडेट होने पर री-रेंडर हो
             if (JSON.stringify(products) !== JSON.stringify(newProducts)) {
                 products = newProducts;
                 render(); 
@@ -313,6 +311,7 @@
         }).join('');
     }
 
+    // --- [JALDI POPUP LOGIC ADDED HERE] ---
     async function addToCart(id) {
         const token = localStorage.getItem('token');
         const p = products.find(i => i.id === id); 
@@ -321,7 +320,11 @@
         const totalP = currentPrice * q;
         const unitLabel = p.unit === 'pc' ? (q > 1 ? 'pcs' : 'pc') : 'kg';
 
+        // 🚀 [STEP 1] सर्वर रिक्वेस्ट से पहले ही पॉपअप दिखाओ ताकि यूजर को "Fast" महसूस हो
+        showAlert('Success!', `Added ${q} ${unitLabel} ${p.name} to cart. <br><b>Total: ₹${totalP.toFixed(0)}</b>`, 'success');
+
         try {
+            // 🚀 [STEP 2] बैकग्राउंड में सर्वर को डेटा भेजो
             const res = await fetch(`${API_URL}/cart/sync`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -329,10 +332,13 @@
             });
             if(res.ok) {
                 const data = await res.json();
-                showAlert('Success!', `Added ${q} ${unitLabel} ${p.name} to cart. <br><b>Total: ₹${totalP.toFixed(0)}</b>`, 'success');
+                // 🚀 [STEP 3] डेटा आने के बाद चुपचाप कार्ट का नंबर बदल दो
                 updateCartBadge(data.cart.items.length);
             }
-        } catch (err) { }
+        } catch (err) { 
+            console.log("Silent sync failed"); 
+            // यूजर को परेशान नहीं करेंगे, बैकग्राउंड एरर सिर्फ कंसोल में दिखेगा
+        }
     }
 
     function updateCartBadge(count) {
