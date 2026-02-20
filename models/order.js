@@ -23,6 +23,10 @@ const orderSchema = new mongoose.Schema({
       price: {
         type: Number,
         required: true
+      },
+      unit: {      // [MUST ADD] क्योंकि server.js इसे भेज रहा है
+        type: String,
+        default: 'kg'
       }
     }
   ],
@@ -43,6 +47,10 @@ const orderSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  // [MUST ADD] लोकेशन के बिना डिलीवरी बॉय को घर ढूँढने में दिक्कत होगी
+  lat: Number,
+  lng: Number,
+  
   orderDate: {
     type: Date,
     default: Date.now
