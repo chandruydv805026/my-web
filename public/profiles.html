@@ -157,14 +157,14 @@
     let totalBanners = 3; 
     let currentSlide = 0;
 
-    // --- [TOKEN LOGIC ADDED - NO LINES REMOVED] ---
+    // --- [IMPORTANT] Token & Sync Logic ---
     window.onload = async () => { 
         const urlParams = new URLSearchParams(window.location.search);
         const urlToken = urlParams.get('token');
         if (urlToken) { localStorage.setItem('token', urlToken); }
         
         const token = localStorage.getItem('token');
-        if(token) { 
+        if(token && token !== "null" && token !== "undefined") { 
             await syncEverything(); 
             setInterval(syncEverything, 5000); 
             updateHeaderName(); 
@@ -221,10 +221,6 @@
             allowLocalhostAsSecureOrigin: false,
             notifyButton: { enable: true },
         });
-
-        if (!OneSignal.Notifications.permission) {
-            await OneSignal.Slidedown.promptPush();
-        }
 
         const user = JSON.parse(localStorage.getItem('user'));
         if (user && user.phone) { 
@@ -305,12 +301,12 @@
     }
 
     async function addToCart(id) {
+        const token = localStorage.getItem('token');
         const p = products.find(i => i.id === id); 
         const q = parseFloat(document.getElementById('qty-'+id).value);
         const currentPrice = p.price; 
         const totalP = currentPrice * q;
         const unitLabel = p.unit === 'pc' ? (q > 1 ? 'pcs' : 'pc') : 'kg';
-        const token = localStorage.getItem('token');
 
         try {
             const res = await fetch(`${API_URL}/cart/sync`, {
@@ -427,14 +423,14 @@
                       btn.innerText = originalText;
                     }
                 }, 4000);
-            } else { throw new Error("Failed"); }
+            } else { throw new Error("Order Failed"); }
         } catch (err) {
             if(btn) {
               btn.disabled = false;
               btn.style.opacity = '1';
               btn.innerText = originalText;
             }
-            showAlert('Error', 'Order failed. Please try again.', 'error');
+            showAlert('Error', 'Order failed. Please check your internet or login again.', 'error');
         }
     }
 
@@ -569,7 +565,6 @@
         }); 
     }
 
-    // --- [OTP BOX REMOVED - ONLY THIS PART CHANGED] ---
     function showAlert(title, msg, type = 'info', action = null) {
         const box = document.getElementById('modal-content');
         if(!box) return;
