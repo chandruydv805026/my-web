@@ -291,21 +291,38 @@
         if (!grid || currentView !== 'shop') return; 
         const filtered = products.filter(p => p.name.toLowerCase().includes(searchTerm));
         grid.innerHTML = filtered.map(p => {
+            // [LIVE STOCK LOGIC]
+            const isOutOfStock = p.inStock === false;
+            const cardOpacity = isOutOfStock ? 'opacity: 0.7; filter: grayscale(100%); background: #fff;' : '';
+            const statusBadge = isOutOfStock 
+                ? '<span style="color: #ff4444; font-weight: 800; font-size: 10px;">● OUT OF STOCK</span>' 
+                : '<span style="color: #2e7d32; font-weight: 800; font-size: 10px;">● IN STOCK</span>';
+
             let opts = p.unit === 'pc' 
                 ? `<option value="1">1 Piece</option><option value="5">5 Pieces</option><option value="10">10 Pieces</option>`
                 : `<option value="0.25">250 g</option><option value="0.5">500 g</option><option value="1" selected>1 kg</option><option value="2">2 kg</option><option value="3">3 kg</option><option value="5">5 kg</option>`;
 
             const imgSrc = p.img.startsWith('http') ? p.img : API_URL + p.img;
 
-            return `<div class="card">
-                <img src="${imgSrc}" class="card-img" onerror="this.src='https://via.placeholder.com/200x150?text=Fresh'">
+            return `<div class="card" style="${cardOpacity}">
+                <div style="position: relative;">
+                    <img src="${imgSrc}" class="card-img" onerror="this.src='https://via.placeholder.com/200x150?text=Fresh'">
+                    <div style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.9); padding: 2px 8px; border-radius: 8px; box-shadow: var(--shadow);">
+                        ${statusBadge}
+                    </div>
+                </div>
                 <div class="card-body">
                     <h3>${p.name}</h3>
                     <div class="price-row">
                         <h3 id="price-label-${p.id}">₹${p.price}</h3>
-                        <select id="qty-${p.id}" class="qty-select-style" onchange="updatePriceUI('${p.id}', ${p.price})">${opts}</select>
+                        <select id="qty-${p.id}" class="qty-select-style" ${isOutOfStock ? 'disabled' : ''} onchange="updatePriceUI('${p.id}', ${p.price})">${opts}</select>
                     </div>
-                    <button class="add-btn" onclick="addToCart('${p.id}')">Add to Cart</button>
+                    <button class="add-btn" 
+                        style="${isOutOfStock ? 'background: #ccc; cursor: not-allowed;' : ''}"
+                        onclick="${isOutOfStock ? "showAlert('Sorry', 'Item not available', 'error')" : `addToCart('${p.id}')`}"
+                        ${isOutOfStock ? 'disabled' : ''}>
+                        ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+                    </button>
                 </div>
             </div>`;
         }).join('');
