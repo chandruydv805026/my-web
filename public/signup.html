@@ -113,7 +113,6 @@
     let verificationTimer;
     let signupCoords = { lat: null, lng: null };
 
-    // Google One Tap Callback (Fill Name & Email automatically)
     function handleGoogleAutoFill(response) {
         try {
             const payload = JSON.parse(atob(response.credential.split('.')[1]));
@@ -129,7 +128,6 @@
       setTimeout(() => toast.classList.remove('show'), 4000);
     }
 
-    // GPS Logic
     document.getElementById('locBtn').addEventListener('click', () => {
       if (!navigator.geolocation) return showStatus("GPS not supported", true);
       showStatus("Detecting location... Please wait.");
@@ -148,13 +146,19 @@
           
           document.getElementById('addressInput').value = data.displayName;
           document.getElementById('pincodeInput').value = data.pincode;
-          document.getElementById('landmarkInput').value = data.area;
+          
+          // [FIX] 'Local Area' को ऑटो-फिल होने से रोकना
+          if (data.area && data.area !== "Local Area") {
+              document.getElementById('landmarkInput').value = data.area;
+          } else {
+              document.getElementById('landmarkInput').value = ""; // खाली रखें ताकि यूजर खुद भरे
+          }
+          
           showStatus("Location Captured! ✨");
         } catch (err) { showStatus("Server connection error", true); }
       }, (err) => showStatus("Please enable GPS & Permissions", true), { enableHighAccuracy: true });
     });
 
-    // Magic Link Signup & Polling
     document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!signupCoords.lat) return showStatus("Please capture location first!", true);
@@ -183,20 +187,15 @@
         });
         
         if (res.ok) {
-          // Success: Show Modal
           verifyOverlay.style.display = 'flex';
-          
-          // Start Polling every 3 seconds
           verificationTimer = setInterval(async () => {
               try {
                   const check = await fetch(`${API_URL}/api/check-verification/${phone}`);
                   const status = await check.json();
-
                   if (status.verified) {
                       clearInterval(verificationTimer);
                       localStorage.setItem('token', status.token);
                       localStorage.setItem('user', JSON.stringify(status.user));
-                      // Redirect to profile
                       window.location.replace('profiles.html?verified=true');
                   }
               } catch (e) { console.log("Checking..."); }
