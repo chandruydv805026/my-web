@@ -7,97 +7,81 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Ratu Fresh | Signup</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
   <style>
     :root { --brand-green: #24b637; --text-main: #1a1a1a; --text-muted: #7d7d7d; --input-bg: #f9f9f9; }
-    * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { margin: 0; background: #fff; padding-bottom: 40px; }
+    * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; }
+    body { background: #fff; padding-bottom: 40px; color: var(--text-main); }
+    
     .mobile-header { padding: 40px 24px 20px; }
-    .brand-logo { font-size: 28px; font-weight: 800; color: var(--brand-green); }
+    .brand-logo { font-size: 28px; font-weight: 800; color: var(--brand-green); margin-bottom: 5px; }
+    h2 { font-size: 22px; font-weight: 700; margin-bottom: 5px; }
+    .header-p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+
     .form-container { padding: 0 24px; }
-    .form-group { margin-bottom: 20px; }
+    .form-group { margin-bottom: 18px; }
     .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+    
     input { width: 100%; height: 56px; background: var(--input-bg); border: 1.5px solid #eee; border-radius: 16px; padding: 0 16px; font-size: 16px; outline: none; transition: 0.2s; }
     input:focus { border-color: var(--brand-green); background: #fff; }
-    .address-row { display: flex; gap: 10px; }
-    .loc-btn { width: 56px; height: 56px; background: #e9f7eb; border: none; border-radius: 16px; color: var(--brand-green); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .submit-btn { width: 100%; height: 60px; background: var(--brand-green); color: #fff; border: none; border-radius: 18px; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 8px 20px rgba(36, 182, 55, 0.2); }
-    .submit-btn:disabled { background: #ccc; box-shadow: none; }
     
-    .toast { position: fixed; top: 20px; left: 24px; right: 24px; background: #333; color: #fff; padding: 16px; border-radius: 12px; text-align: center; transform: translateY(-200%); transition: 0.4s; z-index: 3000; font-size: 14px; }
-    .toast.show { transform: translateY(0); }
-    .toast.error { background: #e74c3c; }
+    .address-row { display: flex; gap: 10px; }
+    .loc-btn { width: 56px; height: 56px; background: #e9f7eb; border: none; border-radius: 16px; color: var(--brand-green); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: 0.2s; }
+    .loc-btn:active { transform: scale(0.9); }
 
-    /* Modal Styling */
-    .overlay { 
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
-      backdrop-filter: blur(8px); align-items: center; justify-content: center; z-index: 5000; padding: 20px;
-    }
-    .modal-card { 
-      background: #fff; padding: 40px 30px; border-radius: 28px; width: 100%; max-width: 380px; text-align: center; 
-      box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: slideUp 0.4s ease;
-    }
+    .submit-btn { width: 100%; height: 60px; background: var(--brand-green); color: #fff; border: none; border-radius: 18px; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 8px 20px rgba(36, 182, 55, 0.2); margin-top: 10px; transition: 0.2s; }
+    .submit-btn:disabled { background: #ccc; box-shadow: none; }
+
+    /* Verification Overlay */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); align-items: center; justify-content: center; z-index: 5000; padding: 20px; }
+    .modal-card { background: #fff; padding: 40px 30px; border-radius: 28px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: slideUp 0.4s ease; }
     @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     
-    .loader-ring {
-      width: 25px; height: 25px; border: 3px solid #f3f3f3; border-top: 3px solid var(--brand-green);
-      border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto;
-    }
+    .loader-ring { width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid var(--brand-green); border-radius: 50%; animation: spin 1s linear infinite; margin: 25px auto; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    .email-input-wrapper { position: relative; display: flex; align-items: center; }
-    .google-icon-btn { 
-      position: absolute; right: 8px; height: 40px; width: 40px; 
-      background: #fff; border: 1px solid #eee; border-radius: 12px; 
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05); z-index: 5;
-    }
-    .google-hidden-btn { opacity: 0; position: absolute; right: 0; width: 100%; height: 56px; z-index: 10; cursor: pointer; }
+    .toast { position: fixed; top: 20px; left: 24px; right: 24px; background: #333; color: #fff; padding: 16px; border-radius: 12px; text-align: center; transform: translateY(-200%); transition: 0.4s; z-index: 6000; font-size: 14px; }
+    .toast.show { transform: translateY(0); }
+    .toast.error { background: #e74c3c; }
   </style>
 </head>
 <body>
 
+  <div id="g_id_onload"
+     data-client_id="7338045042-h6edgesc81p3gkj1spq9mgl382nmpv7o.apps.googleusercontent.com"
+     data-context="signup"
+     data-callback="handleGoogleAutoFill"
+     data-auto_select="true"
+     data-itp_support="true">
+  </div>
+
   <div class="mobile-header">
     <div class="brand-logo">Ratu Fresh</div>
     <h2>Create Account</h2>
-    <p>Sign up to order fresh items within 5km.</p>
+    <p class="header-p">Fast & Fresh delivery within 5km of Ratu.</p>
   </div>
 
   <div class="form-container">
     <form id="signupForm">
-      <div class="form-group"><label>Full Name</label><input type="text" id="fullName" required></div>
-      <div class="form-group"><label>Mobile Number</label><input type="tel" id="phone" maxlength="10" required></div>
-      
-      <div class="form-group">
-        <label>Email Address</label>
-        <div class="email-input-wrapper">
-          <input type="email" id="email" placeholder="example@gmail.com" required style="padding-right: 60px;">
-          
-          <div id="g_id_onload"
-               data-client_id="7338045042-h6edgesc81p3gkj1spq9mgl382nmpv7o.apps.googleusercontent.com"
-               data-callback="handleGoogleResponse"
-               data-auto_prompt="false">
-          </div>
-          
-          <div class="google-icon-btn">
-            <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" width="20" height="20" alt="G">
-          </div>
-          
-          <div class="g_id_signin google-hidden-btn" data-type="standard" data-shape="rectangular" data-width="400"></div>
-        </div>
-      </div>
+      <div class="form-group"><label>Full Name</label><input type="text" id="fullName" placeholder="Enter your name" required></div>
+      <div class="form-group"><label>Mobile Number</label><input type="tel" id="phone" maxlength="10" placeholder="10-digit mobile number" required></div>
+      <div class="form-group"><label>Email Address</label><input type="email" id="email" placeholder="example@gmail.com" required></div>
 
       <div class="form-group">
         <label>Delivery Address</label>
         <div class="address-row">
-          <input type="text" id="addressInput" placeholder="Detect location..." required readonly>
+          <input type="text" id="addressInput" placeholder="Click icon to detect location..." required readonly>
           <button type="button" class="loc-btn" id="locBtn">
             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
           </button>
         </div>
       </div>
-      <div class="form-group"><label>Pincode</label><input type="text" id="pincodeInput" maxlength="6" required></div>
-      <div class="form-group"><label>Landmark / Area</label><input type="text" id="landmarkInput" required></div>
+
+      <div class="form-group"><label>Pincode</label><input type="text" id="pincodeInput" maxlength="6" placeholder="6-digit pincode" required></div>
+      <div class="form-group"><label>Landmark / Area</label><input type="text" id="landmarkInput" placeholder="Nearby famous place" required></div>
+      
       <button type="submit" class="submit-btn" id="signupBtn">Create Account</button>
+      <p style="text-align:center; font-size:13px; color:var(--text-muted); margin-top:20px;">Already have an account? <a href="login.html" style="color:var(--brand-green); text-decoration:none; font-weight:700;">Login</a></p>
     </form>
   </div>
 
@@ -107,13 +91,13 @@
       <h2 style="color:var(--brand-green); font-weight:800; margin-bottom:10px;">Check Your Email!</h2>
       <p style="color:#555; line-height:1.6; font-size:15px;">
         We have sent a verification link to your Gmail. <br>
-        <b>Open your Gmail app and click the 'Verify Account' button.</b>
+        <b>Open Gmail and click 'Verify Account'.</b>
       </p>
       
       <div class="loader-ring"></div>
       <p style="color:var(--brand-green); font-weight:700; font-size:13px;">Waiting for verification...</p>
       
-      <p style="font-size:11px; color:#aaa; margin-top:25px;">The page will redirect automatically after success.</p>
+      <p style="font-size:11px; color:#aaa; margin-top:25px;">This page will automatically open your profile once verified.</p>
     </div>
   </div>
 
@@ -129,11 +113,14 @@
     let verificationTimer;
     let signupCoords = { lat: null, lng: null };
 
-    function handleGoogleResponse(response) {
-        const payload = JSON.parse(atob(response.credential.split('.')[1]));
-        document.getElementById('fullName').value = payload.name;
-        document.getElementById('email').value = payload.email;
-        showStatus("Gmail detected! Capture location now. ✨");
+    // Google One Tap Callback (Fill Name & Email automatically)
+    function handleGoogleAutoFill(response) {
+        try {
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            if (payload.name) document.getElementById('fullName').value = payload.name;
+            if (payload.email) document.getElementById('email').value = payload.email;
+            showStatus("Gmail detected! Now capture your location. ✨");
+        } catch (e) { console.log("Auto-fill error"); }
     }
 
     function showStatus(msg, isError = false) {
@@ -145,7 +132,8 @@
     // GPS Logic
     document.getElementById('locBtn').addEventListener('click', () => {
       if (!navigator.geolocation) return showStatus("GPS not supported", true);
-      showStatus("Capturing location...");
+      showStatus("Detecting location... Please wait.");
+      
       navigator.geolocation.getCurrentPosition(async (pos) => {
         signupCoords.lat = pos.coords.latitude;
         signupCoords.lng = pos.coords.longitude;
@@ -157,23 +145,24 @@
           });
           const data = await res.json();
           if (!res.ok) return showStatus(data.error, true);
+          
           document.getElementById('addressInput').value = data.displayName;
           document.getElementById('pincodeInput').value = data.pincode;
           document.getElementById('landmarkInput').value = data.area;
-          showStatus("Location captured! ✨");
-        } catch (err) { showStatus("Server error", true); }
-      }, (err) => showStatus("Please turn on GPS/Permissions", true), { enableHighAccuracy: true });
+          showStatus("Location Captured! ✨");
+        } catch (err) { showStatus("Server connection error", true); }
+      }, (err) => showStatus("Please enable GPS & Permissions", true), { enableHighAccuracy: true });
     });
 
-    // Real-time Magic Signup Logic
+    // Magic Link Signup & Polling
     document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!signupCoords.lat) return showStatus("Detect location first!", true);
+      if (!signupCoords.lat) return showStatus("Please capture location first!", true);
 
       const signupBtn = document.getElementById('signupBtn');
       const phone = document.getElementById('phone').value;
       signupBtn.disabled = true;
-      signupBtn.innerText = "Processing...";
+      signupBtn.innerText = "Sending Link...";
 
       const formData = {
         name: document.getElementById('fullName').value,
@@ -194,39 +183,36 @@
         });
         
         if (res.ok) {
-          // [STEP 1] पॉपअप दिखाओ
+          // Success: Show Modal
           verifyOverlay.style.display = 'flex';
           
-          // [STEP 2] हर 3 सेकंड में बैकएंड से पूछो कि बंदा वेरीफाई हुआ या नहीं
-          startPolling(phone);
+          // Start Polling every 3 seconds
+          verificationTimer = setInterval(async () => {
+              try {
+                  const check = await fetch(`${API_URL}/api/check-verification/${phone}`);
+                  const status = await check.json();
+
+                  if (status.verified) {
+                      clearInterval(verificationTimer);
+                      localStorage.setItem('token', status.token);
+                      localStorage.setItem('user', JSON.stringify(status.user));
+                      // Redirect to profile
+                      window.location.replace('profiles.html?verified=true');
+                  }
+              } catch (e) { console.log("Checking..."); }
+          }, 3000);
         } else {
           const data = await res.json();
           showStatus(data.error, true);
-          signupBtn.disabled = false; signupBtn.innerText = "Create Account";
+          signupBtn.disabled = false;
+          signupBtn.innerText = "Create Account";
         }
       } catch (err) {
-        showStatus("Server error", true);
-        signupBtn.disabled = false; signupBtn.innerText = "Create Account";
+        showStatus("Server error, try again.", true);
+        signupBtn.disabled = false;
+        signupBtn.innerText = "Create Account";
       }
     });
-
-    function startPolling(phone) {
-        verificationTimer = setInterval(async () => {
-            try {
-                const res = await fetch(`${API_URL}/api/check-verification/${phone}`);
-                const status = await res.json();
-
-                if (status.verified) {
-                    clearInterval(verificationTimer); // पूछना बंद करो
-                    localStorage.setItem('token', status.token); // टोकन सेव करो
-                    localStorage.setItem('user', JSON.stringify(status.user));
-                    
-                    // [SUCCESS] सीधा प्रोफाइल पर जादू की तरह!
-                    window.location.replace('profiles.html?verified=true');
-                }
-            } catch (e) { console.log("Verifying..."); }
-        }, 3000);
-    }
   </script>
 </body>
 </html>
