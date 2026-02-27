@@ -34,7 +34,6 @@
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
-      // डोमेन चेक ताकि एरर न आए
       if (window.location.hostname !== 'ratufresh.me' && window.location.hostname !== 'localhost') return;
 
       await OneSignal.init({
@@ -75,18 +74,20 @@
 
     .search-bar { width: 100%; padding: 12px; border: none; border-radius: 12px; outline: none; box-shadow: var(--shadow); font-size: 1rem; }
 
+    /* Slider CSS */
     .slider-container { width: 100%; overflow: hidden; margin: 15px 0; position: relative; border-radius: 20px; }
     .slider { display: flex; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; }
     .slide { min-width: 100%; padding: 0 15px; box-sizing: border-box; }
     .offer-card {
-      width: 100%; height: 130px; border-radius: 20px;
+      width: 100%; height: 140px; border-radius: 20px;
       display: flex; flex-direction: column; justify-content: center;
       padding: 20px; color: white; position: relative; box-shadow: var(--shadow);
     }
     .offer-card h2 { font-size: 1.6rem; margin: 3px 0; }
     .offer-card p { font-size: 0.9rem; font-weight: 600; background: rgba(255,255,255,0.2); display: inline-block; padding: 2px 8px; border-radius: 5px; width: fit-content; }
     
-    .banner-img { width: 100%; height: 130px; object-fit: cover; border-radius: 20px; box-shadow: var(--shadow); }
+    /* Perfect Image Fit for Admin Banners */
+    .banner-img { width: 100%; height: 140px; object-fit: cover; border-radius: 20px; box-shadow: var(--shadow); }
 
     .products { 
       display: grid; 
@@ -113,6 +114,7 @@
     .add-btn { width: 100%; margin-top: 10px; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3); transition: 0.2s; }
     .add-btn:active { transform: scale(0.95); }
 
+    /* Modals, Desktop Corrections and Footer (Keeping everything as is) */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: flex-end; z-index: 2000; }
     .modal { background: white; width: 100%; padding: 30px 20px; border-radius: 25px 25px 0 0; text-align: center; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); animation: slideUp 0.3s ease-out; }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -169,25 +171,6 @@
       </p>
   </footer>
 
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "VegetableStore",
-    "name": "Ratu Fresh",
-    "image": "https://ratufresh.me/icons/icon-512.png",
-    "url": "https://ratufresh.me/",
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": "Shivala Colony, Ratu",
-      "addressLocality": "Ranchi",
-      "addressRegion": "JH",
-      "postalCode": "835222",
-      "addressCountry": "IN"
-    },
-    "telephone": "9955054109"
-  }
-  </script>
-
   <script>
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                     ? 'http://localhost:4000' 
@@ -198,44 +181,21 @@
     let totalSlides = 0;
     let bannerIndex = 0;
 
-    // --- [BACK BUTTON FIX START] ---
-    window.history.replaceState({ modalOpen: false }, "", "");
-
-    window.addEventListener('popstate', function(event) {
-        const modal = document.getElementById("loginModal");
-        if (modal && modal.style.display === "flex") {
-            modal.style.display = "none";
-            window.history.replaceState({ modalOpen: false }, "", "");
-        }
-    });
-
-    function checkLogin() {
-        window.history.pushState({ modalOpen: true }, "", "");
-        document.getElementById("loginModal").style.display = "flex";
-    }
-
-    function closeModal() { 
-        document.getElementById("loginModal").style.display = "none"; 
-        if (window.history.state && window.history.state.modalOpen) {
-            window.history.back();
-        }
-    }
-    // --- [BACK BUTTON FIX END] ---
-
+    // --- Static Banners (Including your 20 Mins Delivery) ---
     const staticBanners = [
+      {
+        type: 'card',
+        bg: 'linear-gradient(135deg, #d32f2f, #b71c1c)',
+        tag: 'RATU SPECIAL ⚡',
+        title: '20 MINS DELIVERY',
+        sub: 'रातु वासियों के लिए सुपरफास्ट सर्विस!'
+      },
       {
         type: 'card',
         bg: 'linear-gradient(135deg, #ff9800, #e65100)',
         tag: 'MEGA OFFER 🚚',
         title: 'FREE DELIVERY',
         sub: 'On all orders above ₹50!'
-      },
-      {
-        type: 'card',
-        bg: 'linear-gradient(135deg, #4caf50, #1b5e20)',
-        tag: 'FRESHNESS GUARANTEED 🥦',
-        title: 'Organic Produce',
-        sub: 'Direct from Farm to Doorstep'
       }
     ];
 
@@ -307,7 +267,7 @@
       const filtered = products.filter(p => p.name.toLowerCase().includes(search));
       
       if(filtered.length === 0) {
-        grid.innerHTML = '<p style="text-align: center; grid-column: 1 / -1; padding: 20px; color: #999;">No vegetables found.</p>';
+        grid.innerHTML = '<p style="text-align:center; grid-column: 1 / -1; padding:20px; color:#999;">No vegetables found.</p>';
         return;
       }
 
@@ -339,18 +299,19 @@
     }
 
     function updatePrice(id, qty, base) {
-      const priceEl = document.getElementById(`price-${id}`);
-      if(priceEl) priceEl.innerText = `₹${Math.round(qty * base)}`;
+      const p = document.getElementById(`price-${id}`);
+      if(p) p.innerText = `₹${Math.round(qty * base)}`;
     }
+
+    function checkLogin() { document.getElementById("loginModal").style.display = "flex"; }
+    function closeModal() { document.getElementById("loginModal").style.display = "none"; }
 
     window.onload = () => {
       const token = localStorage.getItem('token');
-      // [FORCE REDIRECT] अगर टोकन है, तो पेज रेंडर होने से पहले ही भेजें
       if (token && token !== "null" && token !== "undefined") {
           window.location.replace('profiles.html');
           return;
       }
-      // अगर टोकन नहीं है, तो डेटा लोड करें
       fetchAllData();
       setInterval(fetchAllData, 5000); 
     };
