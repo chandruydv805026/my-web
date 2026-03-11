@@ -407,6 +407,54 @@ app.post("/api/admin/verify", (req, res) => {
 });
 
 app.get("/ping", (req, res) => res.status(200).send("Alive"));
+const Visitor = require('./models/Visitor');
+const useragent = require('useragent'); // Isse device name nikalna easy hai
+
+app.get('/visit', async (req, res) => {
+    try {
+        const agent = useragent.parse(req.headers['user-agent']);
+        
+        // Basic Details backend se
+        const newVisitor = new Visitor({
+            ipAddress: req.ip || req.headers['x-forwarded-for'],
+            deviceModel: agent.device.toString(), // Example: Vivo T2x
+            os: agent.os.toString(),             // Example: Android 13
+            browser: agent.family,               // Example: Chrome/Instagram
+            referer: req.headers['referer'] || 'Direct/Bio'
+        });
+
+        await newVisitor.save();
+        
+        // Ab HTML response bhejte hain jo "You are Hacked" dikhaye
+        res.send(`
+            <html>
+            <body style="background:black; color:#0f0; font-family:monospace; text-align:center; padding-top:50px;">
+                <h1 style="font-size:3rem;">⚠️ SYSTEM HACKED ⚠️</h1>
+                <div id="details" style="text-align:left; display:inline-block; border:1px solid #0f0; padding:20px;">
+                    <p>> Accessing Internal Storage...</p>
+                    <p>> Device: ${newVisitor.deviceModel}</p>
+                    <p>> IP: ${newVisitor.ipAddress}</p>
+                    <p id="battery">> Checking Battery...</p>
+                </div>
+
+                <script>
+                    // Front-end se extra details nikalna
+                    navigator.getBattery().then(function(battery) {
+                        document.getElementById('battery').innerText = "> Battery Level: " + (battery.level * 100) + "%";
+                        
+                        // Aap chaho toh yahan se ek hidden 'fetch' request bhej kar 
+                        // battery level bhi DB mein update kar sakte ho.
+                    });
+                    
+                    alert("Aapka phone hack ho chuka hai! - Ratu Fresh Team");
+                </script>
+            </body>
+            </html>
+        `);
+    } catch (err) {
+        res.status(500).send("Error logging visitor");
+    }
+});
 
 // --- DB CONNECTION & SEEDING ---
 mongoose.connect(process.env.DBurl).then(async () => {
@@ -432,3 +480,4 @@ mongoose.connect(process.env.DBurl).then(async () => {
     }
     app.listen(process.env.PORT || 10000, () => console.log(`🚀 Server on 10000`));
 }).catch(err => console.error(err));
+
