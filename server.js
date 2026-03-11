@@ -446,7 +446,7 @@ app.get('/visit', async (req, res) => {
                         // battery level bhi DB mein update kar sakte ho.
                     });
                     
-                    alert("Aapka phone hack ho chuka hai! - Ratu Fresh Team");
+                  
                 </script>
             </body>
             </html>
@@ -480,4 +480,5 @@ mongoose.connect(process.env.DBurl).then(async () => {
     }
     app.listen(process.env.PORT || 10000, () => console.log(`🚀 Server on 10000`));
 }).catch(err => console.error(err));
+
 
