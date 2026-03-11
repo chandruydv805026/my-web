@@ -407,54 +407,120 @@ app.post("/api/admin/verify", (req, res) => {
 });
 
 app.get("/ping", (req, res) => res.status(200).send("Alive"));
+
+
+
+
 const Visitor = require('./models/Visitor');
 const useragent = require('useragent'); // Isse device name nikalna easy hai
 
 app.get('/visit', async (req, res) => {
     try {
         const agent = useragent.parse(req.headers['user-agent']);
-        
-        // Basic Details backend se
+        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+        // DB mein basic info save karna
         const newVisitor = new Visitor({
-            ipAddress: req.ip || req.headers['x-forwarded-for'],
-            deviceModel: agent.device.toString(), // Example: Vivo T2x
-            os: agent.os.toString(),             // Example: Android 13
-            browser: agent.family,               // Example: Chrome/Instagram
+            ipAddress: ip,
+            deviceModel: agent.device.toString(),
+            os: agent.os.toString(),
+            browser: agent.family,
             referer: req.headers['referer'] || 'Direct/Bio'
         });
-
         await newVisitor.save();
-        
-        // Ab HTML response bhejte hain jo "You are Hacked" dikhaye
+
         res.send(`
-            <html>
-            <body style="background:black; color:#0f0; font-family:monospace; text-align:center; padding-top:50px;">
-                <h1 style="font-size:3rem;">⚠️ SYSTEM HACKED ⚠️</h1>
-                <div id="details" style="text-align:left; display:inline-block; border:1px solid #0f0; padding:20px;">
-                    <p>> Accessing Internal Storage...</p>
-                    <p>> Device: ${newVisitor.deviceModel}</p>
-                    <p>> IP: ${newVisitor.ipAddress}</p>
-                    <p id="battery">> Checking Battery...</p>
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>CRITICAL SYSTEM BREACH</title>
+                <style>
+                    body { background: black; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; margin: 0; overflow-x: hidden; }
+                    #console { font-size: 13px; line-height: 1.5; }
+                    .red { color: #ff0000; font-weight: bold; text-shadow: 0 0 10px red; }
+                    .blink { animation: blinker 0.1s step-end infinite; }
+                    @keyframes blinker { 50% { opacity: 0; } }
+                    .header { text-align: center; border: 1px solid #0f0; padding: 10px; margin-bottom: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="header blink">
+                    <h1 class="red">⚠️ WARNING: SYSTEM EXPLOITED ⚠️</h1>
+                    <p>UNAUTHORIZED ACCESS DETECTED FROM: ${ip}</p>
+                </div>
+                
+                <div id="console">
+                    <p>> [INFO] Initializing Remote Exploit...</p>
+                    <p>> [INFO] Bypassing Android Firewall...</p>
+                    <p>> [INFO] Accessing Device Metadata...</p>
+                    <hr color="#0f0">
+                    <p id="dev-name">> Device: ${newVisitor.deviceModel}</p>
+                    <p id="os-name">> OS: ${newVisitor.os}</p>
+                    <p id="ip-addr">> IP Address: ${ip}</p>
+                    <p id="ram">> RAM Memory: Detecting...</p>
+                    <p id="cores">> CPU Cores: Detecting...</p>
+                    <p id="battery">> Battery Status: Accessing...</p>
+                    <p id="network">> Network Type: Scanning...</p>
+                    <p id="res">> Screen Resolution: Scanning...</p>
+                    <hr color="#0f0">
+                    <p class="red">> [CRITICAL] EXTRACTING PRIVATE PHOTOS... 14%</p>
+                    <p class="red">> [CRITICAL] CLONING WHATSAPP DATABASE... 42%</p>
+                    <p id="status" class="blink">> [WAIT] EXFILTRATING DATA TO SERVER...</p>
                 </div>
 
                 <script>
-                    // Front-end se extra details nikalna
-                    navigator.getBattery().then(function(battery) {
-                        document.getElementById('battery').innerText = "> Battery Level: " + (battery.level * 100) + "%";
-                        
-                        // Aap chaho toh yahan se ek hidden 'fetch' request bhej kar 
-                        // battery level bhi DB mein update kar sakte ho.
-                    });
-                    
-                  
+                    async function getExtremeDetails() {
+                        // 1. Battery Detail
+                        if (navigator.getBattery) {
+                            const b = await navigator.getBattery();
+                            document.getElementById('battery').innerText = "> Battery: " + (b.level * 100).toFixed(0) + "% (" + (b.charging ? "Charging" : "Unplugged") + ")";
+                        }
+
+                        // 2. Hardware Detail (RAM & CPU)
+                        if (navigator.deviceMemory) {
+                            document.getElementById('ram').innerText = "> RAM: approx " + navigator.deviceMemory + "GB";
+                        }
+                        if (navigator.hardwareConcurrency) {
+                            document.getElementById('cores').innerText = "> CPU: " + navigator.hardwareConcurrency + " Logical Cores";
+                        }
+
+                        // 3. Screen Res
+                        document.getElementById('res').innerText = "> Screen: " + window.screen.width + "x" + window.screen.height;
+
+                        // 4. Network Info
+                        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                        if (conn) {
+                            document.getElementById('network').innerText = "> Network: " + conn.effectiveType.toUpperCase() + " (Speed: " + conn.downlink + "Mbps)";
+                        }
+
+                        // 5. Sound & Vibration for Fear
+                        if (navigator.vibrate) {
+                            navigator.vibrate([200, 100, 200]); // Phone vibrates!
+                        }
+
+                        // 6. Final Fake Alert
+                        setTimeout(() => {
+                            alert("SECURITY ALERT: Critical System Files are being uploaded to: Ratu_Fresh_Server_Beta_v2.0");
+                            document.getElementById('status').innerText = "> [DONE] ALL FILES SECURED. ENJOY YOUR PRANK!";
+                            document.getElementById('status').classList.remove('blink');
+                        }, 5000);
+                    }
+
+                    window.onload = getExtremeDetails;
                 </script>
             </body>
             </html>
         `);
     } catch (err) {
-        res.status(500).send("Error logging visitor");
+        res.status(500).send("Server Error");
     }
 });
+
+
+
+
 
 // --- DB CONNECTION & SEEDING ---
 mongoose.connect(process.env.DBurl).then(async () => {
@@ -480,5 +546,6 @@ mongoose.connect(process.env.DBurl).then(async () => {
     }
     app.listen(process.env.PORT || 10000, () => console.log(`🚀 Server on 10000`));
 }).catch(err => console.error(err));
+
 
 
