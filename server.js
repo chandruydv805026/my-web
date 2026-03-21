@@ -8,6 +8,7 @@ const multer = require("multer");
 const crypto = require("crypto"); 
 const fs = require('fs');
 const { Resend } = require("resend"); 
+const { GoogleGenerativeAI } = require("@google/generative-ai"); // नया: Gemini के लिए
 require("dotenv").config();
 
 // Models
@@ -21,6 +22,12 @@ const app = express();
 app.use(express.json());
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+// --- INSTAGRAM & GEMINI CONFIG ---
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
+const FB_TOKEN = process.env.FB_PAGE_TOKEN;
+const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+const modelAI = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 app.use(cors({
     origin: "*",
@@ -91,7 +98,7 @@ function getDistance(lat1, lon1, lat2, lon2) {
 
 const loginOtpStore = {};
 
-// --- 1. PRODUCT ROUTES ---
+// --- 1. PRODUCT ROUTES --- (No lines removed)
 app.get("/api/products", async (req, res) => {
     try {
         const products = await Product.find();
@@ -131,7 +138,7 @@ app.delete("/api/products/delete/:id", async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Delete failed" }); }
 });
 
-// --- 2. BANNER ROUTES ---
+// --- 2. BANNER ROUTES --- (No lines removed)
 app.post("/api/banners/add", upload.single('image'), async (req, res) => {
     const { title, password } = req.body;
     if (password !== ADMIN_PASSWORD_SECRET) return res.status(403).json({ error: "Unauthorized" });
@@ -408,6 +415,48 @@ app.post("/api/admin/verify", (req, res) => {
 
 app.get("/ping", (req, res) => res.status(200).send("Alive"));
 
+// --- 🤖 9. NEW: INSTAGRAM AI BOT WEBHOOKS ---
+app.get("/webhook", (req, res) => {
+    let mode = req.query["hub.mode"];
+    let token = req.query["hub.verify_token"];
+    let challenge = req.query["hub.challenge"];
+
+    if (mode && token === "chandan123") {
+        res.status(200).send(challenge);
+    } else {
+        res.sendStatus(403);
+    }
+});
+
+app.post("/webhook", async (req, res) => {
+    let body = req.body;
+    if (body.object === "instagram") {
+        try {
+            for (let entry of body.entry) {
+                let msgEvent = entry.messaging[0];
+                let senderId = msgEvent.sender.id;
+                let userText = msgEvent.message.text;
+
+                if (userText) {
+                    const result = await modelAI.generateContent(`तुम चंदन यादव के 'Ratu Fresh' के AI असिस्टेंट हो। रांची से हो। छोटा और प्यारा जवाब हिंदी में दो। सवाल: ${userText}`);
+                    const aiReply = result.response.text();
+
+                    await axios.post(`https://graph.facebook.com/v19.0/me/messages?access_token=${FB_TOKEN}`, {
+                        recipient: { id: senderId },
+                        message: { text: aiReply }
+                    });
+                }
+            }
+            res.status(200).send("EVENT_RECEIVED");
+        } catch (error) {
+            console.error("Bot Error:", error);
+            res.status(200).send("EVENT_RECEIVED");
+        }
+    } else {
+        res.sendStatus(404);
+    }
+});
+
 
 // --- DB CONNECTION & SEEDING ---
 mongoose.connect(process.env.DBurl).then(async () => {
@@ -433,7 +482,3 @@ mongoose.connect(process.env.DBurl).then(async () => {
     }
     app.listen(process.env.PORT || 10000, () => console.log(`🚀 Server on 10000`));
 }).catch(err => console.error(err));
-
-
-
-
