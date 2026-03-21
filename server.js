@@ -27,7 +27,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const FB_TOKEN = process.env.FB_PAGE_TOKEN;
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
-const modelAI = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const modelAI = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
 app.use(cors({
     origin: "*",
