@@ -29,12 +29,12 @@ const FB_TOKEN = process.env.FB_PAGE_TOKEN;
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 
 /**
- * चंदन भाई, यहाँ 'v1beta' और 'models/' को साफ़ तौर पर जोड़ दिया है। 
- * अब गूगल का सर्वर इसे 100% पहचानेगा और रिप्लाई देगा।
+ * चंदन भाई, यहाँ 'gemini-1.5-flash' का इस्तेमाल किया गया है जो 
+ * फ्री टियर वाली चाबी (Key) पर बिना 404 एरर के चलता है।
  */
 const modelAI = genAI.getGenerativeModel({ 
     model: "gemini-1.5-flash" 
-}, { apiVersion: "v1beta" });
+});
 
 app.use(cors({
     origin: "*",
