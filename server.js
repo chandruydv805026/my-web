@@ -27,7 +27,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const FB_TOKEN = process.env.FB_PAGE_TOKEN;
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
-const modelAI = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1beta' });
+// सुधारा गया: gemini-pro का इस्तेमाल किया गया है ताकि 404 एरर न आए
+const modelAI = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 app.use(cors({
     origin: "*",
@@ -449,7 +450,6 @@ app.post("/webhook", async (req, res) => {
     if (body.object === "instagram") {
         try {
             for (let entry of body.entry) {
-                // सुधारा गया: checks added to prevent "Cannot read properties of undefined"
                 if (entry.messaging && entry.messaging[0]) {
                     let msgEvent = entry.messaging[0];
                     if (msgEvent.sender && msgEvent.sender.id && msgEvent.message && msgEvent.message.text) {
