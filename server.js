@@ -24,7 +24,10 @@ app.use(express.json());
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // --- INSTAGRAM & GROQ CONFIG ---
-const FB_TOKEN = process.env.FB_PAGE_TOKEN;
+/**
+ * चंदन भाई, यहाँ .trim() लगा दिया है ताकि वो न्यूलाइन (\n) वाला एरर खत्म हो जाए।
+ */
+const FB_TOKEN = (process.env.FB_PAGE_TOKEN || "").trim(); 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY }); // Groq का इस्तेमाल
 
 app.use(cors({
@@ -453,7 +456,7 @@ app.post("/webhook", async (req, res) => {
                         let senderId = msgEvent.sender.id;
                         let userText = msgEvent.message.text;
 
-                        // सुधारा गया हिस्सा: Groq के साथ सुपर फ़ास्ट रिप्लाई
+                        // सुधारा गया हिस्सा: Groq के साथ सुपर फ़ास्ट रिप्लाई (नया मॉडल)
                         const chatCompletion = await groq.chat.completions.create({
                             messages: [
                                 { role: "system", content: "तुम चंदन यादव के 'Ratu Fresh' के AI असिस्टेंट हो। रांची से हो। छोटा और प्यारा जवाब हिंदी में दो।" },
