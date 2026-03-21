@@ -433,18 +433,21 @@ app.post("/webhook", async (req, res) => {
     if (body.object === "instagram") {
         try {
             for (let entry of body.entry) {
-                let msgEvent = entry.messaging[0];
-                let senderId = msgEvent.sender.id;
-                let userText = msgEvent.message.text;
+                // सुधारा गया: checks added to prevent "Cannot read properties of undefined"
+                if (entry.messaging && entry.messaging[0]) {
+                    let msgEvent = entry.messaging[0];
+                    if (msgEvent.sender && msgEvent.sender.id && msgEvent.message && msgEvent.message.text) {
+                        let senderId = msgEvent.sender.id;
+                        let userText = msgEvent.message.text;
 
-                if (userText) {
-                    const result = await modelAI.generateContent(`तुम चंदन यादव के 'Ratu Fresh' के AI असिस्टेंट हो। रांची से हो। छोटा और प्यारा जवाब हिंदी में दो। सवाल: ${userText}`);
-                    const aiReply = result.response.text();
+                        const result = await modelAI.generateContent(`तुम चंदन यादव के 'Ratu Fresh' के AI असिस्टेंट हो। रांची से हो। छोटा और प्यारा जवाब हिंदी में दो। सवाल: ${userText}`);
+                        const aiReply = result.response.text();
 
-                    await axios.post(`https://graph.facebook.com/v19.0/me/messages?access_token=${FB_TOKEN}`, {
-                        recipient: { id: senderId },
-                        message: { text: aiReply }
-                    });
+                        await axios.post(`https://graph.facebook.com/v19.0/me/messages?access_token=${FB_TOKEN}`, {
+                            recipient: { id: senderId },
+                            message: { text: aiReply }
+                        });
+                    }
                 }
             }
             res.status(200).send("EVENT_RECEIVED");
