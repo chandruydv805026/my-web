@@ -453,13 +453,13 @@ app.post("/webhook", async (req, res) => {
                         let senderId = msgEvent.sender.id;
                         let userText = msgEvent.message.text;
 
-                        // सुधारा गया हिस्सा: Groq के साथ सुपर फ़ास्ट रिप्लाई
+                        // सुधारा गया हिस्सा: Groq के साथ सुपर फ़ास्ट रिप्लाई
                         const chatCompletion = await groq.chat.completions.create({
                             messages: [
                                 { role: "system", content: "तुम चंदन यादव के 'Ratu Fresh' के AI असिस्टेंट हो। रांची से हो। छोटा और प्यारा जवाब हिंदी में दो।" },
                                 { role: "user", content: userText }
                             ],
-                            model: "llama3-8b-8192",
+                            model: "llama-3.1-8b-instant",
                         });
 
                         const aiReply = chatCompletion.choices[0]?.message?.content || "नमस्ते! हम आपकी क्या सहायता कर सकते हैं?";
