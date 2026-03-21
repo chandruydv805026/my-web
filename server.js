@@ -27,7 +27,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const FB_TOKEN = process.env.FB_PAGE_TOKEN;
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
-// सुधारा गया: नए वर्शन के लिए सही तरीका (बिना किसी वर्शन झंझट के)
+// अपडेटेड लाइन: नए वर्शन के साथ बिना किसी वर्जन झंझट के काम करेगा
 const modelAI = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 app.use(cors({
