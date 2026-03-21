@@ -8,7 +8,7 @@ const multer = require("multer");
 const crypto = require("crypto"); 
 const fs = require('fs');
 const { Resend } = require("resend"); 
-const { GoogleGenerativeAI } = require("@google/generative-ai"); // नया: Gemini के लिए
+const Groq = require("groq-sdk"); // अपडेट: Gemini की जगह Groq लाइब्रेरी
 require("dotenv").config();
 
 // Models
@@ -23,18 +23,9 @@ app.use(express.json());
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// --- INSTAGRAM & GEMINI CONFIG ---
-const GEMINI_KEY = process.env.GEMINI_API_KEY;
+// --- INSTAGRAM & GROQ CONFIG ---
 const FB_TOKEN = process.env.FB_PAGE_TOKEN;
-const genAI = new GoogleGenerativeAI(GEMINI_KEY);
-
-/**
- * चंदन भाई, यहाँ 'gemini-1.5-flash' का इस्तेमाल किया गया है जो 
- * फ्री टियर वाली चाबी (Key) पर बिना 404 एरर के चलता है।
- */
-const modelAI = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash" 
-});
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY }); // Groq का इस्तेमाल
 
 app.use(cors({
     origin: "*",
@@ -438,7 +429,7 @@ app.post("/api/admin/verify", (req, res) => {
 
 app.get("/ping", (req, res) => res.status(200).send("Alive"));
 
-// --- 🤖 9. NEW: INSTAGRAM AI BOT WEBHOOKS ---
+// --- 🤖 9. NEW: INSTAGRAM AI BOT WEBHOOKS (Updated to Groq) ---
 app.get("/webhook", (req, res) => {
     let mode = req.query["hub.mode"];
     let token = req.query["hub.verify_token"];
@@ -462,8 +453,16 @@ app.post("/webhook", async (req, res) => {
                         let senderId = msgEvent.sender.id;
                         let userText = msgEvent.message.text;
 
-                        const result = await modelAI.generateContent(`तुम चंदन यादव के 'Ratu Fresh' के AI असिस्टेंट हो। रांची से हो। छोटा और प्यारा जवाब हिंदी में दो। सवाल: ${userText}`);
-                        const aiReply = result.response.text();
+                        // सुधारा गया हिस्सा: Groq के साथ सुपर फ़ास्ट रिप्लाई
+                        const chatCompletion = await groq.chat.completions.create({
+                            messages: [
+                                { role: "system", content: "तुम चंदन यादव के 'Ratu Fresh' के AI असिस्टेंट हो। रांची से हो। छोटा और प्यारा जवाब हिंदी में दो।" },
+                                { role: "user", content: userText }
+                            ],
+                            model: "llama3-8b-8192",
+                        });
+
+                        const aiReply = chatCompletion.choices[0]?.message?.content || "नमस्ते! हम आपकी क्या सहायता कर सकते हैं?";
 
                         await axios.post(`https://graph.facebook.com/v19.0/me/messages?access_token=${FB_TOKEN}`, {
                             recipient: { id: senderId },
