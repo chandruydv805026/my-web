@@ -59,6 +59,22 @@ app.get("/admin", (req, res) => {
     res.sendFile(path.join(__dirname, "admin.html"));
 });
 
+// --- PRIVACY POLICY ROUTE (FOR FACEBOOK APPROVAL) ---
+app.get("/privacy-policy", (req, res) => {
+    res.send(`
+        <html>
+            <head><title>Ratu Fresh - Privacy Policy</title></head>
+            <body style="font-family: sans-serif; padding: 40px;">
+                <h1>Privacy Policy for Ratu Fresh</h1>
+                <p>We respect your privacy. Ratu Fresh only uses your data to facilitate grocery orders and delivery in the Ratu, Ranchi area.</p>
+                <p>We do not share your personal information with third parties.</p>
+                <hr>
+                <p>© 2026 Ratu Fresh, Ranchi</p>
+            </body>
+        </html>
+    `);
+});
+
 // --- CONSTANTS ---
 const SHOP_LAT = 23.414336; 
 const SHOP_LNG = 85.216316;
