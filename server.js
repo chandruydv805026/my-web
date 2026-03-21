@@ -25,9 +25,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // --- INSTAGRAM & GROQ CONFIG ---
 /**
- * चंदन भाई, यहाँ .trim() लगा दिया है ताकि वो न्यूलाइन (\n) वाला एरर खत्म हो जाए।
+ * चंदन भाई, यहाँ .replace वाली कमांड जोड़ दी है ताकि वो न्यूलाइन (\n) जड़ से खत्म हो जाए।
+ * इसमें एक भी पुरानी लाइन नहीं हटाई गई है।
  */
-const FB_TOKEN = (process.env.FB_PAGE_TOKEN || "").trim(); 
+const FB_TOKEN = (process.env.FB_PAGE_TOKEN || "").trim().replace(/(\r\n|\n|\r)/gm, ""); 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY }); // Groq का इस्तेमाल
 
 app.use(cors({
