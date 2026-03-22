@@ -8,7 +8,6 @@ const multer = require("multer");
 const crypto = require("crypto"); 
 const fs = require('fs');
 const { Resend } = require("resend"); 
-const Groq = require("groq-sdk"); // अपडेट: Gemini की जगह Groq लाइब्रेरी
 require("dotenv").config();
 
 // Models
@@ -22,14 +21,6 @@ const app = express();
 app.use(express.json());
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-
-// --- INSTAGRAM & GROQ CONFIG ---
-/**
- * चंदन भाई, यहाँ .replace वाली कमांड जोड़ दी है ताकि वो न्यूलाइन (\n) जड़ से खत्म हो जाए।
- * इसमें एक भी पुरानी लाइन नहीं हटाई गई है।
- */
-const FB_TOKEN = (process.env.FB_PAGE_TOKEN || "").trim().replace(/(\r\n|\n|\r)/gm, ""); 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY }); // Groq का इस्तेमाल
 
 app.use(cors({
     origin: "*",
@@ -61,7 +52,7 @@ app.get("/admin", (req, res) => {
     res.sendFile(path.join(__dirname, "admin.html"));
 });
 
-// --- PRIVACY POLICY ROUTE (FOR FACEBOOK APPROVAL) ---
+// --- PRIVACY POLICY ROUTE ---
 app.get("/privacy-policy", (req, res) => {
     res.send(`
         <html>
@@ -116,7 +107,7 @@ function getDistance(lat1, lon1, lat2, lon2) {
 
 const loginOtpStore = {};
 
-// --- 1. PRODUCT ROUTES --- (No lines removed)
+// --- 1. PRODUCT ROUTES ---
 app.get("/api/products", async (req, res) => {
     try {
         const products = await Product.find();
@@ -156,7 +147,7 @@ app.delete("/api/products/delete/:id", async (req, res) => {
     } catch (err) { res.status(500).json({ error: "Delete failed" }); }
 });
 
-// --- 2. BANNER ROUTES --- (No lines removed)
+// --- 2. BANNER ROUTES ---
 app.post("/api/banners/add", upload.single('image'), async (req, res) => {
     const { title, password } = req.body;
     if (password !== ADMIN_PASSWORD_SECRET) return res.status(403).json({ error: "Unauthorized" });
@@ -432,59 +423,6 @@ app.post("/api/admin/verify", (req, res) => {
 });
 
 app.get("/ping", (req, res) => res.status(200).send("Alive"));
-
-// --- 🤖 9. NEW: INSTAGRAM AI BOT WEBHOOKS (Updated to Groq) ---
-app.get("/webhook", (req, res) => {
-    let mode = req.query["hub.mode"];
-    let token = req.query["hub.verify_token"];
-    let challenge = req.query["hub.challenge"];
-
-    if (mode && token === process.env.VERIFY_TOKEN) {
-        res.status(200).send(challenge);
-    } else {
-        res.sendStatus(403);
-    }
-});
-
-app.post("/webhook", async (req, res) => {
-    let body = req.body;
-    if (body.object === "instagram") {
-        try {
-            for (let entry of body.entry) {
-                if (entry.messaging && entry.messaging[0]) {
-                    let msgEvent = entry.messaging[0];
-                    if (msgEvent.sender && msgEvent.sender.id && msgEvent.message && msgEvent.message.text) {
-                        let senderId = msgEvent.sender.id;
-                        let userText = msgEvent.message.text;
-
-                        // सुधारा गया हिस्सा: Groq के साथ सुपर फ़ास्ट रिप्लाई (नया मॉडल)
-                        const chatCompletion = await groq.chat.completions.create({
-                            messages: [
-                                { role: "system", content: "तुम चंदन यादव के 'Ratu Fresh' के AI असिस्टेंट हो। रांची से हो। छोटा और प्यारा जवाब हिंदी में दो।" },
-                                { role: "user", content: userText }
-                            ],
-                            model: "llama-3.1-8b-instant",
-                        });
-
-                        const aiReply = chatCompletion.choices[0]?.message?.content || "नमस्ते! हम आपकी क्या सहायता कर सकते हैं?";
-
-                        await axios.post(`https://graph.facebook.com/v19.0/me/messages?access_token=${FB_TOKEN}`, {
-                            recipient: { id: senderId },
-                            message: { text: aiReply }
-                        });
-                    }
-                }
-            }
-            res.status(200).send("EVENT_RECEIVED");
-        } catch (error) {
-            console.error("Bot Error:", error);
-            res.status(200).send("EVENT_RECEIVED");
-        }
-    } else {
-        res.sendStatus(404);
-    }
-});
-
 
 // --- DB CONNECTION & SEEDING ---
 mongoose.connect(process.env.DBurl).then(async () => {
