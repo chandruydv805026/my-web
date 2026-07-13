@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ratu Fresh - Chat with Priya ✨</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .chat-container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h2 { color: #2e7d32; margin-bottom: 5px; }
+        p.subtitle { color: #666; font-size: 14px; margin-top: 0; margin-bottom: 25px; }
+        
+        .mic-btn {
+            background: #24b637;
+            color: white;
+            border: none;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            font-size: 40px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(36, 182, 55, 0.4);
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        .mic-btn:active { transform: scale(0.95); }
+        .recording {
+            background: #ff4444;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 5px 15px rgba(255, 68, 68, 0.4);
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+
+        .status-text { margin-top: 20px; font-weight: bold; color: #444; min-height: 24px; }
+        .response-box {
+            margin-top: 25px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 5px solid #24b637;
+            border-radius: 5px;
+            text-align: left;
+            display: none;
+        }
+        .response-box h4 { margin: 0 0 5px 0; color: #2e7d32; }
+        .response-box p { margin: 0; color: #333; font-size: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <h2>Ratu Fresh AI Assistant</h2>
+    <p class="subtitle">Talk to Priya for fresh vegetables! 🥬</p>
+    
+    <button id="micBtn" class="mic-btn">🎙️</button>
+    <div id="statusText" class="status-text">Tap the mic to speak...</div>
+
+    <div id="responseBox" class="response-box">
+        <h4>Priya:</h4>
+        <p id="replyText"></p>
+    </div>
+</div>
+
+<script>
+    const micBtn = document.getElementById('micBtn');
+    const statusText = document.getElementById('statusText');
+    const responseBox = document.getElementById('responseBox');
+    const replyText = document.getElementById('replyText');
+
+    let mediaRecorder;
+    let audioChunks = [];
+    let recognition;
+    let transcribedText = "";
+
+    // 1. Browser Speech Recognition Setup (Aawaaz ko text me badalne ke liye)
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'hi-IN'; // Hinglish/Hindi catch karne ke liye
+        recognition.interimResults = false;
+
+        recognition.onresult = (event) => {
+            transcribedText = event.results[0][0].transcript;
+            statusText.innerText = "Thinking...";
+        };
+
+        recognition.onerror = () => {
+            statusText.innerText = "Sorry, couldn't understand. Try again.";
+            stopRecordingProcess();
+        };
+    }
+
+    // Mic Button click logic
+    micBtn.addEventListener('click', async () => {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+            // Stop recording
+            stopRecordingProcess();
+        } else {
+            // Start recording
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioChunks = [];
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                
+                mediaRecorder.ondataavailable = (e) => {
+                    audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    // Saare audio chunks se ek single audio file (Blob) banana
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    sendDataToBackend(audioBlob, transcribedText);
+                };
+
+                // Dono start karenge: Audio stream buffer aur Speech-to-Text engine
+                mediaRecorder.start();
+                if (recognition) recognition.start();
+                
+                micBtn.classList.add('recording');
+                statusText.innerText = "Listening... Speak now!";
+            } catch (err) {
+                alert("Microphone access denied or not supported.");
+            }
+        }
+    });
+
+    function stopRecordingProcess() {
+        if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
+        if (recognition) recognition.stop();
+        micBtn.classList.remove('recording');
+    }
+
+    // 2. Data ko backend par bhejna (FormData me wrap karke taaki audio file aur text ek sath jayein)
+    async function sendDataToBackend(audioBlob, textContent) {
+        const formData = new FormData();
+        formData.append('audioBlob', audioBlob, 'user-voice.webm');
+        formData.append('userText', textContent || "Hello");
+        formData.append('userName', "Instagram Visitor");
+
+        try {
+            const res = await fetch('/api/ratu-fresh-ai', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                statusText.innerText = "Tap mic to speak again";
+                responseBox.style.display = "block";
+                replyText.innerText = data.reply;
+                
+                // 3. Priya ki aawaaz play karna (Text-to-Speech)
+                speakOut(data.reply);
+            } else {
+                statusText.innerText = "Error getting reply.";
+            }
+        } catch (err) {
+            statusText.innerText = "Server error. Try again.";
+        }
+    }
+
+    // Browser Speech Synthesis (Priya bolkar sunayegi)
+    function speakOut(text) {
+        if ('speechSynthesis' in window) {
+            // Agar pehle se kuch bol rahi ho toh stop karein
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'hi-IN'; // Indian accent ke liye
+            utterance.rate = 1.0;     // Normal speed
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+</script>
+
+</body>
+</html>
