@@ -17,7 +17,7 @@ const Order = require("./models/order");
 const Product = require("./models/product"); 
 const Banner = require("./models/banner");
 
-// 🟢 --- UPDATED MONGOOSE SCHEMA: ONLY SAVES PURE AUDIO RECORDING ---
+// --- MONGOOSE SCHEMA: ONLY SAVES PURE AUDIO RECORDING ---
 const InstagramChatSchema = new mongoose.Schema({
     userName: { type: String, default: "Instagram User" },
     audioBuffer: Buffer,       // User ki real voice recording file binary format me safe hogi
@@ -52,7 +52,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// 🟢 --- INSTAGRAM AUDIO UPLOAD MULTER (IN-MEMORY STORAGE FOR BINARY BUFFER) ---
+// --- INSTAGRAM AUDIO UPLOAD MULTER (IN-MEMORY STORAGE FOR BINARY BUFFER) ---
 const memoryStorage = multer.memoryStorage();
 const uploadAudio = multer({ storage: memoryStorage });
 
@@ -125,37 +125,36 @@ function getDistance(lat1, lon1, lat2, lon2) {
 
 const loginOtpStore = {};
 
-// 🟢 --- UPDATED ROUTE: REPLIES VIA GEMINI BUT SAVES ONLY PURE BINARY AUDIO TO MONGODB ---
+// --- AI ROUTE WITH NEW STABLE MODEL FIX ---
 app.post("/api/ratu-fresh-ai", uploadAudio.single('audioBlob'), async (req, res) => {
     const { userText, userName } = req.body;
     
     try {
-        // MongoDB se active items nikal kar price string banana
         const products = await Product.find({ inStock: true });
         const priceListString = products.map(p => `${p.name}: ₹${p.price} per ${p.unit}`).join(", ");
 
-        // Google Gemini Engine connectivity setup
         const { GoogleGenAI } = require("@google/genai");
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+        // 🟢 MODEL NAME FIXED: Changed from 'gemini-2.5-flash' to stable 'gemini-2.0-flash'
         const aiResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.0-flash',
             contents: userText || "Hello",
             config: {
-                systemInstruction: `Your name is Priya. You are the official AI voice assistant of 'Ratu Fresh' (owned by Chandan Yadav). Talk like a sweet 21-year-old girl from Ratu, Ranchi in short Hinglish. CURRENT VEGETABLE PRICES: [${priceListString}]. Give answer in max 1-2 sentences. Never sound robotic.`
+                systemInstruction: `Your name is Priya. You are the official AI assistant of 'Ratu Fresh' (owned by Chandan Yadav). Speak like a sweet, polite 21-year-old local Indian girl in natural Hinglish. Keep your answers extremely short (maximum 1-2 sentences). Use words like 'bhaiya', 'aap', 'fresh sabzi'. CURRENT VEGETABLE PRICES IN RATU: [${priceListString}]. If they ask for prices, strictly check this list. If a product is not listed, say 'Bhaiya abhi stock me nahi h, Chandan bhaiya kal mangwa denge'. Never sound like a robot.`
             }
         });
 
-        const aiReplyText = aiResponse.text || "Ratu Fresh me aapka swagat hai bhaiya!";
+        const aiReplyText = aiResponse.text || "Haan ji bhaiya, boliye Ratu Fresh me aapka swagat hai!";
 
-        // 🎯 STRICT AUDIO SAVING LOGIC: No plain chat text saved, only raw file stream block
+        // User ki raw voice stream ko database me save karna
         if (req.file) {
-            const audioRecord = new InstagramChat({
+            const chatRecord = new InstagramChat({
                 userName: userName || "Instagram Visitor",
-                audioBuffer: req.file.buffer, // User ki asli aawaaz ka binary buffer data
-                contentType: req.file.mimetype // audio/webm format descriptor
+                audioBuffer: req.file.buffer, 
+                contentType: req.file.mimetype
             });
-            await audioRecord.save();
+            await chatRecord.save();
         }
 
         res.json({ success: true, reply: aiReplyText });
