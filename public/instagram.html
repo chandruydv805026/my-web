@@ -28,7 +28,6 @@
         h2 { color: #2e7d32; margin-bottom: 5px; }
         p.subtitle { color: #666; font-size: 14px; margin-top: 0; margin-bottom: 25px; }
         
-        /* Lion Character Container */
         .lion-container {
             width: 140px;
             height: 140px;
@@ -45,7 +44,6 @@
             cursor: pointer;
         }
         
-        /* Animations for different states */
         .listening-active {
             background: #e8f5e9;
             box-shadow: 0 0 25px #24b637;
@@ -59,7 +57,6 @@
         .thinking-active {
             background: #e1f5fe;
             box-shadow: 0 0 25px #0288d1;
-            animation: spin-soft 2s infinite linear;
         }
 
         @keyframes pulse-green {
@@ -119,8 +116,8 @@
     let transcribedText = "";
     let isFirstClick = true;
     let silenceTimer;
+    let isIntentionalStop = false; // Mobile auto-disconnect guard flag
 
-    // Speech Recognition Setup
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
         recognition = new SpeechRecognition();
@@ -129,9 +126,7 @@
         recognition.interimResults = true;
 
         recognition.onresult = (event) => {
-            // User bol raha hai, toh silence timer ko clear (reset) karo
             clearTimeout(silenceTimer);
-
             let currentTranscript = "";
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
@@ -143,43 +138,49 @@
             
             liveTranscript.innerText = "Aapne bola: " + (transcribedText + currentTranscript);
 
-            // 🟢 AUTOMATIC SILENCE DETECTION: 
-            // Agar user ne bolna band kiya aur 2 second (2000ms) tak koi aawaaz nahi aayi, toh auto-submit!
+            // Mobile friendly dynamic silence handling (2.5 seconds window)
             silenceTimer = setTimeout(() => {
                 if (mediaRecorder && mediaRecorder.state === "recording") {
-                    console.log("Silence detected. Stopping automatically...");
+                    console.log("Auto-submitting due to natural pause...");
+                    isIntentionalStop = true;
                     stopRecordingProcess();
                 }
-            }, 2000); 
+            }, 2500); 
+        };
+
+        recognition.onend = () => {
+            // 🔥 MAIN MOBILE FIX: Agar mobile browser hardware bina hamare roke auto-off ho jaye
+            // toh use forcefully dobara restart kar do jab tak hum khud submit na karein!
+            if (!isIntentionalStop && mediaRecorder && mediaRecorder.state === "recording") {
+                console.log("Mobile browser dropped mic. Force restarting framework...");
+                try { recognition.start(); } catch(e) {}
+            }
         };
 
         recognition.onerror = (event) => {
             console.log("Speech Error:", event.error);
-            if(event.error === 'no-speech') {
-                // Agar user chup hai toh timer handle karega
-            } else {
-                setLionState('waiting', "Error occurred. Tap lion to retry.");
+            if (event.error === 'aborted') return; // Ignore accidental logs
+            if (event.error !== 'no-speech') {
+                isIntentionalStop = true;
+                setLionState('waiting', "Tap lion to retry.");
                 stopRecordingProcess();
             }
         };
     }
 
-    // Lion avatar click to kickstart first interaction
     lionAvatar.addEventListener('click', () => {
         if (isFirstClick) {
             isFirstClick = false;
             setLionState('thinking', "Connecting to Priya...");
             const welcomeText = "Swagat hai aapka Ratu Fresh me! Mai Chandan ki AI assistant Priya bol rahi hu. Boliye bhaiya, kaun si fresh sabzi chahiye aapko?";
             
-            // Welcome message bolte waqt lion speak karega
             setLionState('speaking', "Priya is speaking...");
             speakOut(welcomeText, () => {
-                // Bolna khatam hote hi automatic listening mode chalu!
                 startRecordingProcess();
             });
         } else {
-            // Manual fallback agar kabhi fast restart karna ho
             if (mediaRecorder && mediaRecorder.state === "recording") {
+                isIntentionalStop = true;
                 stopRecordingProcess();
             } else {
                 startRecordingProcess();
@@ -192,6 +193,7 @@
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             audioChunks = [];
             transcribedText = ""; 
+            isIntentionalStop = false; // Reset security flag
             
             mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
             
@@ -206,11 +208,13 @@
                 setTimeout(async () => {
                     const cleanText = transcribedText.trim();
                     await sendDataToBackend(audioBlob, cleanText || "Hello Priya");
-                }, 300);
+                }, 400);
             };
 
             mediaRecorder.start();
-            if (recognition) recognition.start();
+            if (recognition) {
+                try { recognition.start(); } catch(e) {}
+            }
             
             setLionState('listening', "Listening... Speak now!");
         } catch (err) {
@@ -220,9 +224,14 @@
     }
 
     function stopRecordingProcess() {
-        if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
-        if (recognition) recognition.stop();
         clearTimeout(silenceTimer);
+        if (recognition) {
+            try { recognition.stop(); } catch(e) {}
+        }
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+        }
+        micBtn.classList.remove('recording');
     }
 
     async function sendDataToBackend(audioBlob, textContent) {
@@ -243,10 +252,8 @@
                 responseBox.style.display = "block";
                 replyText.innerText = data.reply;
                 
-                // Response bolte waqt Lion speaking state me jayega
                 setLionState('speaking', "Priya is replying...");
                 speakOut(data.reply, () => {
-                    // 🟢 LOOP CHAIN: Priya ka bolna khatam hote hi, wapas auto-listening chalu bina kisi click ke!
                     startRecordingProcess();
                 });
             } else {
@@ -257,10 +264,9 @@
         }
     }
 
-    // Helper function to change Lion States & Emojis dynamically
     function setLionState(state, statusMsg) {
         statusText.innerText = statusMsg;
-        lionAvatar.className = "lion-container"; // reset
+        lionAvatar.className = "lion-container"; 
         
         if (state === 'listening') {
             lionAvatar.innerText = "🦁👂";
@@ -276,7 +282,6 @@
         }
     }
 
-    // Advanced Speech Synthesis with End-Callback support
     function speakOut(text, onEndCallback) {
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
@@ -288,14 +293,12 @@
             utterance.rate = 1.0; 
             utterance.pitch = 1.35;
             
-            // Jab Priya bolna band karegi tab ye callback chalega
             utterance.onend = () => {
                 if (onEndCallback) onEndCallback();
             };
             
             window.speechSynthesis.speak(utterance);
         } else {
-            // Fallback agar speech synthesis na ho
             if (onEndCallback) onEndCallback();
         }
     }
