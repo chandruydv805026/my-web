@@ -172,6 +172,20 @@ app.post("/api/ratu-fresh-ai", uploadAudio.single('audioBlob'), async (req, res)
     }
 });
 
+// 🟢 --- 100% NEW ROUTE: ADMIN SE BINARY RECORDING LIVE SUNNE KE LIYE ---
+app.get("/api/admin/listen-voice/:id", async (req, res) => {
+    try {
+        const record = await InstagramChat.findById(req.params.id);
+        if (!record || !record.audioBuffer) {
+            return res.status(404).send("<h1>Bhaiya, is record me koi audio clip nahi mili!</h1>");
+        }
+        res.set("Content-Type", record.contentType || "audio/webm");
+        res.send(record.audioBuffer);
+    } catch (err) {
+        res.status(500).send("Error playing raw voice stream: " + err.message);
+    }
+});
+
 // --- 1. PRODUCT ROUTES ---
 app.get("/api/products", async (req, res) => {
     try {
