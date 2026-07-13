@@ -28,33 +28,54 @@
         h2 { color: #2e7d32; margin-bottom: 5px; }
         p.subtitle { color: #666; font-size: 14px; margin-top: 0; margin-bottom: 25px; }
         
-        .mic-btn {
-            background: #24b637;
-            color: white;
-            border: none;
-            width: 100px;
-            height: 100px;
+        /* Lion Character Container */
+        .lion-container {
+            width: 140px;
+            height: 140px;
+            margin: 20px auto;
+            background: #f1f8e9;
             border-radius: 50%;
-            font-size: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 70px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            transition: all 0.4s ease;
+            position: relative;
             cursor: pointer;
-            box-shadow: 0 5px 15px rgba(36, 182, 55, 0.4);
-            transition: all 0.3s ease;
-            outline: none;
         }
-        .mic-btn:active { transform: scale(0.95); }
-        .recording {
-            background: #ff4444;
-            animation: pulse 1.5s infinite;
-            box-shadow: 0 5px 15px rgba(255, 68, 68, 0.4);
+        
+        /* Animations for different states */
+        .listening-active {
+            background: #e8f5e9;
+            box-shadow: 0 0 25px #24b637;
+            animation: pulse-green 1.5s infinite;
         }
-        @keyframes pulse {
+        .speaking-active {
+            background: #fff3e0;
+            box-shadow: 0 0 25px #ff9800;
+            animation: pulse-orange 1.2s infinite;
+        }
+        .thinking-active {
+            background: #e1f5fe;
+            box-shadow: 0 0 25px #0288d1;
+            animation: spin-soft 2s infinite linear;
+        }
+
+        @keyframes pulse-green {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        @keyframes pulse-orange {
             0% { transform: scale(1); }
             50% { transform: scale(1.08); }
             100% { transform: scale(1); }
         }
-
+        
         .status-text { margin-top: 20px; font-weight: bold; color: #444; min-height: 24px; }
-        .live-transcript { margin-top: 5px; font-size: 13px; color: #777; font-style: italic; min-height: 18px; }
+        .live-transcript { margin-top: 5px; font-size: 13px; color: #666; font-style: italic; min-height: 18px; }
+        
         .response-box {
             margin-top: 25px;
             padding: 15px;
@@ -74,8 +95,9 @@
     <h2>Ratu Fresh AI Assistant</h2>
     <p class="subtitle">Talk to Priya for fresh vegetables! 🥬</p>
     
-    <button id="micBtn" class="mic-btn">🎙️</button>
-    <div id="statusText" class="status-text">Tap the mic to start...</div>
+    <div id="lionAvatar" class="lion-container">🦁</div>
+    
+    <div id="statusText" class="status-text">Tap the Lion to connect...</div>
     <div id="liveTranscript" class="live-transcript"></div>
 
     <div id="responseBox" class="response-box">
@@ -85,7 +107,7 @@
 </div>
 
 <script>
-    const micBtn = document.getElementById('micBtn');
+    const lionAvatar = document.getElementById('lionAvatar');
     const statusText = document.getElementById('statusText');
     const liveTranscript = document.getElementById('liveTranscript');
     const responseBox = document.getElementById('responseBox');
@@ -96,16 +118,20 @@
     let recognition;
     let transcribedText = "";
     let isFirstClick = true;
+    let silenceTimer;
 
-    // 1. Inbuilt Speech Recognition Engine Advanced Setup
+    // Speech Recognition Setup
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
         recognition = new SpeechRecognition();
-        recognition.lang = 'hi-IN'; // Catch Hindi/Hinglish perfectly
-        recognition.continuous = true; // Keep listening until manual stop
-        recognition.interimResults = true; // Live update text stream
+        recognition.lang = 'hi-IN';
+        recognition.continuous = true;
+        recognition.interimResults = true;
 
         recognition.onresult = (event) => {
+            // User bol raha hai, toh silence timer ko clear (reset) karo
+            clearTimeout(silenceTimer);
+
             let currentTranscript = "";
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
@@ -114,39 +140,50 @@
                     currentTranscript += event.results[i][0].transcript;
                 }
             }
-            // Screen par live text display karein taaki maloom chale browser sun raha hai
+            
             liveTranscript.innerText = "Aapne bola: " + (transcribedText + currentTranscript);
+
+            // 🟢 AUTOMATIC SILENCE DETECTION: 
+            // Agar user ne bolna band kiya aur 2 second (2000ms) tak koi aawaaz nahi aayi, toh auto-submit!
+            silenceTimer = setTimeout(() => {
+                if (mediaRecorder && mediaRecorder.state === "recording") {
+                    console.log("Silence detected. Stopping automatically...");
+                    stopRecordingProcess();
+                }
+            }, 2000); 
         };
 
         recognition.onerror = (event) => {
-            console.log("Speech API Error:", event.error);
-            if (event.error !== 'no-speech') {
-                statusText.innerText = "Error occurred. Tap mic to retry.";
+            console.log("Speech Error:", event.error);
+            if(event.error === 'no-speech') {
+                // Agar user chup hai toh timer handle karega
+            } else {
+                setLionState('waiting', "Error occurred. Tap lion to retry.");
                 stopRecordingProcess();
             }
         };
     }
 
-    // Mic Button Core Event Handler
-    micBtn.addEventListener('click', async () => {
-        // Welcome Greeting Flow Handler
+    // Lion avatar click to kickstart first interaction
+    lionAvatar.addEventListener('click', () => {
         if (isFirstClick) {
             isFirstClick = false;
-            statusText.innerText = "Connecting to Priya...";
+            setLionState('thinking', "Connecting to Priya...");
             const welcomeText = "Swagat hai aapka Ratu Fresh me! Mai Chandan ki AI assistant Priya bol rahi hu. Boliye bhaiya, kaun si fresh sabzi chahiye aapko?";
-            speakOut(welcomeText);
             
-            // Priya ka welcome message bolkar poora hote hi recording system auto chalu hoga
-            setTimeout(() => {
+            // Welcome message bolte waqt lion speak karega
+            setLionState('speaking', "Priya is speaking...");
+            speakOut(welcomeText, () => {
+                // Bolna khatam hote hi automatic listening mode chalu!
                 startRecordingProcess();
-            }, 6800);
-            return;
-        }
-
-        if (mediaRecorder && mediaRecorder.state === "recording") {
-            stopRecordingProcess();
+            });
         } else {
-            startRecordingProcess();
+            // Manual fallback agar kabhi fast restart karna ho
+            if (mediaRecorder && mediaRecorder.state === "recording") {
+                stopRecordingProcess();
+            } else {
+                startRecordingProcess();
+            }
         }
     });
 
@@ -155,7 +192,6 @@
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             audioChunks = [];
             transcribedText = ""; 
-            liveTranscript.innerText = "Sun rahi hu... Boliye!";
             
             mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
             
@@ -164,27 +200,21 @@
             };
 
             mediaRecorder.onstop = async () => {
-                statusText.innerText = "Processing voice...";
+                setLionState('thinking', "Priya is thinking...");
                 const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                 
-                // Halqa sa buffer delay taaki browser final tokens catch kar sake
                 setTimeout(async () => {
                     const cleanText = transcribedText.trim();
-                    console.log("Final Sent Text:", cleanText);
-                    // Agar speech recognition catch na kare toh default fallback text apply
-                    sendDataToBackend(audioBlob, cleanText || "Hello Priya");
-                }, 400);
+                    await sendDataToBackend(audioBlob, cleanText || "Hello Priya");
+                }, 300);
             };
 
             mediaRecorder.start();
-            if (recognition) {
-                recognition.start();
-            }
+            if (recognition) recognition.start();
             
-            micBtn.classList.add('recording');
-            statusText.innerText = "Listening... Speak now!";
+            setLionState('listening', "Listening... Speak now!");
         } catch (err) {
-            alert("Microphone access blocked or not supported.");
+            alert("Microphone access denied.");
             isFirstClick = true;
         }
     }
@@ -192,10 +222,9 @@
     function stopRecordingProcess() {
         if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
         if (recognition) recognition.stop();
-        micBtn.classList.remove('recording');
+        clearTimeout(silenceTimer);
     }
 
-    // Backend Delivery Pipe
     async function sendDataToBackend(audioBlob, textContent) {
         const formData = new FormData();
         formData.append('audioBlob', audioBlob, 'user-voice.webm');
@@ -210,34 +239,64 @@
             const data = await res.json();
             
             if (data.success) {
-                statusText.innerText = "Tap mic to speak again";
-                liveTranscript.innerText = ""; // clear old string logs
+                liveTranscript.innerText = ""; 
                 responseBox.style.display = "block";
                 replyText.innerText = data.reply;
                 
-                // Voice playback call
-                speakOut(data.reply);
+                // Response bolte waqt Lion speaking state me jayega
+                setLionState('speaking', "Priya is replying...");
+                speakOut(data.reply, () => {
+                    // 🟢 LOOP CHAIN: Priya ka bolna khatam hote hi, wapas auto-listening chalu bina kisi click ke!
+                    startRecordingProcess();
+                });
             } else {
-                statusText.innerText = "Priya could not process the request.";
+                setLionState('waiting', "Please try again.");
             }
         } catch (err) {
-            statusText.innerText = "Server error. Try again.";
+            setLionState('waiting', "Server error.");
         }
     }
 
-    // Native Speech Synthesizer
-    function speakOut(text) {
+    // Helper function to change Lion States & Emojis dynamically
+    function setLionState(state, statusMsg) {
+        statusText.innerText = statusMsg;
+        lionAvatar.className = "lion-container"; // reset
+        
+        if (state === 'listening') {
+            lionAvatar.innerText = "🦁👂";
+            lionAvatar.classList.add('listening-active');
+        } else if (state === 'speaking') {
+            lionAvatar.innerText = "🦁🗣️";
+            lionAvatar.classList.add('speaking-active');
+        } else if (state === 'thinking') {
+            lionAvatar.innerText = "🦁🧠";
+            lionAvatar.classList.add('thinking-active');
+        } else {
+            lionAvatar.innerText = "🦁💤";
+        }
+    }
+
+    // Advanced Speech Synthesis with End-Callback support
+    function speakOut(text, onEndCallback) {
         if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel(); // kill active traces instantly
+            window.speechSynthesis.cancel();
             
             const cleanText = text.replace(/[^a-zA-Z0-9 space,?.!अ-हॉा-्]/g, "");
             const utterance = new SpeechSynthesisUtterance(cleanText);
             
             utterance.lang = 'hi-IN';
             utterance.rate = 1.0; 
-            utterance.pitch = 1.35; // Standard high female dynamic tone
+            utterance.pitch = 1.35;
+            
+            // Jab Priya bolna band karegi tab ye callback chalega
+            utterance.onend = () => {
+                if (onEndCallback) onEndCallback();
+            };
             
             window.speechSynthesis.speak(utterance);
+        } else {
+            // Fallback agar speech synthesis na ho
+            if (onEndCallback) onEndCallback();
         }
     }
 </script>
