@@ -54,6 +54,7 @@
         }
 
         .status-text { margin-top: 20px; font-weight: bold; color: #444; min-height: 24px; }
+        .live-transcript { margin-top: 5px; font-size: 13px; color: #777; font-style: italic; min-height: 18px; }
         .response-box {
             margin-top: 25px;
             padding: 15px;
@@ -74,7 +75,8 @@
     <p class="subtitle">Talk to Priya for fresh vegetables! 🥬</p>
     
     <button id="micBtn" class="mic-btn">🎙️</button>
-    <div id="statusText" class="status-text">Tap the mic to start conversation...</div>
+    <div id="statusText" class="status-text">Tap the mic to start...</div>
+    <div id="liveTranscript" class="live-transcript"></div>
 
     <div id="responseBox" class="response-box">
         <h4>Priya:</h4>
@@ -85,6 +87,7 @@
 <script>
     const micBtn = document.getElementById('micBtn');
     const statusText = document.getElementById('statusText');
+    const liveTranscript = document.getElementById('liveTranscript');
     const responseBox = document.getElementById('responseBox');
     const replyText = document.getElementById('replyText');
 
@@ -94,39 +97,49 @@
     let transcribedText = "";
     let isFirstClick = true;
 
-    // 1. Browser Speech Recognition Setup (Aawaaz ko text me badalne ke liye)
+    // 1. Inbuilt Speech Recognition Engine Advanced Setup
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
         recognition = new SpeechRecognition();
-        recognition.lang = 'hi-IN'; // Hinglish/Hindi catch karne ke liye
-        recognition.interimResults = false;
+        recognition.lang = 'hi-IN'; // Catch Hindi/Hinglish perfectly
+        recognition.continuous = true; // Keep listening until manual stop
+        recognition.interimResults = true; // Live update text stream
 
         recognition.onresult = (event) => {
-            transcribedText = event.results[0][0].transcript;
-            statusText.innerText = "Thinking...";
+            let currentTranscript = "";
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    transcribedText += event.results[i][0].transcript + " ";
+                } else {
+                    currentTranscript += event.results[i][0].transcript;
+                }
+            }
+            // Screen par live text display karein taaki maloom chale browser sun raha hai
+            liveTranscript.innerText = "Aapne bola: " + (transcribedText + currentTranscript);
         };
 
         recognition.onerror = (event) => {
-            console.log("Recognition error: ", event.error);
-            if(event.error === 'no-speech') {
-                statusText.innerText = "Kuch sunai nahi diya, fir se mic tap karein.";
-            } else {
-                statusText.innerText = "Sorry, error occurred. Try again.";
+            console.log("Speech API Error:", event.error);
+            if (event.error !== 'no-speech') {
+                statusText.innerText = "Error occurred. Tap mic to retry.";
+                stopRecordingProcess();
             }
-            stopRecordingProcess();
         };
     }
 
-    // Mic Button click logic
+    // Mic Button Core Event Handler
     micBtn.addEventListener('click', async () => {
-        // First click logic: Welcome greeting handler
+        // Welcome Greeting Flow Handler
         if (isFirstClick) {
             isFirstClick = false;
             statusText.innerText = "Connecting to Priya...";
-            speakOut("Swagat hai aapka Ratu Fresh me! Mai Chandan ki AI assistant bol rahi hu. Kya mai aapka naam jaan sakti hu?");
+            const welcomeText = "Swagat hai aapka Ratu Fresh me! Mai Chandan ki AI assistant Priya bol rahi hu. Boliye bhaiya, kaun si fresh sabzi chahiye aapko?";
+            speakOut(welcomeText);
+            
+            // Priya ka welcome message bolkar poora hote hi recording system auto chalu hoga
             setTimeout(() => {
                 startRecordingProcess();
-            }, 6500); // 6.5 seconds welcome message bolne ke baad recorder trigger hoga
+            }, 6800);
             return;
         }
 
@@ -141,27 +154,38 @@
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             audioChunks = [];
-            transcribedText = ""; // Reset transcript block
+            transcribedText = ""; 
+            liveTranscript.innerText = "Sun rahi hu... Boliye!";
+            
             mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
             
             mediaRecorder.ondataavailable = (e) => {
-                audioChunks.push(e.data);
+                if (e.data.size > 0) audioChunks.push(e.data);
             };
 
             mediaRecorder.onstop = async () => {
+                statusText.innerText = "Processing voice...";
                 const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                // Fallback ensure karna taaki userText kabhi empty string na baje
-                sendDataToBackend(audioBlob, transcribedText.trim() || "Hello");
+                
+                // Halqa sa buffer delay taaki browser final tokens catch kar sake
+                setTimeout(async () => {
+                    const cleanText = transcribedText.trim();
+                    console.log("Final Sent Text:", cleanText);
+                    // Agar speech recognition catch na kare toh default fallback text apply
+                    sendDataToBackend(audioBlob, cleanText || "Hello Priya");
+                }, 400);
             };
 
             mediaRecorder.start();
-            if (recognition) recognition.start();
+            if (recognition) {
+                recognition.start();
+            }
             
             micBtn.classList.add('recording');
             statusText.innerText = "Listening... Speak now!";
         } catch (err) {
-            alert("Microphone access denied or not supported.");
-            isFirstClick = true; // reset fallback descriptor
+            alert("Microphone access blocked or not supported.");
+            isFirstClick = true;
         }
     }
 
@@ -171,9 +195,8 @@
         micBtn.classList.remove('recording');
     }
 
-    // 2. Data ko backend par bhejna (Strict alignment to new binary server schemas)
+    // Backend Delivery Pipe
     async function sendDataToBackend(audioBlob, textContent) {
-        statusText.innerText = "Processing voice stream...";
         const formData = new FormData();
         formData.append('audioBlob', audioBlob, 'user-voice.webm');
         formData.append('userText', textContent);
@@ -188,30 +211,32 @@
             
             if (data.success) {
                 statusText.innerText = "Tap mic to speak again";
+                liveTranscript.innerText = ""; // clear old string logs
                 responseBox.style.display = "block";
                 replyText.innerText = data.reply;
                 
-                // 3. Priya ki sweet voice framework render trigger
+                // Voice playback call
                 speakOut(data.reply);
             } else {
-                statusText.innerText = "Error getting reply from backend.";
+                statusText.innerText = "Priya could not process the request.";
             }
         } catch (err) {
             statusText.innerText = "Server error. Try again.";
         }
     }
 
-    // Browser Speech Synthesis (Priya bolkar sunayegi)
+    // Native Speech Synthesizer
     function speakOut(text) {
         if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
+            window.speechSynthesis.cancel(); // kill active traces instantly
             
-            // Clean star tokens or erratic formatting symbols
             const cleanText = text.replace(/[^a-zA-Z0-9 space,?.!अ-हॉा-्]/g, "");
             const utterance = new SpeechSynthesisUtterance(cleanText);
+            
             utterance.lang = 'hi-IN';
-            utterance.rate = 1.05; // Slightly fast tone representation
-            utterance.pitch = 1.3;  // Feminine tone processing shift
+            utterance.rate = 1.0; 
+            utterance.pitch = 1.35; // Standard high female dynamic tone
+            
             window.speechSynthesis.speak(utterance);
         }
     }
