@@ -74,7 +74,7 @@
     <p class="subtitle">Talk to Priya for fresh vegetables! 🥬</p>
     
     <button id="micBtn" class="mic-btn">🎙️</button>
-    <div id="statusText" class="status-text">Tap the mic to speak...</div>
+    <div id="statusText" class="status-text">Tap the mic to start conversation...</div>
 
     <div id="responseBox" class="response-box">
         <h4>Priya:</h4>
@@ -92,6 +92,7 @@
     let audioChunks = [];
     let recognition;
     let transcribedText = "";
+    let isFirstClick = true;
 
     // 1. Browser Speech Recognition Setup (Aawaaz ko text me badalne ke liye)
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -105,45 +106,64 @@
             statusText.innerText = "Thinking...";
         };
 
-        recognition.onerror = () => {
-            statusText.innerText = "Sorry, couldn't understand. Try again.";
+        recognition.onerror = (event) => {
+            console.log("Recognition error: ", event.error);
+            if(event.error === 'no-speech') {
+                statusText.innerText = "Kuch sunai nahi diya, fir se mic tap karein.";
+            } else {
+                statusText.innerText = "Sorry, error occurred. Try again.";
+            }
             stopRecordingProcess();
         };
     }
 
     // Mic Button click logic
     micBtn.addEventListener('click', async () => {
+        // First click logic: Welcome greeting handler
+        if (isFirstClick) {
+            isFirstClick = false;
+            statusText.innerText = "Connecting to Priya...";
+            speakOut("Swagat hai aapka Ratu Fresh me! Mai Chandan ki AI assistant bol rahi hu. Kya mai aapka naam jaan sakti hu?");
+            setTimeout(() => {
+                startRecordingProcess();
+            }, 6500); // 6.5 seconds welcome message bolne ke baad recorder trigger hoga
+            return;
+        }
+
         if (mediaRecorder && mediaRecorder.state === "recording") {
-            // Stop recording
             stopRecordingProcess();
         } else {
-            // Start recording
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                audioChunks = [];
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-                
-                mediaRecorder.ondataavailable = (e) => {
-                    audioChunks.push(e.data);
-                };
-
-                mediaRecorder.onstop = async () => {
-                    // Saare audio chunks se ek single audio file (Blob) banana
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    sendDataToBackend(audioBlob, transcribedText);
-                };
-
-                // Dono start karenge: Audio stream buffer aur Speech-to-Text engine
-                mediaRecorder.start();
-                if (recognition) recognition.start();
-                
-                micBtn.classList.add('recording');
-                statusText.innerText = "Listening... Speak now!";
-            } catch (err) {
-                alert("Microphone access denied or not supported.");
-            }
+            startRecordingProcess();
         }
     });
+
+    async function startRecordingProcess() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioChunks = [];
+            transcribedText = ""; // Reset transcript block
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            
+            mediaRecorder.ondataavailable = (e) => {
+                audioChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                // Fallback ensure karna taaki userText kabhi empty string na baje
+                sendDataToBackend(audioBlob, transcribedText.trim() || "Hello");
+            };
+
+            mediaRecorder.start();
+            if (recognition) recognition.start();
+            
+            micBtn.classList.add('recording');
+            statusText.innerText = "Listening... Speak now!";
+        } catch (err) {
+            alert("Microphone access denied or not supported.");
+            isFirstClick = true; // reset fallback descriptor
+        }
+    }
 
     function stopRecordingProcess() {
         if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
@@ -151,11 +171,12 @@
         micBtn.classList.remove('recording');
     }
 
-    // 2. Data ko backend par bhejna (FormData me wrap karke taaki audio file aur text ek sath jayein)
+    // 2. Data ko backend par bhejna (Strict alignment to new binary server schemas)
     async function sendDataToBackend(audioBlob, textContent) {
+        statusText.innerText = "Processing voice stream...";
         const formData = new FormData();
         formData.append('audioBlob', audioBlob, 'user-voice.webm');
-        formData.append('userText', textContent || "Hello");
+        formData.append('userText', textContent);
         formData.append('userName', "Instagram Visitor");
 
         try {
@@ -170,10 +191,10 @@
                 responseBox.style.display = "block";
                 replyText.innerText = data.reply;
                 
-                // 3. Priya ki aawaaz play karna (Text-to-Speech)
+                // 3. Priya ki sweet voice framework render trigger
                 speakOut(data.reply);
             } else {
-                statusText.innerText = "Error getting reply.";
+                statusText.innerText = "Error getting reply from backend.";
             }
         } catch (err) {
             statusText.innerText = "Server error. Try again.";
@@ -183,12 +204,14 @@
     // Browser Speech Synthesis (Priya bolkar sunayegi)
     function speakOut(text) {
         if ('speechSynthesis' in window) {
-            // Agar pehle se kuch bol rahi ho toh stop karein
             window.speechSynthesis.cancel();
             
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'hi-IN'; // Indian accent ke liye
-            utterance.rate = 1.0;     // Normal speed
+            // Clean star tokens or erratic formatting symbols
+            const cleanText = text.replace(/[^a-zA-Z0-9 space,?.!अ-हॉा-्]/g, "");
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'hi-IN';
+            utterance.rate = 1.05; // Slightly fast tone representation
+            utterance.pitch = 1.3;  // Feminine tone processing shift
             window.speechSynthesis.speak(utterance);
         }
     }
