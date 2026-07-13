@@ -125,29 +125,37 @@ function getDistance(lat1, lon1, lat2, lon2) {
 
 const loginOtpStore = {};
 
-// --- AI ROUTE WITH NEW STABLE MODEL FIX ---
+// 🟢 --- 100% UPDATED: DYNAMIC VOICE ROUTE VIA SUPER-FAST GROQ CLOUD AI ---
 app.post("/api/ratu-fresh-ai", uploadAudio.single('audioBlob'), async (req, res) => {
     const { userText, userName } = req.body;
     
     try {
+        // Live items ka stock aur price nikalna
         const products = await Product.find({ inStock: true });
         const priceListString = products.map(p => `${p.name}: ₹${p.price} per ${p.unit}`).join(", ");
 
-        const { GoogleGenAI } = require("@google/genai");
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        // Groq SDK Initialize karna
+        const Groq = require("groq-sdk");
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-        // 🟢 MODEL NAME FIXED: Changed from 'gemini-2.5-flash' to stable 'gemini-2.0-flash'
-        const aiResponse = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
-            contents: userText || "Hello",
-            config: {
-                systemInstruction: `Your name is Priya. You are the official AI assistant of 'Ratu Fresh' (owned by Chandan Yadav). Speak like a sweet, polite 21-year-old local Indian girl in natural Hinglish. Keep your answers extremely short (maximum 1-2 sentences). Use words like 'bhaiya', 'aap', 'fresh sabzi'. CURRENT VEGETABLE PRICES IN RATU: [${priceListString}]. If they ask for prices, strictly check this list. If a product is not listed, say 'Bhaiya abhi stock me nahi h, Chandan bhaiya kal mangwa denge'. Never sound like a robot.`
-            }
+        // Groq chat completion request using ultra-fast llama-3.3-70b model
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [
+                {
+                    role: "system",
+                    content: `Your name is Priya. You are the official AI voice assistant of 'Ratu Fresh' (owned by Chandan Yadav). You are talking to a customer from Chandan's Instagram bio. Speak like a sweet, polite 21-year-old local Indian girl in natural Hinglish. Keep your answers extremely short (maximum 1-2 sentences). Use words like 'bhaiya', 'aap', 'fresh sabzi'. CURRENT VEGETABLE PRICES IN RATU: [${priceListString}]. If they ask for prices, strictly check this list. If a product is not listed, say 'Bhaiya abhi stock me nahi h, Chandan bhaiya kal mangwa denge'. Never sound like a robot.`
+                },
+                {
+                    role: "user",
+                    content: userText || "Hello"
+                }
+            ],
+            model: "llama-3.3-70b-versatile"
         });
 
-        const aiReplyText = aiResponse.text || "Haan ji bhaiya, boliye Ratu Fresh me aapka swagat hai!";
+        const aiReplyText = chatCompletion.choices[0].message.content || "Haan ji bhaiya, boliye Ratu Fresh me aapka swagat hai!";
 
-        // User ki raw voice stream ko database me save karna
+        // User ki raw voice recording pipeline ko database me dump karna
         if (req.file) {
             const chatRecord = new InstagramChat({
                 userName: userName || "Instagram Visitor",
@@ -159,7 +167,7 @@ app.post("/api/ratu-fresh-ai", uploadAudio.single('audioBlob'), async (req, res)
 
         res.json({ success: true, reply: aiReplyText });
     } catch (error) {
-        console.error("AI Error:", error);
+        console.error("Groq AI Error:", error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
