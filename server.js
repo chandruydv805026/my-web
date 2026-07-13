@@ -17,6 +17,17 @@ const Order = require("./models/order");
 const Product = require("./models/product"); 
 const Banner = require("./models/banner");
 
+// --- NEW MONGOOSE SCHEMA FOR INSTAGRAM AI ASSISTANT ---
+const InstagramChatSchema = new mongoose.Schema({
+    userName: { type: String, default: "Instagram User" },
+    userText: String,
+    aiReply: String,
+    audioBuffer: Buffer,       // User ki real voice recording binary format me save hogi
+    contentType: String,       // Audio file format (like audio/webm ya audio/wav)
+    createdAt: { type: Date, default: Date.now }
+});
+const InstagramChat = mongoose.model("InstagramChat", InstagramChatSchema);
+
 const app = express();
 app.use(express.json());
 
@@ -43,6 +54,10 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
+// --- INSTAGRAM AUDIO UPLOAD MULTER (IN-MEMORY STORAGE FOR BINARY BUFFER) ---
+const memoryStorage = multer.memoryStorage();
+const uploadAudio = multer({ storage: memoryStorage });
+
 // --- DEFAULT ROUTES ---
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "main.html"));
@@ -50,6 +65,11 @@ app.get("/", (req, res) => {
 
 app.get("/admin", (req, res) => {
     res.sendFile(path.join(__dirname, "admin.html"));
+});
+
+// --- NEW INSTAGRAM BIO ROUTE ---
+app.get("/instagram", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "instagram.html"));
 });
 
 // --- PRIVACY POLICY ROUTE ---
@@ -106,6 +126,49 @@ function getDistance(lat1, lon1, lat2, lon2) {
 }
 
 const loginOtpStore = {};
+
+// --- FULLY CONNECTED RATU FRESH INSTAGRAM AI VOICE CHAT & RECORDING ROUTE ---
+app.post("/api/ratu-fresh-ai", uploadAudio.single('audioBlob'), async (req, res) => {
+    const { userText, userName } = req.body;
+    
+    try {
+        // 1. Database se live in-stock sabziyon ki list aur unka dynamic price uthana
+        const products = await Product.find({ inStock: true });
+        const priceListString = products.map(p => `${p.name}: ₹${p.price} per ${p.unit}`).join(", ");
+
+        // 2. Google Gen AI SDK ko initialize karke call lagana
+        const { GoogleGenAI } = require("@google/genai");
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+        // Gemini API se text reply generate karwana system instructions ke sath
+        const aiResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: userText || "Hello",
+            config: {
+                systemInstruction: `Your name is Priya. You are the official AI voice assistant of 'Ratu Fresh' (which is owned by Chandan Yadav). You are talking to a customer who clicked the link from Chandan's Instagram bio. Speak like a sweet, extremely polite 21-year-old local Indian girl in natural Hinglish. Keep your answers very short and perfectly human-like (maximum 1-2 sentences). Use words like 'bhaiya', 'aap', 'fresh sabzi'. CURRENT VEGETABLE PRICES IN RATU: [${priceListString}]. If they ask for prices, strictly check this list. If a product is not listed, say 'Bhaiya abhi stock me nahi h, Chandan bhaiya kal mangwa denge'. Never sound like a robot.`
+            }
+        });
+
+        // AI ka reply content extracted
+        const aiReplyText = aiResponse.text || "Haan ji bhaiya, boliye kya fresh sabzi chahiye aapko?";
+
+        // 3. User ki transcript, AI ka jawab aur audio file (.webm buffer) ko MongoDB me save karna
+        const chatRecord = new InstagramChat({
+            userName: userName || "Instagram User",
+            userText: userText || "Audio Input Captured",
+            aiReply: aiReplyText,
+            audioBuffer: req.file ? req.file.buffer : null, // Binary stream direct mongo me save ho rahi hai
+            contentType: req.file ? req.file.mimetype : null
+        });
+        await chatRecord.save();
+
+        // Frontend ko reply text return karna taaki browser me sound play ho sake
+        res.json({ success: true, reply: aiReplyText });
+    } catch (error) {
+        console.error("AI Route Error:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 // --- 1. PRODUCT ROUTES ---
 app.get("/api/products", async (req, res) => {
