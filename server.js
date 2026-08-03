@@ -17,6 +17,9 @@ const Order = require("./models/order");
 const Product = require("./models/product"); 
 const Banner = require("./models/banner");
 
+// --- AZURE VOICE SERVER CONFIGURATION ---
+const AZURE_VOICE_SERVER = "http://20.198.82.202";
+
 // --- MONGOOSE SCHEMA: ONLY SAVES PURE AUDIO RECORDING ---
 const InstagramChatSchema = new mongoose.Schema({
     userName: { type: String, default: "Instagram User" },
@@ -52,7 +55,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// --- INSTAGRAM AUDIO UPLOAD MULTER (IN-MEMORY STORAGE FOR BINARY BUFFER) ---
+// --- INSTAGRAM AUDIO & CLONE MEDIA UPLOAD MULTER ---
 const memoryStorage = multer.memoryStorage();
 const uploadAudio = multer({ storage: memoryStorage });
 
@@ -183,6 +186,49 @@ app.get("/api/admin/listen-voice/:id", async (req, res) => {
         res.send(record.audioBuffer);
     } catch (err) {
         res.status(500).send("Error playing raw voice stream: " + err.message);
+    }
+});
+
+// 🎙️ --- NAYA ADDITION 1: FAST TEXT-TO-SPEECH ROUTE (AZURE VM CONNECTED) ---
+app.post("/api/generate-tts", async (req, res) => {
+    const { text, voice } = req.body;
+    try {
+        const response = await axios.post(`${AZURE_VOICE_SERVER}/generate-voice`, {
+            text: text || "नमस्ते, रातू फ्रेश में आपका स्वागत है!",
+            voice: voice || "hi-IN-SwaraNeural"
+        }, {
+            responseType: 'arraybuffer'
+        });
+
+        res.set("Content-Type", "audio/mpeg");
+        res.send(Buffer.from(response.data));
+    } catch (error) {
+        console.error("Azure TTS Error:", error.message);
+        res.status(500).json({ error: "Failed to generate voice from Azure Server" });
+    }
+});
+
+// 🎙️ --- NAYA ADDITION 2: CUSTOM VOICE CLONING UPLOAD GATEWAY ROUTE ---
+app.post("/api/voice/clone", uploadAudio.single('media'), async (req, res) => {
+    const { text } = req.body;
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "No media file provided for cloning" });
+        }
+
+        // Demo fallback response (Jab tak Azure GPU XTTS Live nahi hota)
+        const response = await axios.post(`${AZURE_VOICE_SERVER}/generate-voice`, {
+            text: text || "नमस्ते, यह आपकी क्लोन की गई आवाज़ है!",
+            voice: "hi-IN-MadhurNeural"
+        }, {
+            responseType: 'arraybuffer'
+        });
+
+        res.set("Content-Type", "audio/mpeg");
+        res.send(Buffer.from(response.data));
+    } catch (error) {
+        console.error("Voice Clone Error:", error.message);
+        res.status(500).json({ error: "Voice cloning engine failed" });
     }
 });
 
