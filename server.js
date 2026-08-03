@@ -189,13 +189,14 @@ app.get("/api/admin/listen-voice/:id", async (req, res) => {
     }
 });
 
-// 🎙️ --- NAYA ADDITION 1: FAST TEXT-TO-SPEECH ROUTE (AZURE VM CONNECTED) ---
+// 🎙️ --- NAYA ADDITION 1: FAST TEXT-TO-SPEECH ROUTE (AZURE VM CONNECTED WITH SPEED BOOST) ---
 app.post("/api/generate-tts", async (req, res) => {
-    const { text, voice } = req.body;
+    const { text, voice, rate } = req.body;
     try {
         const response = await axios.post(`${AZURE_VOICE_SERVER}/generate-voice`, {
             text: text || "नमस्ते, रातू फ्रेश में आपका स्वागत है!",
-            voice: voice || "hi-IN-SwaraNeural"
+            voice: voice || "hi-IN-SwaraNeural",
+            rate: rate || "+30%" // Fast 1.3x energetic speech rate
         }, {
             responseType: 'arraybuffer'
         });
