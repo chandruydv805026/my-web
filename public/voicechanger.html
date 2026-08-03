@@ -56,33 +56,17 @@
                     <p class="text-xs text-slate-400 mb-6">High-speed natural neural voices for instant notifications & alerts.</p>
 
                     <form id="ttsForm" class="space-y-4">
-                        <!-- Text Input -->
                         <div>
                             <label class="block text-xs font-medium text-slate-300 mb-2">Hindi / English Text</label>
                             <textarea id="ttsText" rows="4" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors placeholder-slate-500" placeholder="यहाँ टेक्स्ट लिखें... उदाहरण: नमस्ते, रातू फ्रेश में आपका स्वागत है!" required></textarea>
                         </div>
 
-                        <!-- Voice Selection Dropdown -->
                         <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-2">Select Voice Model (10 Tested Voices)</label>
+                            <label class="block text-xs font-medium text-slate-300 mb-2">Select Voice Model</label>
                             <select id="ttsVoice" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors">
                                 <optgroup label="🇮🇳 Hindi Voices">
-                                    <option value="hi-IN-SwaraNeural" selected>1. Swara (Female - Clear & Natural Hindi)</option>
-                                    <option value="hi-IN-MadhurNeural">2. Madhur (Male - Deep Professional Hindi)</option>
-                                </optgroup>
-                                <optgroup label="🇮🇳 Indian English / Hinglish">
-                                    <option value="en-IN-NeerjaNeural">3. Neerja (Female - Indian Accent)</option>
-                                    <option value="en-IN-PrabhatNeural">4. Prabhat (Male - Corporate Indian Accent)</option>
-                                </optgroup>
-                                <optgroup label="🌐 Regional Indian Voices">
-                                    <option value="bn-IN-TanishaaNeural">5. Tanishaa (Female - Bengali/Eastern Accent)</option>
-                                    <option value="bn-IN-BashkarNeural">6. Bashkar (Male - Bengali/Eastern Accent)</option>
-                                </optgroup>
-                                <optgroup label="🌐 Global US & UK Voices">
-                                    <option value="en-US-AriaNeural">7. Aria (Female - Clear US Studio Accent)</option>
-                                    <option value="en-US-GuyNeural">8. Guy (Male - Professional US Accent)</option>
-                                    <option value="en-US-JennyNeural">9. Jenny (Female - Conversational US)</option>
-                                    <option value="en-GB-SoniaNeural">10. Sonia (Female - British Accent)</option>
+                                    <option value="hi-IN-SwaraNeural" selected>1. Swara (Female - Clear Hindi)</option>
+                                    <option value="hi-IN-MadhurNeural">2. Madhur (Male - Deep Hindi)</option>
                                 </optgroup>
                             </select>
                         </div>
@@ -94,7 +78,6 @@
                     </form>
                 </div>
 
-                <!-- Option 1 Audio Player Output -->
                 <div id="ttsOutput" class="hidden bg-slate-900/90 rounded-xl p-4 border border-slate-700/80 space-y-3">
                     <div class="flex items-center justify-between text-xs text-emerald-400 font-medium">
                         <span><i class="fa-solid fa-circle-check mr-1"></i> Audio Ready</span>
@@ -172,13 +155,11 @@
             }
         });
 
-        // OPTION 1: FAST TEXT-TO-SPEECH
+        // OPTION 1: FAST TTS
         document.getElementById('ttsForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const text = document.getElementById('ttsText').value.trim();
             const voice = document.getElementById('ttsVoice').value;
-
             if (!text) return;
 
             showLoader("Fast AI Voice Audio Generate Ho Raha Hai...");
@@ -187,18 +168,21 @@
                 const response = await fetch('/api/generate-tts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, voice, rate: "+30%" })
+                    body: JSON.stringify({ text, voice })
                 });
 
-                if (!response.ok) throw new Error("Voice generation failed!");
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || "Generation Failed");
+                }
 
-                const audioBlob = await response.blob();
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBlob = new Blob([arrayBuffer], { type: 'audio/wav' });
                 const audioUrl = URL.createObjectURL(audioBlob);
 
                 const player = document.getElementById('ttsAudioPlayer');
                 player.src = audioUrl;
                 document.getElementById('ttsOutput').classList.remove('hidden');
-                document.getElementById('ttsVoiceLabel').textContent = voice.split('-')[2] || voice;
                 player.play();
 
             } catch (err) {
@@ -208,41 +192,47 @@
             }
         });
 
-        // 🟢 FIXED OPTION 2: CUSTOM XTTS VOICE CLONING SUBMIT (PROXIED VIA EXPRESS)
+        // OPTION 2: CUSTOM VOICE CLONE
         document.getElementById('cloneForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const file = mediaFileInput.files[0];
             const text = document.getElementById('cloneText').value.trim();
 
-            if (!file || !text) return;
+            if (!file || !text) return alert("File aur Text dono dalo!");
 
-            showLoader("Video/Audio Se Voice Extract karke Clone Kiya Ja Raha Hai (15-20 sec wait karein)...");
+            showLoader("Voice Clone Ho Rahi Hai (15-20 sec wait karein)...");
 
             const formData = new FormData();
-            formData.append('sample', file); // Mapped to Express upload field 'sample'
+            formData.append('sample', file);
             formData.append('text', text);
-            formData.append('language', 'hi'); // Default Hindi
+            formData.append('language', 'hi');
 
             try {
-                // Call Express HTTPS Endpoint (No direct HTTP IP call)
                 const response = await fetch('/api/voice/clone', {
                     method: 'POST',
                     body: formData
                 });
 
-                if (!response.ok) throw new Error("Voice Cloning Server Response Error!");
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || "Voice Cloning Failed");
+                }
 
-                const audioBlob = await response.blob();
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBlob = new Blob([arrayBuffer], { type: 'audio/wav' });
                 const audioUrl = URL.createObjectURL(audioBlob);
 
                 const player = document.getElementById('cloneAudioPlayer');
                 player.src = audioUrl;
                 document.getElementById('cloneOutput').classList.remove('hidden');
+                
+                // Force load metadata so duration shows up correctly
+                player.load();
                 player.play();
 
             } catch (err) {
-                alert("Voice Cloning Error: " + err.message);
+                alert("Cloning Error: " + err.message);
             } finally {
                 hideLoader();
             }
