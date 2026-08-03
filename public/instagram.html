@@ -120,10 +120,9 @@
             </div>
         </div>
 
-        <!-- Dynamic Status Message & Live Transcript -->
-        <div class="space-y-2 min-h-[50px]">
+        <!-- Dynamic Status Message -->
+        <div class="space-y-2 min-h-[40px]">
             <div id="statusText" class="text-sm font-semibold text-sky-400 tracking-wide">Tap Orb to Start</div>
-            <div id="liveTranscript" class="text-xs text-slate-400 italic"></div>
         </div>
 
         <!-- Priya Reply Box -->
@@ -141,20 +140,16 @@
         const aiOrbContainer = document.getElementById('aiOrbContainer');
         const orbIcon = document.getElementById('orbIcon');
         const statusText = document.getElementById('statusText');
-        const liveTranscript = document.getElementById('liveTranscript');
         const responseBox = document.getElementById('responseBox');
         const replyText = document.getElementById('replyText');
 
         let mediaRecorder;
         let audioChunks = [];
-        let recognition;
-        let transcribedText = "";
         let isFirstClick = true;
-        let silenceTimer;
-        let isIntentionalStop = false;
         let currentAudioInstance = null;
         let selectedMimeType = 'audio/webm';
 
+        // 📱 Detect Mobile Native Supported Audio Format
         if (MediaRecorder.isTypeSupported('audio/webm')) {
             selectedMimeType = 'audio/webm';
         } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
@@ -162,58 +157,6 @@
         } else if (MediaRecorder.isTypeSupported('audio/aac')) {
             selectedMimeType = 'audio/aac';
         }
-
-        function initSpeechRecognition() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (SpeechRecognition) {
-                recognition = new SpeechRecognition();
-                recognition.lang = 'hi-IN';
-                recognition.continuous = false; // Mobile Chrome lag fix: continuous false rakha hai
-                recognition.interimResults = true;
-
-                recognition.onresult = (event) => {
-                    stopPriyaVoice();
-                    clearTimeout(silenceTimer);
-                    let currentTranscript = "";
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        if (event.results[i].isFinal) {
-                            transcribedText += event.results[i][0].transcript + " ";
-                        } else {
-                            currentTranscript += event.results[i][0].transcript;
-                        }
-                    }
-                    
-                    liveTranscript.innerText = "आप बोले: " + (transcribedText + currentTranscript);
-
-                    // 1.5 Second natural pause submission
-                    silenceTimer = setTimeout(() => {
-                        if (mediaRecorder && mediaRecorder.state === "recording") {
-                            isIntentionalStop = true;
-                            stopRecordingProcess();
-                        }
-                    }, 1500); 
-                };
-
-                recognition.onend = () => {
-                    // Chrome Error Fix: Safe Auto Restart
-                    if (!isIntentionalStop && mediaRecorder && mediaRecorder.state === "recording") {
-                        try { recognition.start(); } catch(e) {}
-                    }
-                };
-
-                recognition.onerror = (event) => {
-                    console.log("Speech Recognition Note:", event.error);
-                    // Ignore 'audio-capture' or 'no-speech' errors and silently keep MediaRecorder alive
-                    if (event.error === 'no-speech' || event.error === 'audio-capture') {
-                        if (!isIntentionalStop && mediaRecorder && mediaRecorder.state === "recording") {
-                            try { recognition.start(); } catch(e) {}
-                        }
-                    }
-                };
-            }
-        }
-
-        initSpeechRecognition();
 
         aiOrbContainer.addEventListener('click', async () => {
             unlockMobileAudio();
@@ -230,7 +173,6 @@
                 });
             } else {
                 if (mediaRecorder && mediaRecorder.state === "recording") {
-                    isIntentionalStop = true;
                     stopRecordingProcess();
                 } else {
                     startRecordingProcess();
@@ -247,8 +189,6 @@
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 audioChunks = [];
-                transcribedText = ""; 
-                isIntentionalStop = false;
                 
                 mediaRecorder = new MediaRecorder(stream, { mimeType: selectedMimeType });
                 
@@ -259,31 +199,25 @@
                 mediaRecorder.onstop = async () => {
                     setOrbState('thinking', "Priya Thinking...");
                     const audioBlob = new Blob(audioChunks, { type: selectedMimeType });
-                    
-                    const cleanText = transcribedText.trim();
-                    await sendDataToBackend(audioBlob, cleanText || "Hello Priya");
+                    await sendDataToBackend(audioBlob);
                 };
 
                 mediaRecorder.start();
-                if (recognition) {
-                    try { recognition.start(); } catch(e) {}
-                }
-                
-                setOrbState('listening', "Listening...");
+                setOrbState('listening', "Listening... Tap Orb to Stop & Send");
             } catch (err) {
-                alert("Microphone access block hai. Kripya Chrome permissions me mic allow karein!");
+                alert("Microphone permission allowed nahi hai! Settings se mic allow karein.");
                 setOrbState('waiting', "Tap Orb to Retry");
                 isFirstClick = true;
             }
         }
 
         function stopRecordingProcess() {
-            clearTimeout(silenceTimer);
-            if (recognition) {
-                try { recognition.stop(); } catch(e) {}
-            }
             if (mediaRecorder && mediaRecorder.state === "recording") {
                 mediaRecorder.stop();
+                // Stream tracks clear karna zaroori hai mic release karne ke liye
+                if (mediaRecorder.stream) {
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                }
             }
         }
 
@@ -295,10 +229,10 @@
             }
         }
 
-        async function sendDataToBackend(audioBlob, textContent) {
+        async function sendDataToBackend(audioBlob) {
             const formData = new FormData();
             formData.append('audioBlob', audioBlob, 'user-voice.webm');
-            formData.append('userText', textContent);
+            formData.append('userText', "Instagram Audio");
             formData.append('userName', "Instagram Visitor");
 
             try {
@@ -309,13 +243,12 @@
                 const data = await res.json();
                 
                 if (data.success) {
-                    liveTranscript.innerText = ""; 
                     responseBox.classList.remove('hidden');
                     replyText.innerText = data.reply;
                     
                     setOrbState('speaking', "Priya Replying...");
                     await speakWithSwaraVoice(data.reply, () => {
-                        startRecordingProcess();
+                        setOrbState('waiting', "Tap Orb to Speak Again");
                     });
                 } else {
                     setOrbState('waiting', "Tap Orb to Retry");
