@@ -208,7 +208,7 @@
             }
         });
 
-        // 🟢 FIXED OPTION 2: CUSTOM XTTS VOICE CLONING SUBMIT
+        // 🟢 FIXED OPTION 2: CUSTOM XTTS VOICE CLONING SUBMIT (PROXIED VIA EXPRESS)
         document.getElementById('cloneForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -220,13 +220,13 @@
             showLoader("Video/Audio Se Voice Extract karke Clone Kiya Ja Raha Hai (15-20 sec wait karein)...");
 
             const formData = new FormData();
-            formData.append('sample', file); // Mapped to XTTS 'sample' field
+            formData.append('sample', file); // Mapped to Express upload field 'sample'
             formData.append('text', text);
             formData.append('language', 'hi'); // Default Hindi
 
             try {
-                // Direct XTTS Azure Backend Endpoint Target
-                const response = await fetch('http://20.198.82.202:8000/clone-voice', {
+                // Call Express HTTPS Endpoint (No direct HTTP IP call)
+                const response = await fetch('/api/voice/clone', {
                     method: 'POST',
                     body: formData
                 });
