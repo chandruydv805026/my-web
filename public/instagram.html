@@ -163,51 +163,57 @@
             selectedMimeType = 'audio/aac';
         }
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            recognition = new SpeechRecognition();
-            recognition.lang = 'hi-IN';
-            recognition.continuous = true;
-            recognition.interimResults = true;
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'hi-IN';
+                recognition.continuous = false; // Mobile Chrome lag fix: continuous false rakha hai
+                recognition.interimResults = true;
 
-            recognition.onresult = (event) => {
-                stopPriyaVoice();
-                clearTimeout(silenceTimer);
-                let currentTranscript = "";
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        transcribedText += event.results[i][0].transcript + " ";
-                    } else {
-                        currentTranscript += event.results[i][0].transcript;
+                recognition.onresult = (event) => {
+                    stopPriyaVoice();
+                    clearTimeout(silenceTimer);
+                    let currentTranscript = "";
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            transcribedText += event.results[i][0].transcript + " ";
+                        } else {
+                            currentTranscript += event.results[i][0].transcript;
+                        }
                     }
-                }
-                
-                liveTranscript.innerText = "आप बोले: " + (transcribedText + currentTranscript);
+                    
+                    liveTranscript.innerText = "आप बोले: " + (transcribedText + currentTranscript);
 
-                // ⚡ Super fast 1.2 second pause submission
-                silenceTimer = setTimeout(() => {
-                    if (mediaRecorder && mediaRecorder.state === "recording") {
-                        isIntentionalStop = true;
-                        stopRecordingProcess();
+                    // 1.5 Second natural pause submission
+                    silenceTimer = setTimeout(() => {
+                        if (mediaRecorder && mediaRecorder.state === "recording") {
+                            isIntentionalStop = true;
+                            stopRecordingProcess();
+                        }
+                    }, 1500); 
+                };
+
+                recognition.onend = () => {
+                    // Chrome Error Fix: Safe Auto Restart
+                    if (!isIntentionalStop && mediaRecorder && mediaRecorder.state === "recording") {
+                        try { recognition.start(); } catch(e) {}
                     }
-                }, 1200); 
-            };
+                };
 
-            recognition.onend = () => {
-                if (!isIntentionalStop && mediaRecorder && mediaRecorder.state === "recording") {
-                    try { recognition.start(); } catch(e) {}
-                }
-            };
-
-            recognition.onerror = (event) => {
-                if (event.error === 'aborted') return;
-                if (event.error !== 'no-speech') {
-                    isIntentionalStop = true;
-                    setOrbState('waiting', "Tap Orb to Try Again");
-                    stopRecordingProcess();
-                }
-            };
+                recognition.onerror = (event) => {
+                    console.log("Speech Recognition Note:", event.error);
+                    // Ignore 'audio-capture' or 'no-speech' errors and silently keep MediaRecorder alive
+                    if (event.error === 'no-speech' || event.error === 'audio-capture') {
+                        if (!isIntentionalStop && mediaRecorder && mediaRecorder.state === "recording") {
+                            try { recognition.start(); } catch(e) {}
+                        }
+                    }
+                };
+            }
         }
+
+        initSpeechRecognition();
 
         aiOrbContainer.addEventListener('click', async () => {
             unlockMobileAudio();
@@ -265,7 +271,7 @@
                 
                 setOrbState('listening', "Listening...");
             } catch (err) {
-                alert("Microphone access blocked. Please open link in Chrome/Safari!");
+                alert("Microphone access block hai. Kripya Chrome permissions me mic allow karein!");
                 setOrbState('waiting', "Tap Orb to Retry");
                 isFirstClick = true;
             }
@@ -351,7 +357,7 @@
                     body: JSON.stringify({
                         text: text,
                         voice: "hi-IN-SwaraNeural",
-                        rate: "+30%" // 🚀 1.3x Speed Boost for Fast Speaking
+                        rate: "+30%"
                     })
                 });
 
@@ -361,7 +367,6 @@
                 const audioUrl = URL.createObjectURL(audioBlob);
                 currentAudioInstance = new Audio(audioUrl);
 
-                // ⚡ Fast playback rate trigger
                 currentAudioInstance.playbackRate = 1.15;
 
                 currentAudioInstance.onended = () => {
