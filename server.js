@@ -18,7 +18,7 @@ const Order = require("./models/order");
 const Product = require("./models/product"); 
 const Banner = require("./models/banner");
 
-// --- AZURE VOICE SERVER CONFIGURATION ---
+// --- AZURE VOICE SERVER CONFIGURATION (PORT 8000 INCLUDED) ---
 const AZURE_VOICE_SERVER = "http://20.198.82.202:8000";
 
 const app = express();
@@ -115,19 +115,28 @@ function getDistance(lat1, lon1, lat2, lon2) {
 
 const loginOtpStore = {};
 
-// 🎙️ --- FAST TEXT-TO-SPEECH ROUTE (AZURE VM CONNECTED) ---
+// 🎙️ --- FAST TEXT-TO-SPEECH ROUTE (OPTION 1 FIX) ---
 app.post("/api/generate-tts", async (req, res) => {
-    const { text, voice, rate } = req.body;
+    const { text, voice } = req.body;
     try {
-        const response = await axios.post(`${AZURE_VOICE_SERVER}/generate-voice`, {
-            text: text || "नमस्ते, रातू फ्रेश में आपका स्वागत है!",
-            voice: voice || "hi-IN-SwaraNeural",
-            rate: rate || "+30%"
-        }, {
+        // Form-data request for XTTS Voice Server
+        const form = new FormData();
+        form.append('text', text || "नमस्ते, रातू फ्रेश में आपका स्वागत है!");
+        form.append('language', 'hi');
+
+        // Dummy silent wav header buffer to fulfill XTTS requirement if sample not provided
+        const dummyBuffer = Buffer.from('RIFF2400WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00', 'binary');
+        form.append('sample', dummyBuffer, { filename: 'sample.wav', contentType: 'audio/wav' });
+
+        const response = await axios.post(`${AZURE_VOICE_SERVER}/clone-voice`, form, {
+            headers: form.getHeaders(),
             responseType: 'arraybuffer'
         });
 
-        res.set("Content-Type", "audio/mpeg");
+        res.set({
+            "Content-Type": "audio/wav",
+            "Accept-Ranges": "bytes"
+        });
         res.send(Buffer.from(response.data));
     } catch (error) {
         console.error("Azure TTS Error:", error.message);
@@ -135,7 +144,7 @@ app.post("/api/generate-tts", async (req, res) => {
     }
 });
 
-// 🎙️ --- CUSTOM VOICE CLONING UPLOAD GATEWAY ROUTE (FIXED & ALIGNED WITH FASTAPI XTTS) ---
+// 🎙️ --- CUSTOM VOICE CLONING ROUTE (OPTION 2 FIX) ---
 app.post("/api/voice/clone", uploadAudio.single('sample'), async (req, res) => {
     const { text, language } = req.body;
     try {
@@ -162,7 +171,7 @@ app.post("/api/voice/clone", uploadAudio.single('sample'), async (req, res) => {
         });
         res.send(Buffer.from(response.data));
     } catch (error) {
-        console.error("Voice Clone Error:", error.message);
+        console.error("Voice Clone Proxy Error:", error.message);
         res.status(500).json({ error: "Voice cloning engine failed" });
     }
 });
@@ -501,7 +510,7 @@ mongoose.connect(process.env.DBurl).then(async () => {
             { id: 'shimla', name: 'Capsicum (Shimla Mirch)', price: 40, img: 'https://media.istockphoto.com/id/137350104/photo/green-peppers.webp?a=1&b=1&s=612x612&w=0&k=20&c=7u2DZpZoSZIWkSDyvAbxkvNU09BrvPdQCPzM4LcsxvU=', unit: 'kg', inStock: true },
             { id: 'palak', name: 'Spinach (Palak)', price: 20, img: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=600', unit: 'kg', inStock: true },
             { id: 'phool', name: 'Cauliflower (Phool Gobhi)', price: 30, img: 'https://media.istockphoto.com/id/1372304664/photo/cauliflower.webp?a=1&b=1&s=612x612&w=0&k=20&c=lEwN90TtHLVx-r3U9GRyRKmXKzfW4tdeUWRWAcOCX7k=', unit: 'kg', inStock: true },
-            { id: 'lahsoon', name: 'Garlic (Lahsoon)', price: 21, img: 'https://media.istockphoto.com/id/531644839/photo/garlic.webp?a=1&b=1&s=612x612&w=0&k=20&c=kABuNBJXIiwWun2GETzq_Gn_u3M9MlxgTfBFLOZYrn=', unit: 'kg', inStock: true },
+            { id: 'lahsoon', name: 'Garlic (Lahsoon)', price: 21, img: 'https://media.istockphoto.com/id/531644839/photo/garlic.webp?a=1&b=1&s=612x612&w=0&k=20&c=kABuNBJXIiwWun2GETzq_Gn_u3M9MlxgTfBFLOZYrnU=', unit: 'kg', inStock: true },
             { id: 'mirch', name: 'Green Chilli (Hari Mirch)', price: 45, img: 'https://media.istockphoto.com/id/942849220/photo/chilli.webp?a=1&b=1&s=612x612&w=0&k=20&c=qsUq5pSQ7j7T4O8UMEUiSgdSSt5DlKybwc7QS_o9Oao=', unit: 'kg', inStock: true }
         ];
         await Product.insertMany(initialProducts);
