@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -110,13 +110,16 @@
     const responseBox = document.getElementById('responseBox');
     const replyText = document.getElementById('replyText');
 
+    // AZURE SERVER FOR NATURAL SWARA VOICE
+    const AZURE_SERVER = "http://20.198.82.202";
+
     let mediaRecorder;
     let audioChunks = [];
     let recognition;
     let transcribedText = "";
     let isFirstClick = true;
     let silenceTimer;
-    let isIntentionalStop = false; // Mobile auto-disconnect guard flag
+    let isIntentionalStop = false;
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -138,7 +141,6 @@
             
             liveTranscript.innerText = "Aapne bola: " + (transcribedText + currentTranscript);
 
-            // Mobile friendly dynamic silence handling (2.5 seconds window)
             silenceTimer = setTimeout(() => {
                 if (mediaRecorder && mediaRecorder.state === "recording") {
                     console.log("Auto-submitting due to natural pause...");
@@ -149,17 +151,13 @@
         };
 
         recognition.onend = () => {
-            // 🔥 MAIN MOBILE FIX: Agar mobile browser hardware bina hamare roke auto-off ho jaye
-            // toh use forcefully dobara restart kar do jab tak hum khud submit na karein!
             if (!isIntentionalStop && mediaRecorder && mediaRecorder.state === "recording") {
-                console.log("Mobile browser dropped mic. Force restarting framework...");
                 try { recognition.start(); } catch(e) {}
             }
         };
 
         recognition.onerror = (event) => {
-            console.log("Speech Error:", event.error);
-            if (event.error === 'aborted') return; // Ignore accidental logs
+            if (event.error === 'aborted') return;
             if (event.error !== 'no-speech') {
                 isIntentionalStop = true;
                 setLionState('waiting', "Tap lion to retry.");
@@ -172,10 +170,10 @@
         if (isFirstClick) {
             isFirstClick = false;
             setLionState('thinking', "Connecting to Priya...");
-            const welcomeText = "Swagat hai aapka Ratu Fresh me! Mai Chandan ki AI assistant Priya bol rahi hu. Boliye bhaiya, kaun si fresh sabzi chahiye aapko?";
+            const welcomeText = "नमस्ते, स्वागत है आपका रातू फ्रेश में! मैं चंदन की AI असिस्टेंट प्रिया बोल रही हूँ। बोलिए भैया, कौन सी ताज़ी सब्ज़ी चाहिए आपको?";
             
             setLionState('speaking', "Priya is speaking...");
-            speakOut(welcomeText, () => {
+            speakWithSwaraVoice(welcomeText, () => {
                 startRecordingProcess();
             });
         } else {
@@ -193,7 +191,7 @@
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             audioChunks = [];
             transcribedText = ""; 
-            isIntentionalStop = false; // Reset security flag
+            isIntentionalStop = false;
             
             mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
             
@@ -231,7 +229,6 @@
         if (mediaRecorder && mediaRecorder.state === "recording") {
             mediaRecorder.stop();
         }
-        micBtn.classList.remove('recording');
     }
 
     async function sendDataToBackend(audioBlob, textContent) {
@@ -253,7 +250,8 @@
                 replyText.innerText = data.reply;
                 
                 setLionState('speaking', "Priya is replying...");
-                speakOut(data.reply, () => {
+                // 🔥 AZURE SWARA VOICE ME BOLERGA
+                speakWithSwaraVoice(data.reply, () => {
                     startRecordingProcess();
                 });
             } else {
@@ -282,23 +280,35 @@
         }
     }
 
-    function speakOut(text, onEndCallback) {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            
-            const cleanText = text.replace(/[^a-zA-Z0-9 space,?.!अ-हॉा-्]/g, "");
-            const utterance = new SpeechSynthesisUtterance(cleanText);
-            
-            utterance.lang = 'hi-IN';
-            utterance.rate = 1.0; 
-            utterance.pitch = 1.35;
-            
-            utterance.onend = () => {
+    // 🎙️ AZURE NATURAL HINDI SWARA FEMALE VOICE FUNCTION
+    async function speakWithSwaraVoice(text, onEndCallback) {
+        try {
+            const response = await fetch(`${AZURE_SERVER}/generate-voice`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: text,
+                    voice: "hi-IN-SwaraNeural" // Swara Female Voice
+                })
+            });
+
+            if (!response.ok) throw new Error("Azure Voice Failed");
+
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+
+            audio.onended = () => {
                 if (onEndCallback) onEndCallback();
             };
-            
-            window.speechSynthesis.speak(utterance);
-        } else {
+
+            audio.onerror = () => {
+                if (onEndCallback) onEndCallback();
+            };
+
+            await audio.play();
+        } catch (error) {
+            console.error("Swara voice play error, falling back:", error);
             if (onEndCallback) onEndCallback();
         }
     }
