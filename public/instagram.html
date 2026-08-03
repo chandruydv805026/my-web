@@ -4,315 +4,370 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ratu Fresh - Chat with Priya ✨</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+        .gradient-bg {
+            background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
         }
-        .chat-container {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-        h2 { color: #2e7d32; margin-bottom: 5px; }
-        p.subtitle { color: #666; font-size: 14px; margin-top: 0; margin-bottom: 25px; }
         
-        .lion-container {
+        /* Modern Glassmorphic Card */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Modern 3D Glowing AI Voice Orb */
+        .ai-orb-container {
+            position: relative;
             width: 140px;
             height: 140px;
-            margin: 20px auto;
-            background: #f1f8e9;
+            margin: 0 auto;
             border-radius: 50%;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 70px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-            transition: all 0.4s ease;
-            position: relative;
-            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             user-select: none;
         }
-        
-        .listening-active {
-            background: #e8f5e9;
-            box-shadow: 0 0 25px #24b637;
-            animation: pulse-green 1.5s infinite;
-        }
-        .speaking-active {
-            background: #fff3e0;
-            box-shadow: 0 0 25px #ff9800;
-            animation: pulse-orange 1.2s infinite;
-        }
-        .thinking-active {
-            background: #e1f5fe;
-            box-shadow: 0 0 25px #0288d1;
+
+        .ai-orb {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #38bdf8, #0284c7 60%, #0369a1 100%);
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.35), inset 0 0 15px rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+            transition: all 0.4s ease;
         }
 
-        @keyframes pulse-green {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+        /* Glow Animations for Different States */
+        .orb-listening .ai-orb {
+            background: radial-gradient(circle at 30% 30%, #4ade80, #22c55e 60%, #15803d 100%);
+            box-shadow: 0 0 45px rgba(74, 222, 128, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.6);
+            animation: orb-pulse-green 1.4s infinite alternate;
         }
-        @keyframes pulse-orange {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.08); }
-            100% { transform: scale(1); }
+
+        .orb-speaking .ai-orb {
+            background: radial-gradient(circle at 30% 30%, #fb923c, #ea580c 60%, #c2410c 100%);
+            box-shadow: 0 0 45px rgba(251, 146, 60, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.6);
+            animation: orb-pulse-orange 1.1s infinite alternate;
         }
-        
-        .status-text { margin-top: 20px; font-weight: bold; color: #444; min-height: 24px; }
-        .live-transcript { margin-top: 5px; font-size: 13px; color: #666; font-style: italic; min-height: 18px; }
-        
-        .response-box {
-            margin-top: 25px;
-            padding: 15px;
-            background: #f9f9f9;
-            border-left: 5px solid #24b637;
-            border-radius: 5px;
-            text-align: left;
-            display: none;
+
+        .orb-thinking .ai-orb {
+            background: radial-gradient(circle at 30% 30%, #a855f7, #7e22ce 60%, #581c87 100%);
+            box-shadow: 0 0 45px rgba(168, 85, 247, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.6);
+            animation: orb-spin 2s linear infinite;
         }
-        .response-box h4 { margin: 0 0 5px 0; color: #2e7d32; }
-        .response-box p { margin: 0; color: #333; font-size: 15px; }
+
+        @keyframes orb-pulse-green {
+            0% { transform: scale(1); box-shadow: 0 0 25px rgba(74, 222, 128, 0.4); }
+            100% { transform: scale(1.08); box-shadow: 0 0 50px rgba(74, 222, 128, 0.8); }
+        }
+
+        @keyframes orb-pulse-orange {
+            0% { transform: scale(1); box-shadow: 0 0 25px rgba(251, 146, 60, 0.4); }
+            100% { transform: scale(1.1); box-shadow: 0 0 55px rgba(251, 146, 60, 0.85); }
+        }
+
+        /* Pulsing Wave Outer Rings */
+        .pulse-ring {
+            position: absolute;
+            inset: -12px;
+            border-radius: 50%;
+            border: 2px solid rgba(56, 189, 248, 0.3);
+            animation: ring-expand 2s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes ring-expand {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            100% { transform: scale(1.35); opacity: 0; }
+        }
     </style>
 </head>
-<body>
+<body class="gradient-bg min-h-screen text-slate-100 font-sans flex items-center justify-center p-4">
 
-<div class="chat-container">
-    <h2>Ratu Fresh AI Assistant</h2>
-    <p class="subtitle">Talk to Priya for fresh vegetables! 🥬</p>
-    
-    <div id="lionAvatar" class="lion-container">🦁</div>
-    
-    <div id="statusText" class="status-text">Tap the Lion to connect...</div>
-    <div id="liveTranscript" class="live-transcript"></div>
+    <div class="glass-card w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-6 text-center border border-slate-700/50">
+        
+        <!-- Top Status Header -->
+        <div class="flex items-center justify-between border-b border-slate-700/60 pb-4">
+            <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 bg-emerald-400 rounded-full animate-ping"></span>
+                <span class="text-xs font-semibold text-emerald-400 tracking-wider uppercase">Ratu Fresh AI</span>
+            </div>
+            <span class="text-xs text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700">Voice Studio</span>
+        </div>
 
-    <div id="responseBox" class="response-box">
-        <h4>Priya:</h4>
-        <p id="replyText"></p>
+        <!-- Title -->
+        <div>
+            <h2 class="text-xl font-bold text-white tracking-wide">Priya Voice Assistant</h2>
+            <p class="text-xs text-slate-400 mt-1">ताज़ी सब्ज़ियों की जानकारी के लिए टैप करके बोलें 🥬</p>
+        </div>
+
+        <!-- 3D AI Voice Orb Graphics -->
+        <div class="py-4">
+            <div id="aiOrbContainer" class="ai-orb-container">
+                <div class="pulse-ring"></div>
+                <div id="aiOrb" class="ai-orb">
+                    <i id="orbIcon" class="fa-solid fa-microphone text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Status Message & Live Transcript -->
+        <div class="space-y-2 min-h-[50px]">
+            <div id="statusText" class="text-sm font-semibold text-sky-400 tracking-wide">Tap Orb to Connect...</div>
+            <div id="liveTranscript" class="text-xs text-slate-400 italic"></div>
+        </div>
+
+        <!-- Priya Reply Box -->
+        <div id="responseBox" class="hidden bg-slate-900/90 rounded-2xl p-4 border border-emerald-500/30 text-left space-y-1 shadow-inner">
+            <div class="flex items-center space-x-2 text-emerald-400 font-semibold text-xs">
+                <i class="fa-solid fa-sparkles"></i>
+                <span>Priya:</span>
+            </div>
+            <p id="replyText" class="text-sm text-slate-200 leading-relaxed"></p>
+        </div>
+
     </div>
-</div>
 
-<script>
-    const lionAvatar = document.getElementById('lionAvatar');
-    const statusText = document.getElementById('statusText');
-    const liveTranscript = document.getElementById('liveTranscript');
-    const responseBox = document.getElementById('responseBox');
-    const replyText = document.getElementById('replyText');
+    <!-- Logic Script -->
+    <script>
+        const aiOrbContainer = document.getElementById('aiOrbContainer');
+        const orbIcon = document.getElementById('orbIcon');
+        const statusText = document.getElementById('statusText');
+        const liveTranscript = document.getElementById('liveTranscript');
+        const responseBox = document.getElementById('responseBox');
+        const replyText = document.getElementById('replyText');
 
-    let mediaRecorder;
-    let audioChunks = [];
-    let recognition;
-    let transcribedText = "";
-    let isFirstClick = true;
-    let silenceTimer;
-    let isIntentionalStop = false;
+        let mediaRecorder;
+        let audioChunks = [];
+        let recognition;
+        let transcribedText = "";
+        let isFirstClick = true;
+        let silenceTimer;
+        let isIntentionalStop = false;
+        let currentAudioInstance = null; // Currently playing voice tracker
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.lang = 'hi-IN';
-        recognition.continuous = true;
-        recognition.interimResults = true;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'hi-IN';
+            recognition.continuous = true;
+            recognition.interimResults = true;
 
-        recognition.onresult = (event) => {
-            clearTimeout(silenceTimer);
-            let currentTranscript = "";
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    transcribedText += event.results[i][0].transcript + " ";
-                } else {
-                    currentTranscript += event.results[i][0].transcript;
+            recognition.onresult = (event) => {
+                // If user starts speaking while Priya was replying, stop Priya's audio immediately!
+                stopPriyaVoice();
+
+                clearTimeout(silenceTimer);
+                let currentTranscript = "";
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        transcribedText += event.results[i][0].transcript + " ";
+                    } else {
+                        currentTranscript += event.results[i][0].transcript;
+                    }
                 }
-            }
-            
-            liveTranscript.innerText = "Aapne bola: " + (transcribedText + currentTranscript);
+                
+                liveTranscript.innerText = "आप बोले: " + (transcribedText + currentTranscript);
 
-            // Natural pause handling increased to 3.5 seconds
-            silenceTimer = setTimeout(() => {
-                if (mediaRecorder && mediaRecorder.state === "recording") {
-                    console.log("Auto-submitting speech...");
+                // Quick submission after 2.5 seconds natural pause
+                silenceTimer = setTimeout(() => {
+                    if (mediaRecorder && mediaRecorder.state === "recording") {
+                        isIntentionalStop = true;
+                        stopRecordingProcess();
+                    }
+                }, 2500); 
+            };
+
+            recognition.onend = () => {
+                if (!isIntentionalStop && mediaRecorder && mediaRecorder.state === "recording") {
+                    try { recognition.start(); } catch(e) {}
+                }
+            };
+
+            recognition.onerror = (event) => {
+                if (event.error === 'aborted') return;
+                if (event.error !== 'no-speech') {
                     isIntentionalStop = true;
+                    setOrbState('waiting', "Tap Orb to Try Again");
                     stopRecordingProcess();
                 }
-            }, 3500); 
-        };
-
-        recognition.onend = () => {
-            if (!isIntentionalStop && mediaRecorder && mediaRecorder.state === "recording") {
-                try { recognition.start(); } catch(e) {}
-            }
-        };
-
-        recognition.onerror = (event) => {
-            if (event.error === 'aborted') return;
-            if (event.error !== 'no-speech') {
-                isIntentionalStop = true;
-                setLionState('waiting', "Tap lion to retry.");
-                stopRecordingProcess();
-            }
-        };
-    }
-
-    lionAvatar.addEventListener('click', () => {
-        if (isFirstClick) {
-            isFirstClick = false;
-            setLionState('thinking', "Connecting to Priya...");
-            const welcomeText = "नमस्ते! स्वागत है आपका रातू फ्रेश में। मैं प्रिया बोल रही हूँ। बोलिए भैया, कौन सी ताज़ी सब्ज़ी चाहिए?";
-            
-            setLionState('speaking', "Priya is speaking...");
-            speakWithSwaraVoice(welcomeText, () => {
-                startRecordingProcess();
-            });
-        } else {
-            if (mediaRecorder && mediaRecorder.state === "recording") {
-                isIntentionalStop = true;
-                stopRecordingProcess();
-            } else {
-                startRecordingProcess();
-            }
-        }
-    });
-
-    async function startRecordingProcess() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            audioChunks = [];
-            transcribedText = ""; 
-            isIntentionalStop = false;
-            
-            mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-            
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) audioChunks.push(e.data);
             };
+        }
 
-            mediaRecorder.onstop = async () => {
-                setLionState('thinking', "Priya is thinking...");
-                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        aiOrbContainer.addEventListener('click', () => {
+            // Instant Voice Interrupt: Cancel any current speech when orb is clicked
+            stopPriyaVoice();
+
+            if (isFirstClick) {
+                isFirstClick = false;
+                setOrbState('thinking', "Connecting to Priya...");
+                const welcomeText = "नमस्ते! स्वागत है आपका रातू फ्रेश में। मैं प्रिया बोल रही हूँ। बोलिए भैया, कौन सी ताज़ी सब्ज़ी चाहिए?";
                 
-                setTimeout(async () => {
-                    const cleanText = transcribedText.trim();
-                    await sendDataToBackend(audioBlob, cleanText || "Hello Priya");
-                }, 300);
-            };
-
-            mediaRecorder.start();
-            if (recognition) {
-                try { recognition.start(); } catch(e) {}
-            }
-            
-            setLionState('listening', "Suniye... Ab Boliye!");
-        } catch (err) {
-            alert("Microphone access denied. Please allow mic permissions.");
-            isFirstClick = true;
-        }
-    }
-
-    function stopRecordingProcess() {
-        clearTimeout(silenceTimer);
-        if (recognition) {
-            try { recognition.stop(); } catch(e) {}
-        }
-        if (mediaRecorder && mediaRecorder.state === "recording") {
-            mediaRecorder.stop();
-        }
-    }
-
-    async function sendDataToBackend(audioBlob, textContent) {
-        const formData = new FormData();
-        formData.append('audioBlob', audioBlob, 'user-voice.webm');
-        formData.append('userText', textContent);
-        formData.append('userName', "Instagram Visitor");
-
-        try {
-            const res = await fetch('/api/ratu-fresh-ai', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await res.json();
-            
-            if (data.success) {
-                liveTranscript.innerText = ""; 
-                responseBox.style.display = "block";
-                replyText.innerText = data.reply;
-                
-                setLionState('speaking', "Priya is replying...");
-                // Express Proxy Route Call
-                speakWithSwaraVoice(data.reply, () => {
+                setOrbState('speaking', "Priya is Speaking...");
+                speakWithSwaraVoice(welcomeText, () => {
                     startRecordingProcess();
                 });
             } else {
-                setLionState('waiting', "Tap lion to retry.");
+                if (mediaRecorder && mediaRecorder.state === "recording") {
+                    isIntentionalStop = true;
+                    stopRecordingProcess();
+                } else {
+                    startRecordingProcess();
+                }
             }
-        } catch (err) {
-            setLionState('waiting', "Server error. Tap to retry.");
+        });
+
+        async function startRecordingProcess() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioChunks = [];
+                transcribedText = ""; 
+                isIntentionalStop = false;
+                
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    setOrbState('thinking', "Priya Thinking...");
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    
+                    // Ultra Fast Submit without lag
+                    const cleanText = transcribedText.trim();
+                    await sendDataToBackend(audioBlob, cleanText || "Hello Priya");
+                };
+
+                mediaRecorder.start();
+                if (recognition) {
+                    try { recognition.start(); } catch(e) {}
+                }
+                
+                setOrbState('listening', "Listening... Speak Now!");
+            } catch (err) {
+                alert("Microphone access denied. Please allow mic permissions.");
+                isFirstClick = true;
+            }
         }
-    }
 
-    function setLionState(state, statusMsg) {
-        statusText.innerText = statusMsg;
-        lionAvatar.className = "lion-container"; 
-        
-        if (state === 'listening') {
-            lionAvatar.innerText = "🦁👂";
-            lionAvatar.classList.add('listening-active');
-        } else if (state === 'speaking') {
-            lionAvatar.innerText = "🦁🗣️";
-            lionAvatar.classList.add('speaking-active');
-        } else if (state === 'thinking') {
-            lionAvatar.innerText = "🦁🧠";
-            lionAvatar.classList.add('thinking-active');
-        } else {
-            lionAvatar.innerText = "🦁💤";
+        function stopRecordingProcess() {
+            clearTimeout(silenceTimer);
+            if (recognition) {
+                try { recognition.stop(); } catch(e) {}
+            }
+            if (mediaRecorder && mediaRecorder.state === "recording") {
+                mediaRecorder.stop();
+            }
         }
-    }
 
-    // 🎙️ UPDATED FUNCTION: Fetch audio via Backend Proxy Endpoint
-    async function speakWithSwaraVoice(text, onEndCallback) {
-        try {
-            const response = await fetch('/api/generate-tts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    text: text,
-                    voice: "hi-IN-SwaraNeural"
-                })
-            });
+        function stopPriyaVoice() {
+            if (currentAudioInstance) {
+                currentAudioInstance.pause();
+                currentAudioInstance.currentTime = 0;
+                currentAudioInstance = null;
+            }
+        }
 
-            if (!response.ok) throw new Error("Voice Fetch Error");
+        async function sendDataToBackend(audioBlob, textContent) {
+            const formData = new FormData();
+            formData.append('audioBlob', audioBlob, 'user-voice.webm');
+            formData.append('userText', textContent);
+            formData.append('userName', "Instagram Visitor");
 
-            const audioBlob = await response.blob();
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const audio = new Audio(audioUrl);
+            try {
+                const res = await fetch('/api/ratu-fresh-ai', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    liveTranscript.innerText = ""; 
+                    responseBox.classList.remove('hidden');
+                    replyText.innerText = data.reply;
+                    
+                    setOrbState('speaking', "Priya Replying...");
+                    speakWithSwaraVoice(data.reply, () => {
+                        startRecordingProcess();
+                    });
+                } else {
+                    setOrbState('waiting', "Tap Orb to Try Again");
+                }
+            } catch (err) {
+                setOrbState('waiting', "Server Error. Tap to Retry");
+            }
+        }
 
-            audio.onended = () => {
+        function setOrbState(state, statusMsg) {
+            statusText.innerText = statusMsg;
+            aiOrbContainer.className = "ai-orb-container";
+            
+            if (state === 'listening') {
+                aiOrbContainer.classList.add('orb-listening');
+                orbIcon.className = "fa-solid fa-ear-listen text-2xl text-white";
+                statusText.className = "text-sm font-semibold text-emerald-400 tracking-wide";
+            } else if (state === 'speaking') {
+                aiOrbContainer.classList.add('orb-speaking');
+                orbIcon.className = "fa-solid fa-volume-high text-2xl text-white";
+                statusText.className = "text-sm font-semibold text-orange-400 tracking-wide";
+            } else if (state === 'thinking') {
+                aiOrbContainer.classList.add('orb-thinking');
+                orbIcon.className = "fa-solid fa-circle-notch text-2xl text-white animate-spin";
+                statusText.className = "text-sm font-semibold text-purple-400 tracking-wide";
+            } else {
+                orbIcon.className = "fa-solid fa-microphone text-2xl text-white";
+                statusText.className = "text-sm font-semibold text-sky-400 tracking-wide";
+            }
+        }
+
+        async function speakWithSwaraVoice(text, onEndCallback) {
+            try {
+                stopPriyaVoice();
+
+                const response = await fetch('/api/generate-tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: text,
+                        voice: "hi-IN-SwaraNeural"
+                    })
+                });
+
+                if (!response.ok) throw new Error("Voice Fetch Error");
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                currentAudioInstance = new Audio(audioUrl);
+
+                currentAudioInstance.onended = () => {
+                    currentAudioInstance = null;
+                    if (onEndCallback) onEndCallback();
+                };
+
+                currentAudioInstance.onerror = () => {
+                    currentAudioInstance = null;
+                    if (onEndCallback) onEndCallback();
+                };
+
+                await currentAudioInstance.play();
+            } catch (error) {
+                console.error("Swara voice play error:", error);
                 if (onEndCallback) onEndCallback();
-            };
-
-            audio.onerror = () => {
-                if (onEndCallback) onEndCallback();
-            };
-
-            await audio.play();
-        } catch (error) {
-            console.error("Swara voice play error:", error);
-            // Fallback in case backend TTS is unreachable
-            if (onEndCallback) onEndCallback();
+            }
         }
-    }
-</script>
-
+    </script>
 </body>
 </html>
