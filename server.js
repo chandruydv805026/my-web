@@ -133,18 +133,21 @@ app.post("/api/generate-tts", async (req, res) => {
             responseType: 'arraybuffer'
         });
 
+        const audioBuffer = Buffer.from(response.data);
+
         res.set({
             "Content-Type": "audio/wav",
+            "Content-Length": audioBuffer.length,
             "Accept-Ranges": "bytes"
         });
-        res.send(Buffer.from(response.data));
+        res.send(audioBuffer);
     } catch (error) {
         console.error("Azure TTS Error:", error.message);
         res.status(500).json({ error: "Failed to generate voice from Azure Server" });
     }
 });
 
-// 🎙️ --- CUSTOM VOICE CLONING ROUTE (OPTION 2 FIX) ---
+// 🎙️ --- CUSTOM VOICE CLONING ROUTE (OPTION 2 BUFFER & HEADER FIX) ---
 app.post("/api/voice/clone", uploadAudio.single('sample'), async (req, res) => {
     const { text, language } = req.body;
     try {
@@ -154,8 +157,8 @@ app.post("/api/voice/clone", uploadAudio.single('sample'), async (req, res) => {
 
         const form = new FormData();
         form.append('sample', req.file.buffer, {
-            filename: req.file.originalname || 'sample.m4a',
-            contentType: req.file.mimetype || 'audio/x-m4a'
+            filename: req.file.originalname || 'sample.wav',
+            contentType: req.file.mimetype || 'audio/wav'
         });
         form.append('text', text || "नमस्ते, यह आपकी क्लोन की गई आवाज़ है!");
         form.append('language', language || 'hi');
@@ -165,14 +168,18 @@ app.post("/api/voice/clone", uploadAudio.single('sample'), async (req, res) => {
             responseType: 'arraybuffer'
         });
 
+        const audioBuffer = Buffer.from(response.data);
+
         res.set({
             "Content-Type": "audio/wav",
+            "Content-Length": audioBuffer.length,
             "Accept-Ranges": "bytes"
         });
-        res.send(Buffer.from(response.data));
+        res.send(audioBuffer);
+
     } catch (error) {
         console.error("Voice Clone Proxy Error:", error.message);
-        res.status(500).json({ error: "Voice cloning engine failed" });
+        res.status(500).json({ error: "Voice cloning engine failed on Azure VM" });
     }
 });
 
