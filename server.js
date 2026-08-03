@@ -8,6 +8,7 @@ const multer = require("multer");
 const crypto = require("crypto"); 
 const fs = require('fs');
 const { Resend } = require("resend"); 
+const FormData = require("form-data");
 require("dotenv").config();
 
 // Models
@@ -18,7 +19,7 @@ const Product = require("./models/product");
 const Banner = require("./models/banner");
 
 // --- AZURE VOICE SERVER CONFIGURATION ---
-const AZURE_VOICE_SERVER = "http://20.198.82.202";
+const AZURE_VOICE_SERVER = "http://20.198.82.202:8000";
 
 const app = express();
 app.use(express.json());
@@ -134,22 +135,31 @@ app.post("/api/generate-tts", async (req, res) => {
     }
 });
 
-// 🎙️ --- CUSTOM VOICE CLONING UPLOAD GATEWAY ROUTE ---
-app.post("/api/voice/clone", uploadAudio.single('media'), async (req, res) => {
-    const { text } = req.body;
+// 🎙️ --- CUSTOM VOICE CLONING UPLOAD GATEWAY ROUTE (FIXED & ALIGNED WITH FASTAPI XTTS) ---
+app.post("/api/voice/clone", uploadAudio.single('sample'), async (req, res) => {
+    const { text, language } = req.body;
     try {
         if (!req.file) {
             return res.status(400).json({ error: "No media file provided for cloning" });
         }
 
-        const response = await axios.post(`${AZURE_VOICE_SERVER}/generate-voice`, {
-            text: text || "नमस्ते, यह आपकी क्लोन की गई आवाज़ है!",
-            voice: "hi-IN-MadhurNeural"
-        }, {
+        const form = new FormData();
+        form.append('sample', req.file.buffer, {
+            filename: req.file.originalname || 'sample.m4a',
+            contentType: req.file.mimetype || 'audio/x-m4a'
+        });
+        form.append('text', text || "नमस्ते, यह आपकी क्लोन की गई आवाज़ है!");
+        form.append('language', language || 'hi');
+
+        const response = await axios.post(`${AZURE_VOICE_SERVER}/clone-voice`, form, {
+            headers: form.getHeaders(),
             responseType: 'arraybuffer'
         });
 
-        res.set("Content-Type", "audio/mpeg");
+        res.set({
+            "Content-Type": "audio/wav",
+            "Accept-Ranges": "bytes"
+        });
         res.send(Buffer.from(response.data));
     } catch (error) {
         console.error("Voice Clone Error:", error.message);
@@ -491,7 +501,7 @@ mongoose.connect(process.env.DBurl).then(async () => {
             { id: 'shimla', name: 'Capsicum (Shimla Mirch)', price: 40, img: 'https://media.istockphoto.com/id/137350104/photo/green-peppers.webp?a=1&b=1&s=612x612&w=0&k=20&c=7u2DZpZoSZIWkSDyvAbxkvNU09BrvPdQCPzM4LcsxvU=', unit: 'kg', inStock: true },
             { id: 'palak', name: 'Spinach (Palak)', price: 20, img: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=600', unit: 'kg', inStock: true },
             { id: 'phool', name: 'Cauliflower (Phool Gobhi)', price: 30, img: 'https://media.istockphoto.com/id/1372304664/photo/cauliflower.webp?a=1&b=1&s=612x612&w=0&k=20&c=lEwN90TtHLVx-r3U9GRyRKmXKzfW4tdeUWRWAcOCX7k=', unit: 'kg', inStock: true },
-            { id: 'lahsoon', name: 'Garlic (Lahsoon)', price: 21, img: 'https://media.istockphoto.com/id/531644839/photo/garlic.webp?a=1&b=1&s=612x612&w=0&k=20&c=kABuNBJXIiwWun2GETzq_Gn_u3M9MlxgTfBFLOZYrnU=', unit: 'kg', inStock: true },
+            { id: 'lahsoon', name: 'Garlic (Lahsoon)', price: 21, img: 'https://media.istockphoto.com/id/531644839/photo/garlic.webp?a=1&b=1&s=612x612&w=0&k=20&c=kABuNBJXIiwWun2GETzq_Gn_u3M9MlxgTfBFLOZYrn=', unit: 'kg', inStock: true },
             { id: 'mirch', name: 'Green Chilli (Hari Mirch)', price: 45, img: 'https://media.istockphoto.com/id/942849220/photo/chilli.webp?a=1&b=1&s=612x612&w=0&k=20&c=qsUq5pSQ7j7T4O8UMEUiSgdSSt5DlKybwc7QS_o9Oao=', unit: 'kg', inStock: true }
         ];
         await Product.insertMany(initialProducts);
