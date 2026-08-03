@@ -64,11 +64,26 @@
 
                         <!-- Voice Selection Dropdown -->
                         <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-2">Select Voice Model</label>
+                            <label class="block text-xs font-medium text-slate-300 mb-2">Select Voice Model (10 Tested Voices)</label>
                             <select id="ttsVoice" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors">
-                                <option value="hi-IN-SwaraNeural">Swara (Female - Clear & Natural Hindi)</option>
-                                <option value="hi-IN-MadhurNeural">Madhur (Male - Professional Hindi)</option>
-                                <option value="hi-IN-KavyanjaliNeural">Kavyanjali (Female - Expressive)</option>
+                                <optgroup label="🇮🇳 Hindi Voices">
+                                    <option value="hi-IN-SwaraNeural" selected>1. Swara (Female - Clear & Natural Hindi)</option>
+                                    <option value="hi-IN-MadhurNeural">2. Madhur (Male - Deep Professional Hindi)</option>
+                                </optgroup>
+                                <optgroup label="🇮🇳 Indian English / Hinglish">
+                                    <option value="en-IN-NeerjaNeural">3. Neerja (Female - Indian Accent)</option>
+                                    <option value="en-IN-PrabhatNeural">4. Prabhat (Male - Corporate Indian Accent)</option>
+                                </optgroup>
+                                <optgroup label="🌐 Regional Indian Voices">
+                                    <option value="bn-IN-TanishaaNeural">5. Tanishaa (Female - Bengali/Eastern Accent)</option>
+                                    <option value="bn-IN-BashkarNeural">6. Bashkar (Male - Bengali/Eastern Accent)</option>
+                                </optgroup>
+                                <optgroup label="🌐 Global US & UK Voices">
+                                    <option value="en-US-AriaNeural">7. Aria (Female - Clear US Studio Accent)</option>
+                                    <option value="en-US-GuyNeural">8. Guy (Male - Professional US Accent)</option>
+                                    <option value="en-US-JennyNeural">9. Jenny (Female - Conversational US)</option>
+                                    <option value="en-GB-SoniaNeural">10. Sonia (Female - British Accent)</option>
+                                </optgroup>
                             </select>
                         </div>
 
@@ -102,7 +117,6 @@
                     <p class="text-xs text-slate-400 mb-6">Upload a 5-10 second video or audio sample to clone any target voice.</p>
 
                     <form id="cloneForm" class="space-y-4">
-                        <!-- File Drag & Drop Input -->
                         <div>
                             <label class="block text-xs font-medium text-slate-300 mb-2">Upload Sample Video/Audio (MP4, MP3, WAV)</label>
                             <div class="relative border-2 border-dashed border-slate-700 hover:border-purple-500/80 rounded-xl p-4 text-center cursor-pointer transition-colors bg-slate-900/50 group" id="dropArea">
@@ -115,10 +129,9 @@
                             </div>
                         </div>
 
-                        <!-- Text Input -->
                         <div>
                             <label class="block text-xs font-medium text-slate-300 mb-2">Text To Speak in Cloned Voice</label>
-                            <textarea id="cloneText" rows="3" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-purple-500 transition-colors placeholder-slate-500" placeholder="जो बात उस आवाज़ में बुलवाना चाहते हैं, यहाँ लिखें..." required></textarea>
+                            <textarea id="cloneText" rows="3" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-purple-500 transition-colors placeholder-slate-500" placeholder="जो बात उस आवाज़ में बुलवाना चाहते हैं, यहाँ लिखें..." required></textarea>
                         </div>
 
                         <button type="submit" id="cloneBtn" class="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl shadow-lg shadow-purple-600/20 transition-all flex items-center justify-center space-x-2">
@@ -128,7 +141,6 @@
                     </form>
                 </div>
 
-                <!-- Option 2 Audio Player Output -->
                 <div id="cloneOutput" class="hidden bg-slate-900/90 rounded-xl p-4 border border-slate-700/80 space-y-3">
                     <div class="flex items-center justify-between text-xs text-purple-400 font-medium">
                         <span><i class="fa-solid fa-circle-check mr-1"></i> Voice Cloned Successfully</span>
@@ -150,10 +162,6 @@
 
     <!-- Frontend Logic -->
     <script>
-        // SERVER CONFIGURATION
-        const AZURE_SERVER_URL = "http://20.198.82.202"; 
-
-        // File Selection Feedback
         const mediaFileInput = document.getElementById('mediaFile');
         const fileNameDisplay = document.getElementById('fileName');
 
@@ -164,24 +172,22 @@
             }
         });
 
-        // OPTION 1: FAST TEXT-TO-SPEECH SUBMIT
+        // 🟢 FIXED: Direct HTTP IP ke jagah HTTPS Relative Express Endpoint '/api/generate-tts' Use Kiya Hai
         document.getElementById('ttsForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const text = document.getElementById('ttsText').value.trim();
             const voice = document.getElementById('ttsVoice').value;
-            const loader = document.getElementById('loader');
-            const loaderText = document.getElementById('loaderText');
 
             if (!text) return;
 
             showLoader("Fast AI Voice Audio Generate Ho Raha Hai...");
 
             try {
-                const response = await fetch(`${AZURE_SERVER_URL}/generate-voice`, {
+                const response = await fetch('/api/generate-tts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, voice })
+                    body: JSON.stringify({ text, voice, rate: "+30%" })
                 });
 
                 if (!response.ok) throw new Error("Voice generation failed!");
@@ -192,7 +198,7 @@
                 const player = document.getElementById('ttsAudioPlayer');
                 player.src = audioUrl;
                 document.getElementById('ttsOutput').classList.remove('hidden');
-                document.getElementById('ttsVoiceLabel').textContent = voice.split('-')[2];
+                document.getElementById('ttsVoiceLabel').textContent = voice.split('-')[2] || voice;
                 player.play();
 
             } catch (err) {
@@ -218,8 +224,7 @@
             formData.append('text', text);
 
             try {
-                // Hits your Node.js Gateway / Azure Cloning Endpoint
-                const response = await fetch(`/api/voice/clone`, {
+                const response = await fetch('/api/voice/clone', {
                     method: 'POST',
                     body: formData
                 });
