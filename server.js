@@ -20,15 +20,6 @@ const Banner = require("./models/banner");
 // --- AZURE VOICE SERVER CONFIGURATION ---
 const AZURE_VOICE_SERVER = "http://20.198.82.202";
 
-// --- MONGOOSE SCHEMA: ONLY SAVES PURE AUDIO RECORDING ---
-const InstagramChatSchema = new mongoose.Schema({
-    userName: { type: String, default: "Instagram User" },
-    audioBuffer: Buffer,       // User ki real voice recording file binary format me safe hogi
-    contentType: String,       // Audio file ka extension/type (audio/webm)
-    createdAt: { type: Date, default: Date.now }
-});
-const InstagramChat = mongoose.model("InstagramChat", InstagramChatSchema);
-
 const app = express();
 app.use(express.json());
 
@@ -55,7 +46,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// --- INSTAGRAM AUDIO & CLONE MEDIA UPLOAD MULTER ---
+// --- CLONE MEDIA UPLOAD MULTER ---
 const memoryStorage = multer.memoryStorage();
 const uploadAudio = multer({ storage: memoryStorage });
 
@@ -66,11 +57,6 @@ app.get("/", (req, res) => {
 
 app.get("/admin", (req, res) => {
     res.sendFile(path.join(__dirname, "admin.html"));
-});
-
-// --- NEW INSTAGRAM BIO ROUTE ---
-app.get("/instagram", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "instagram.html"));
 });
 
 // --- PRIVACY POLICY ROUTE ---
@@ -128,75 +114,14 @@ function getDistance(lat1, lon1, lat2, lon2) {
 
 const loginOtpStore = {};
 
-// 🟢 --- 100% UPDATED: DYNAMIC VOICE ROUTE VIA SUPER-FAST GROQ CLOUD AI ---
-app.post("/api/ratu-fresh-ai", uploadAudio.single('audioBlob'), async (req, res) => {
-    const { userText, userName } = req.body;
-    
-    try {
-        // Live items ka stock aur price nikalna
-        const products = await Product.find({ inStock: true });
-        const priceListString = products.map(p => `${p.name}: ₹${p.price} per ${p.unit}`).join(", ");
-
-        // Groq SDK Initialize karna
-        const Groq = require("groq-sdk");
-        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
-        // Groq chat completion request using ultra-fast llama-3.3-70b model
-        const chatCompletion = await groq.chat.completions.create({
-            messages: [
-                {
-                    role: "system",
-                    content: `Your name is Priya. You are the official AI voice assistant of 'Ratu Fresh' (owned by Chandan Yadav). You are talking to a customer from Chandan's Instagram bio. Speak like a sweet, polite 21-year-old local Indian girl in natural Hinglish. Keep your answers extremely short (maximum 1-2 sentences). Use words like 'bhaiya', 'aap', 'fresh sabzi'. CURRENT VEGETABLE PRICES IN RATU: [${priceListString}]. If they ask for prices, strictly check this list. If a product is not listed, say 'Bhaiya abhi stock me nahi h, Chandan bhaiya kal mangwa denge'. Never sound like a robot.`
-                },
-                {
-                    role: "user",
-                    content: userText || "Hello"
-                }
-            ],
-            model: "llama-3.3-70b-versatile"
-        });
-
-        const aiReplyText = chatCompletion.choices[0].message.content || "Haan ji bhaiya, boliye Ratu Fresh me aapka swagat hai!";
-
-        // User ki raw voice recording pipeline ko database me dump karna
-        if (req.file) {
-            const chatRecord = new InstagramChat({
-                userName: userName || "Instagram Visitor",
-                audioBuffer: req.file.buffer, 
-                contentType: req.file.mimetype
-            });
-            await chatRecord.save();
-        }
-
-        res.json({ success: true, reply: aiReplyText });
-    } catch (error) {
-        console.error("Groq AI Error:", error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-// 🟢 --- 100% NEW ROUTE: ADMIN SE BINARY RECORDING LIVE SUNNE KE LIYE ---
-app.get("/api/admin/listen-voice/:id", async (req, res) => {
-    try {
-        const record = await InstagramChat.findById(req.params.id);
-        if (!record || !record.audioBuffer) {
-            return res.status(404).send("<h1>Bhaiya, is record me koi audio clip nahi mili!</h1>");
-        }
-        res.set("Content-Type", record.contentType || "audio/webm");
-        res.send(record.audioBuffer);
-    } catch (err) {
-        res.status(500).send("Error playing raw voice stream: " + err.message);
-    }
-});
-
-// 🎙️ --- NAYA ADDITION 1: FAST TEXT-TO-SPEECH ROUTE (AZURE VM CONNECTED WITH SPEED BOOST) ---
+// 🎙️ --- FAST TEXT-TO-SPEECH ROUTE (AZURE VM CONNECTED) ---
 app.post("/api/generate-tts", async (req, res) => {
     const { text, voice, rate } = req.body;
     try {
         const response = await axios.post(`${AZURE_VOICE_SERVER}/generate-voice`, {
             text: text || "नमस्ते, रातू फ्रेश में आपका स्वागत है!",
             voice: voice || "hi-IN-SwaraNeural",
-            rate: rate || "+30%" // Fast 1.3x energetic speech rate
+            rate: rate || "+30%"
         }, {
             responseType: 'arraybuffer'
         });
@@ -209,7 +134,7 @@ app.post("/api/generate-tts", async (req, res) => {
     }
 });
 
-// 🎙️ --- NAYA ADDITION 2: CUSTOM VOICE CLONING UPLOAD GATEWAY ROUTE ---
+// 🎙️ --- CUSTOM VOICE CLONING UPLOAD GATEWAY ROUTE ---
 app.post("/api/voice/clone", uploadAudio.single('media'), async (req, res) => {
     const { text } = req.body;
     try {
@@ -217,7 +142,6 @@ app.post("/api/voice/clone", uploadAudio.single('media'), async (req, res) => {
             return res.status(400).json({ error: "No media file provided for cloning" });
         }
 
-        // Demo fallback response (Jab tak Azure GPU XTTS Live nahi hota)
         const response = await axios.post(`${AZURE_VOICE_SERVER}/generate-voice`, {
             text: text || "नमस्ते, यह आपकी क्लोन की गई आवाज़ है!",
             voice: "hi-IN-MadhurNeural"
