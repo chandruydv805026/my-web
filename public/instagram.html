@@ -42,6 +42,7 @@
             transition: all 0.4s ease;
             position: relative;
             cursor: pointer;
+            user-select: none;
         }
         
         .listening-active {
@@ -110,9 +111,6 @@
     const responseBox = document.getElementById('responseBox');
     const replyText = document.getElementById('replyText');
 
-    // AZURE SERVER FOR NATURAL SWARA VOICE
-    const AZURE_SERVER = "http://20.198.82.202";
-
     let mediaRecorder;
     let audioChunks = [];
     let recognition;
@@ -141,13 +139,14 @@
             
             liveTranscript.innerText = "Aapne bola: " + (transcribedText + currentTranscript);
 
+            // Natural pause handling increased to 3.5 seconds
             silenceTimer = setTimeout(() => {
                 if (mediaRecorder && mediaRecorder.state === "recording") {
-                    console.log("Auto-submitting due to natural pause...");
+                    console.log("Auto-submitting speech...");
                     isIntentionalStop = true;
                     stopRecordingProcess();
                 }
-            }, 2500); 
+            }, 3500); 
         };
 
         recognition.onend = () => {
@@ -170,7 +169,7 @@
         if (isFirstClick) {
             isFirstClick = false;
             setLionState('thinking', "Connecting to Priya...");
-            const welcomeText = "नमस्ते, स्वागत है आपका रातू फ्रेश में! मैं चंदन की AI असिस्टेंट प्रिया बोल रही हूँ। बोलिए भैया, कौन सी ताज़ी सब्ज़ी चाहिए आपको?";
+            const welcomeText = "नमस्ते! स्वागत है आपका रातू फ्रेश में। मैं प्रिया बोल रही हूँ। बोलिए भैया, कौन सी ताज़ी सब्ज़ी चाहिए?";
             
             setLionState('speaking', "Priya is speaking...");
             speakWithSwaraVoice(welcomeText, () => {
@@ -206,7 +205,7 @@
                 setTimeout(async () => {
                     const cleanText = transcribedText.trim();
                     await sendDataToBackend(audioBlob, cleanText || "Hello Priya");
-                }, 400);
+                }, 300);
             };
 
             mediaRecorder.start();
@@ -214,9 +213,9 @@
                 try { recognition.start(); } catch(e) {}
             }
             
-            setLionState('listening', "Listening... Speak now!");
+            setLionState('listening', "Suniye... Ab Boliye!");
         } catch (err) {
-            alert("Microphone access denied.");
+            alert("Microphone access denied. Please allow mic permissions.");
             isFirstClick = true;
         }
     }
@@ -250,15 +249,15 @@
                 replyText.innerText = data.reply;
                 
                 setLionState('speaking', "Priya is replying...");
-                // 🔥 AZURE SWARA VOICE ME BOLERGA
+                // Express Proxy Route Call
                 speakWithSwaraVoice(data.reply, () => {
                     startRecordingProcess();
                 });
             } else {
-                setLionState('waiting', "Please try again.");
+                setLionState('waiting', "Tap lion to retry.");
             }
         } catch (err) {
-            setLionState('waiting', "Server error.");
+            setLionState('waiting', "Server error. Tap to retry.");
         }
     }
 
@@ -280,19 +279,19 @@
         }
     }
 
-    // 🎙️ AZURE NATURAL HINDI SWARA FEMALE VOICE FUNCTION
+    // 🎙️ UPDATED FUNCTION: Fetch audio via Backend Proxy Endpoint
     async function speakWithSwaraVoice(text, onEndCallback) {
         try {
-            const response = await fetch(`${AZURE_SERVER}/generate-voice`, {
+            const response = await fetch('/api/generate-tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     text: text,
-                    voice: "hi-IN-SwaraNeural" // Swara Female Voice
+                    voice: "hi-IN-SwaraNeural"
                 })
             });
 
-            if (!response.ok) throw new Error("Azure Voice Failed");
+            if (!response.ok) throw new Error("Voice Fetch Error");
 
             const audioBlob = await response.blob();
             const audioUrl = URL.createObjectURL(audioBlob);
@@ -308,7 +307,8 @@
 
             await audio.play();
         } catch (error) {
-            console.error("Swara voice play error, falling back:", error);
+            console.error("Swara voice play error:", error);
+            // Fallback in case backend TTS is unreachable
             if (onEndCallback) onEndCallback();
         }
     }
