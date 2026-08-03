@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ratu Fresh - Voice AI Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+        .card-glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-slate-100 font-sans p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto space-y-8">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-700/60">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-emerald-500/20 border border-emerald-500/40 rounded-xl flex items-center justify-center text-emerald-400 text-2xl shadow-lg shadow-emerald-500/10">
+                    <i class="fa-solid fa-microphone-lines"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-wide text-white">Ratu Fresh <span class="text-emerald-400">Voice AI</span> Studio</h1>
+                    <p class="text-xs text-slate-400">Text-to-Speech & Custom Voice Cloning Dashboard</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700 text-xs">
+                <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                <span class="text-slate-300 font-medium">Azure VM Server Live</span>
+            </div>
+        </header>
+
+        <!-- Main Grid Container -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+            <!-- ================= OPTION 1: INSTANT TTS ================= -->
+            <div class="card-glass rounded-2xl p-6 shadow-xl flex flex-col justify-between space-y-6">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-md border border-emerald-500/30">Option 1</span>
+                            <h2 class="text-lg font-bold text-white">Fast Text-To-Speech</h2>
+                        </div>
+                        <i class="fa-solid fa-bolt text-amber-400"></i>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-6">High-speed natural neural voices for instant notifications & alerts.</p>
+
+                    <form id="ttsForm" class="space-y-4">
+                        <!-- Text Input -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-2">Hindi / English Text</label>
+                            <textarea id="ttsText" rows="4" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors placeholder-slate-500" placeholder="यहाँ टेक्स्ट लिखें... उदाहरण: नमस्ते, रातू फ्रेश में आपका स्वागत है!" required></textarea>
+                        </div>
+
+                        <!-- Voice Selection Dropdown -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-2">Select Voice Model</label>
+                            <select id="ttsVoice" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors">
+                                <option value="hi-IN-SwaraNeural">Swara (Female - Clear & Natural Hindi)</option>
+                                <option value="hi-IN-MadhurNeural">Madhur (Male - Professional Hindi)</option>
+                                <option value="hi-IN-KavyanjaliNeural">Kavyanjali (Female - Expressive)</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" id="ttsBtn" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-play"></i>
+                            <span>Generate Voice</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Option 1 Audio Player Output -->
+                <div id="ttsOutput" class="hidden bg-slate-900/90 rounded-xl p-4 border border-slate-700/80 space-y-3">
+                    <div class="flex items-center justify-between text-xs text-emerald-400 font-medium">
+                        <span><i class="fa-solid fa-circle-check mr-1"></i> Audio Ready</span>
+                        <span id="ttsVoiceLabel">Swara Neural</span>
+                    </div>
+                    <audio id="ttsAudioPlayer" controls class="w-full h-10 accent-emerald-500"></audio>
+                </div>
+            </div>
+
+            <!-- ================= OPTION 2: CUSTOM VOICE CLONING ================= -->
+            <div class="card-glass rounded-2xl p-6 shadow-xl flex flex-col justify-between space-y-6">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2.5 py-1 bg-purple-500/20 text-purple-400 text-xs font-semibold rounded-md border border-purple-500/30">Option 2</span>
+                            <h2 class="text-lg font-bold text-white">Custom Voice Cloner</h2>
+                        </div>
+                        <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-6">Upload a 5-10 second video or audio sample to clone any target voice.</p>
+
+                    <form id="cloneForm" class="space-y-4">
+                        <!-- File Drag & Drop Input -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-2">Upload Sample Video/Audio (MP4, MP3, WAV)</label>
+                            <div class="relative border-2 border-dashed border-slate-700 hover:border-purple-500/80 rounded-xl p-4 text-center cursor-pointer transition-colors bg-slate-900/50 group" id="dropArea">
+                                <input type="file" id="mediaFile" accept="video/*,audio/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required>
+                                <div class="space-y-2 pointer-events-none">
+                                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-500 group-hover:text-purple-400 transition-colors"></i>
+                                    <p class="text-xs text-slate-300 font-medium" id="fileName">Click or Drag & Drop File Here</p>
+                                    <p class="text-[10px] text-slate-500">Supported: MP4, MOV, MP3, WAV (Max 20MB)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Text Input -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-2">Text To Speak in Cloned Voice</label>
+                            <textarea id="cloneText" rows="3" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-purple-500 transition-colors placeholder-slate-500" placeholder="जो बात उस आवाज़ में बुलवाना चाहते हैं, यहाँ लिखें..." required></textarea>
+                        </div>
+
+                        <button type="submit" id="cloneBtn" class="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl shadow-lg shadow-purple-600/20 transition-all flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-dna"></i>
+                            <span>Extract & Clone Voice</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Option 2 Audio Player Output -->
+                <div id="cloneOutput" class="hidden bg-slate-900/90 rounded-xl p-4 border border-slate-700/80 space-y-3">
+                    <div class="flex items-center justify-between text-xs text-purple-400 font-medium">
+                        <span><i class="fa-solid fa-circle-check mr-1"></i> Voice Cloned Successfully</span>
+                        <span>Custom Model</span>
+                    </div>
+                    <audio id="cloneAudioPlayer" controls class="w-full h-10 accent-purple-500"></audio>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Global Loader Overlay -->
+        <div id="loader" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center z-50 space-y-4">
+            <div class="w-16 h-16 border-4 border-slate-700 border-t-emerald-500 border-r-purple-500 rounded-full animate-spin"></div>
+            <p id="loaderText" class="text-sm font-medium text-slate-200 animate-pulse">Generating Voice Audio...</p>
+        </div>
+
+    </div>
+
+    <!-- Frontend Logic -->
+    <script>
+        // SERVER CONFIGURATION
+        const AZURE_SERVER_URL = "http://20.198.82.202"; 
+
+        // File Selection Feedback
+        const mediaFileInput = document.getElementById('mediaFile');
+        const fileNameDisplay = document.getElementById('fileName');
+
+        mediaFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                fileNameDisplay.textContent = `Selected: ${e.target.files[0].name}`;
+                fileNameDisplay.classList.add('text-purple-400');
+            }
+        });
+
+        // OPTION 1: FAST TEXT-TO-SPEECH SUBMIT
+        document.getElementById('ttsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const text = document.getElementById('ttsText').value.trim();
+            const voice = document.getElementById('ttsVoice').value;
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loaderText');
+
+            if (!text) return;
+
+            showLoader("Fast AI Voice Audio Generate Ho Raha Hai...");
+
+            try {
+                const response = await fetch(`${AZURE_SERVER_URL}/generate-voice`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, voice })
+                });
+
+                if (!response.ok) throw new Error("Voice generation failed!");
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+
+                const player = document.getElementById('ttsAudioPlayer');
+                player.src = audioUrl;
+                document.getElementById('ttsOutput').classList.remove('hidden');
+                document.getElementById('ttsVoiceLabel').textContent = voice.split('-')[2];
+                player.play();
+
+            } catch (err) {
+                alert("Error: " + err.message);
+            } finally {
+                hideLoader();
+            }
+        });
+
+        // OPTION 2: CUSTOM VOICE CLONING SUBMIT
+        document.getElementById('cloneForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const file = mediaFileInput.files[0];
+            const text = document.getElementById('cloneText').value.trim();
+
+            if (!file || !text) return;
+
+            showLoader("Video/Audio Se Voice Extract karke Clone Kiya Ja Raha Hai...");
+
+            const formData = new FormData();
+            formData.append('media', file);
+            formData.append('text', text);
+
+            try {
+                // Hits your Node.js Gateway / Azure Cloning Endpoint
+                const response = await fetch(`/api/voice/clone`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error("Voice Cloning Failed!");
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+
+                const player = document.getElementById('cloneAudioPlayer');
+                player.src = audioUrl;
+                document.getElementById('cloneOutput').classList.remove('hidden');
+                player.play();
+
+            } catch (err) {
+                alert("Error: " + err.message);
+            } finally {
+                hideLoader();
+            }
+        });
+
+        function showLoader(msg) {
+            document.getElementById('loaderText').textContent = msg;
+            document.getElementById('loader').classList.remove('hidden');
+        }
+
+        function hideLoader() {
+            document.getElementById('loader').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
