@@ -81,7 +81,7 @@
       <div class="form-group"><label>Landmark / Area</label><input type="text" id="landmarkInput" placeholder="Nearby famous place" required></div>
       
       <button type="submit" class="submit-btn" id="signupBtn">Create Account</button>
-      <p style="text-align:center; font-size:13px; color:var(--text-muted); margin-top:20px;">Already have an account? <a href="login.html" style="color:var(--brand-green); text-decoration:none; font-weight:700;">Login</a></p>
+      <p style="text-align:center; font-size:13px; color:var(--text-muted); margin-top:20px;">Already have an account? <a href="/login" style="color:var(--brand-green); text-decoration:none; font-weight:700;">Login</a></p>
     </form>
   </div>
 
@@ -105,8 +105,8 @@
 
   <script>
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                     ? 'http://localhost:4000' 
-                     : 'https://my-web-xrr5.onrender.com'; 
+                    ? 'http://localhost:4000' 
+                    : 'https://my-web-xrr5.onrender.com'; 
 
     const toast = document.getElementById('toast');
     const verifyOverlay = document.getElementById('verifyOverlay');
@@ -147,7 +147,7 @@
           document.getElementById('addressInput').value = data.displayName;
           document.getElementById('pincodeInput').value = data.pincode;
           
-          // [FIX] 'Local Area' को ऑटो-फिल होने से रोकना
+          // 'Local Area' को ऑटो-फिल होने से रोकना
           if (data.area && data.area !== "Local Area") {
               document.getElementById('landmarkInput').value = data.area;
           } else {
@@ -196,7 +196,7 @@
                       clearInterval(verificationTimer);
                       localStorage.setItem('token', status.token);
                       localStorage.setItem('user', JSON.stringify(status.user));
-                      window.location.replace('profiles.html?verified=true');
+                      window.location.replace('profiles?verified=true');
                   }
               } catch (e) { console.log("Checking..."); }
           }, 3000);
