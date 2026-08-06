@@ -16,7 +16,7 @@
     (function() {
       const token = localStorage.getItem('token');
       if (token && token !== "undefined" && token !== "null") {
-        window.location.replace('profiles.html');
+        window.location.replace('/profiles');
       }
     })();
   </script>
@@ -127,8 +127,8 @@
     <div class="header-top">
       <div class="brand">🥬 Ratu Fresh</div>
       <div class="auth-links" id="authSection">
-        <a href="login.html" class="btn-auth">Login</a>
-        <a href="signup.html" class="btn-auth">Signup</a>
+        <a href="/login" class="btn-auth">Login</a>
+        <a href="/signup" class="btn-auth">Signup</a>
       </div>
     </div>
     <input type="text" class="search-bar" id="search" placeholder="Search for vegetables..." onkeyup="render()">
@@ -147,8 +147,8 @@
       <h2 style="font-size: 1.4rem;">Access Denied! ✋</h2>
       <p style="color:#666; margin-top: 8px; font-size: 0.9rem;">Please login or signup first to place your order and get Free Delivery.</p>
       <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
-        <a href="login.html" style="background: var(--primary); color: white; padding: 14px; border-radius: 12px; text-decoration: none; font-weight: 700;">Login Now</a>
-        <a href="signup.html" style="background: #ff9800; color: white; padding: 14px; border-radius: 12px; text-decoration: none; font-weight: 700;">Create Account</a>
+        <a href="/login" style="background: var(--primary); color: white; padding: 14px; border-radius: 12px; text-decoration: none; font-weight: 700;">Login Now</a>
+        <a href="/signup" style="background: #ff9800; color: white; padding: 14px; border-radius: 12px; text-decoration: none; font-weight: 700;">Create Account</a>
       </div>
       <button onclick="closeModal()" style="margin-top:12px; border:none; background:none; color:#999; font-weight:600; cursor:pointer; padding: 10px;">Not Now</button>
     </div>
@@ -293,7 +293,7 @@
     window.onload = () => {
       const token = localStorage.getItem('token');
       if (token && token !== "null" && token !== "undefined") {
-          window.location.replace('profiles.html');
+          window.location.replace('/profiles');
           return;
       }
       fetchAllData();
