@@ -136,7 +136,7 @@
         </button>
       </form>
       <div class="toggle-section">
-        <p>Don't have an account? <span class="toggle-link" onclick="window.location.href='signup.html'">Sign Up</span></p>
+        <p>Don't have an account? <span class="toggle-link" onclick="window.location.href='/signup'">Sign Up</span></p>
       </div>
     </div>
 
@@ -165,11 +165,10 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    // [IMPROVED] Automatically detect server URL based on the current website URL
-    // Taaki localhost pe localhost chale aur Render pe ratufresh.me chale
+    // Automatically detect server URL based on the current website URL
     const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                      ? 'http://localhost:4000' 
-                     : ''; // Render ke liye empty string kyunki static files wahin se serve ho rahi hain
+                     : ''; // Render ke liye empty string
 
     let currentPhone = "";
     const toast = document.getElementById('toast');
@@ -196,7 +195,6 @@
       btnText.textContent = "Processing...";
 
       try {
-        // [FIXED] Using API_BASE variable
         const res = await fetch(`${API_BASE}/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -239,7 +237,6 @@
       vText.textContent = "Verifying...";
 
       try {
-        // [FIXED] Using API_BASE variable
         const res = await fetch(`${API_BASE}/verify-login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -251,7 +248,7 @@
           localStorage.setItem('token', data.token);
           localStorage.setItem('user', JSON.stringify(data.user));
           showStatus("Welcome Back! Redirecting... 🎉");
-          setTimeout(() => window.location.href = 'profiles.html', 1500);
+          setTimeout(() => window.location.href = '/profiles', 1500);
         } else {
           showStatus(data.error, true);
           vBtn.disabled = false;
