@@ -32,7 +32,8 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-app.use(express.static("public"));
+// --- HTML EXTENSIONS ENABLED FOR CLEAN URLs ---
+app.use(express.static("public", { extensions: ['html'] }));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // --- MULTER CONFIG ---
@@ -309,7 +310,7 @@ app.get("/api/verify-email", async (req, res) => {
         if (!(await Cart.findOne({ user: user._id }))) await new Cart({ user: user._id, items: [] }).save();
 
         const loginToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "90d" });
-        res.redirect(`https://ratufresh.me/profiles.html?token=${loginToken}&verified=true`);
+        res.redirect(`https://ratufresh.me/profiles?token=${loginToken}&verified=true`);
     } catch (err) { res.status(500).send("Error"); }
 });
 
@@ -499,6 +500,18 @@ app.post("/api/admin/verify", (req, res) => {
 });
 
 app.get("/ping", (req, res) => res.status(200).send("Alive"));
+
+// --- CLEAN URL CATCH-ALL ROUTE FOR PUBLIC HTML FILES ---
+app.get("/:page", (req, res, next) => {
+    const pageName = req.params.page;
+    const filePath = path.join(__dirname, "public", `${pageName}.html`);
+
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        next();
+    }
+});
 
 // --- DB CONNECTION & SEEDING ---
 mongoose.connect(process.env.DBurl).then(async () => {
