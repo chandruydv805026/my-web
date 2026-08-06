@@ -59,7 +59,7 @@
     #custom-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 5000; display: none; align-items: center; justify-content: center; padding: 25px; }
     .modal-box { background: white; padding: 30px; border-radius: 25px; width: 100%; max-width: 340px; text-align: center; animation: pop 0.3s ease; }
     #success-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 6000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-    .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #eee; z-index: 2000; }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; justify-around: space-around; padding: 10px 0; border-top: 1px solid #eee; z-index: 2000; }
     .nav-icon { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #bbb; border: none; background: none; outline: none; cursor: pointer; position: relative; }
     .nav-icon.active { color: var(--primary); }
     .nav-icon img { width: 24px; height: 24px; opacity: 0.4; }
@@ -169,7 +169,7 @@
         const token = localStorage.getItem('token');
 
         if(!token || token === "null" || token === "undefined") { 
-            window.location.href = 'main.html';
+            window.location.href = '/main';
             return;
         }
         
@@ -194,7 +194,7 @@
                 }
             } else {
                 localStorage.clear();
-                window.location.href = 'main.html';
+                window.location.href = '/main';
             }
         } catch(e) { console.log("Load Error"); }
     };
@@ -509,7 +509,7 @@
         } catch (err) { showAlert('Error', 'Failed to save changes.', 'error'); }
     }
 
-    function logout() { showAlert('Logout?', 'Sign out from Ratu Fresh?', 'cancel-ask', () => { localStorage.clear(); window.location.href = 'main.html'; }); }
+    function logout() { showAlert('Logout?', 'Sign out from Ratu Fresh?', 'cancel-ask', () => { localStorage.clear(); window.location.href = '/main'; }); }
 
     function showAlert(title, msg, type = 'info', action = null) {
         const box = document.getElementById('modal-content');
