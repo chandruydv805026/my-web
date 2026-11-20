@@ -27,7 +27,7 @@ export const ShopProvider = ({ children }) => {
 
   // Announcement Bar Text
   const [announcementText, setAnnouncementText] = useState(
-    "Grand Fashion Festival: Chhote Bachhe, Bade Log aur Ladkiyo Ka Collection Up to 80% Off!"
+    "Grand Fashion Festival: Exclusive Collection for Kids, Men & Women Up to 80% Off!"
   );
 
   // Coupons List (Synced with /api/coupons)
@@ -36,7 +36,7 @@ export const ShopProvider = ({ children }) => {
   // Store Settings
   const [storeSettings, setStoreSettings] = useState({
     storeName: "RatuMart",
-    tagline: "Chhote Bachhe, Bade Log aur Ladkiyo Ka Fashion Hub",
+    tagline: "India's Premium Fashion Destination for Kids, Men & Women",
     freeShippingThreshold: 499,
     deliveryCharge: 40,
     supportPhone: "080-4547-RATU",

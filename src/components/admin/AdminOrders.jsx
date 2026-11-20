@@ -37,7 +37,7 @@ export default function AdminOrders() {
         <div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight">Order Fulfillment Control</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Customer ke orders ko track karein, status badlein (Packing &rarr; Shipped &rarr; Delivered) aur delivery address dekhein.
+            Track customer orders, update delivery status (Packing &rarr; Shipped &rarr; Delivered), and review delivery addresses.
           </p>
         </div>
 

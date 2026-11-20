@@ -63,7 +63,7 @@ export default function AdminSettings() {
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
         <h2 className="text-xl font-black text-slate-900 tracking-tight">Master Store Settings</h2>
         <p className="text-xs text-slate-500 mt-0.5">
-          Delivery charges, free shipping threshold, support helpline aur payment policies configure karein.
+          Configure delivery charges, free shipping threshold, support helpline, and store policies.
         </p>
       </div>
 

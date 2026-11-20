@@ -95,12 +95,12 @@ export default function AuthModal() {
             </div>
 
             <h3 className="text-xl font-black tracking-tight leading-snug">
-              {activeTab === 'login' ? 'Login' : 'Naya Account'}
+              {activeTab === 'login' ? 'Login' : 'Create Account'}
             </h3>
             <p className="text-xs text-blue-100 mt-2 leading-relaxed">
               {activeTab === 'login'
                 ? 'Get access to your Orders, Wishlist and Personalized Fashion Recommendations'
-                : 'Sign up to shop trending fashion for Chhote Bachhe, Bade Log aur Ladkiyan'}
+                : 'Sign up to shop trending fashion collections for Kids, Men & Women'}
             </p>
           </div>
 
@@ -139,7 +139,7 @@ export default function AuthModal() {
                   : 'border-transparent text-slate-400 hover:text-slate-700'
               }`}
             >
-              Naya Account
+              Create Account
             </button>
           </div>
 

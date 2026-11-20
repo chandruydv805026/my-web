@@ -20,7 +20,7 @@ export default function AdminCustomers() {
         <div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight">Customer &amp; Shopper Directory</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Registered customers dekhein, unka order count check karein aur unko Ratu SuperCoins gift karein.
+            View registered customers, monitor order counts, and reward Ratu SuperCoins.
           </p>
         </div>
 

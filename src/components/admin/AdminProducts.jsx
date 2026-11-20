@@ -30,7 +30,7 @@ export default function AdminProducts() {
     name: '',
     brand: 'Ratu Mart',
     category: 'kids',
-    audience: 'kids', // 'kids' (Chhote bachhe), 'men' (Bade log), 'women' (Ladki)
+    audience: 'kids', // 'kids' (Kids Wear), 'men' (Men's Fashion), 'women' (Women's Fashion)
     price: '',
     originalPrice: '',
     stockLeft: 25,
@@ -140,7 +140,7 @@ export default function AdminProducts() {
             Inventory &amp; Clothes Catalog (SQLite Database)
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Chhote Bachhe, Bade Log aur Ladkiyo ke kapde add karein aur real photos upload karein.
+            Manage clothing catalog for Kids, Men &amp; Women and upload real product photos.
           </p>
         </div>
 
@@ -157,7 +157,7 @@ export default function AdminProducts() {
             onClick={handleOpenAdd}
             className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow transition flex items-center gap-1.5 active:scale-95"
           >
-            <Plus className="w-4 h-4" /> Add Naye Kapde (Photo Upload)
+            <Plus className="w-4 h-4" /> Add New Clothes (Photo Upload)
           </button>
         </div>
       </div>
@@ -167,9 +167,9 @@ export default function AdminProducts() {
         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1 mr-1">Section:</span>
         {[
           { id: 'all', label: 'All Clothes' },
-          { id: 'kids', label: '🧒 Chhote Bachhe' },
-          { id: 'men', label: '👔 Bade Log / Men' },
-          { id: 'women', label: '👗 Ladki / Women' }
+          { id: 'kids', label: '🧒 Kids' },
+          { id: 'men', label: '👔 Men' },
+          { id: 'women', label: '👗 Women' }
         ].map(seg => (
           <button
             key={seg.id}
@@ -256,7 +256,7 @@ export default function AdminProducts() {
                         ? 'bg-rose-50 text-rose-800 border border-rose-200' 
                         : 'bg-blue-50 text-blue-800 border border-blue-200'
                     }`}>
-                      {item.audience === 'kids' ? 'Chhote Bachhe' : item.audience === 'women' ? 'Ladki / Women' : 'Bade Log / Men'}
+                      {item.audience === 'kids' ? 'Kids' : item.audience === 'women' ? 'Women' : 'Men'}
                     </span>
                   </td>
 
@@ -327,7 +327,7 @@ export default function AdminProducts() {
                 <h3 className="text-base sm:text-lg font-black text-slate-900">
                   {editingProduct ? 'Edit Outfit Details' : 'Add Naye Kapde (With Real Photo Upload)'}
                 </h3>
-                <p className="text-[11px] text-slate-400">Ye seedhe aapke real SQLite database me save hoga.</p>
+                <p className="text-[11px] text-slate-400">This item will be saved directly to your live database.</p>
               </div>
               <button
                 onClick={() => setIsAddModalOpen(false)}
@@ -341,12 +341,12 @@ export default function AdminProducts() {
               
               {/* Target Audience: Kids, Men, Women */}
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Ye Kapda Kiske Liye Hai? *</label>
+                <label className="block text-slate-700 font-bold mb-1">Target Audience / Category *</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'kids', label: '🧒 Chhote Bachhe' },
-                    { id: 'men', label: '👔 Bade Log / Men' },
-                    { id: 'women', label: '👗 Ladki / Women' }
+                    { id: 'kids', label: '🧒 Kids' },
+                    { id: 'men', label: '👔 Men' },
+                    { id: 'women', label: '👗 Women' }
                   ].map(aud => (
                     <button
                       type="button"
@@ -366,7 +366,7 @@ export default function AdminProducts() {
 
               {/* Product Title */}
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Kapde Ka Naam (Title) *</label>
+                <label className="block text-slate-700 font-bold mb-1">Product Title *</label>
                 <input
                   type="text"
                   required

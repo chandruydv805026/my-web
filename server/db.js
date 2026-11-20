@@ -88,7 +88,7 @@ if (currentCount === 0) {
   `);
 
   const initialItems = [
-    // --- 1. CHHOTE BACHHE (KIDS) ---
+    // --- 1. KIDS WEAR ---
     {
       name: "Boys 3-Piece Festive Royal Blazer, Waistcoat & Trouser Suit Set",
       brand: "Little Gentleman",
@@ -100,7 +100,7 @@ if (currentCount === 0) {
       rating: 4.8,
       rating_count: 890,
       assured: 1,
-      tag: "Bachho Ka Party Bestseller",
+      tag: "Kids Party Bestseller",
       image: "https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=700&auto=format&fit=crop&q=80",
       images: JSON.stringify([
         "https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=700&auto=format&fit=crop&q=80",
@@ -113,7 +113,7 @@ if (currentCount === 0) {
       wash_care: "Dry Clean Only",
       stock_left: 15,
       delivery_days: "Tomorrow, 2:00 PM",
-      description: "Chhote bachho ke birthday, wedding aur family functions ke liye royal 3-piece suit set.",
+      description: "Royal 3-piece tailored suit set for boys, ideal for birthdays, weddings, and festive occasions.",
       created_at: new Date().toISOString()
     },
     {
@@ -127,7 +127,7 @@ if (currentCount === 0) {
       rating: 4.7,
       rating_count: 960,
       assured: 1,
-      tag: "Bacchi Ka Birthday Gown",
+      tag: "Girls Birthday Gown",
       image: "https://images.unsplash.com/photo-1518831959646-742c3a14ebf7?w=700&auto=format&fit=crop&q=80",
       images: JSON.stringify([
         "https://images.unsplash.com/photo-1518831959646-742c3a14ebf7?w=700&auto=format&fit=crop&q=80"
@@ -139,7 +139,7 @@ if (currentCount === 0) {
       wash_care: "Gentle Hand Wash Cold",
       stock_left: 22,
       delivery_days: "Tomorrow, 4:00 PM",
-      description: "Chhoti bacchi ke liye pure soft cotton lining wala princess frock jisme skin par koi khujli nahi hoti.",
+      description: "Princess party frock for girls crafted with 100% scratch-free pure cotton inner lining for ultimate comfort.",
       created_at: new Date().toISOString()
     },
     {
@@ -165,11 +165,11 @@ if (currentCount === 0) {
       wash_care: "Gentle Machine Wash",
       stock_left: 18,
       delivery_days: "Delivery in 2 Days",
-      description: "Puja, Diwali aur shaadi ke functions me chhote bachho ke liye aaramdayak kurta dhoti set.",
+      description: "Comfortable traditional art silk kurta dhoti set for boys, perfect for festivals and puja ceremonies.",
       created_at: new Date().toISOString()
     },
 
-    // --- 2. BADE LOG / MEN ---
+    // --- 2. MEN'S FASHION ---
     {
       name: "Men Slim Fit Washed Pure Denim Biker Jacket",
       brand: "RoadRider Urban",
@@ -194,7 +194,7 @@ if (currentCount === 0) {
       wash_care: "Machine Wash Cold inside out",
       stock_left: 14,
       delivery_days: "Tomorrow, 6:00 PM",
-      description: "Bade ladko aur mardo ke liye rugged denim biker jacket with heavy brass buttons.",
+      description: "Rugged denim biker jacket for men featuring heavyweight premium cotton and solid brass buttons.",
       created_at: new Date().toISOString()
     },
     {
@@ -208,7 +208,7 @@ if (currentCount === 0) {
       rating: 4.6,
       rating_count: 1845,
       assured: 1,
-      tag: "Shaadi & Festive Special",
+      tag: "Festive Wedding Special",
       image: "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?w=700&auto=format&fit=crop&q=80",
       images: JSON.stringify([
         "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?w=700&auto=format&fit=crop&q=80"
@@ -220,7 +220,7 @@ if (currentCount === 0) {
       wash_care: "Dry Clean Only",
       stock_left: 12,
       delivery_days: "Tomorrow, 1:00 PM",
-      description: "Indian traditional look ke liye self-embossed floral Jacquard kurta set.",
+      description: "Regal self-embossed floral Jacquard kurta set for men designed for traditional ceremonies.",
       created_at: new Date().toISOString()
     },
     {
@@ -246,11 +246,11 @@ if (currentCount === 0) {
       wash_care: "Machine Wash Warm",
       stock_left: 28,
       delivery_days: "Tomorrow, 11:00 AM",
-      description: "Garmi aur daily office wear ke liye super comfortable pure linen shirt.",
+      description: "Breathable pure linen-cotton casual shirt designed for all-day comfort and office wear.",
       created_at: new Date().toISOString()
     },
 
-    // --- 3. LADKI / WOMEN ---
+    // --- 3. WOMEN'S FASHION ---
     {
       name: "Royal Banarasi Silk Embroidered Zari Saree with Blouse Piece",
       brand: "Ratu Heritage",
@@ -275,7 +275,7 @@ if (currentCount === 0) {
       wash_care: "Dry Clean Preferred",
       stock_left: 9,
       delivery_days: "Tomorrow, 3:00 PM",
-      description: "Shadi, festival aur puja ke liye heavy Zari Banarasi saree.",
+      description: "Exquisite Banarasi silk saree featuring heavy gold Zari woven borders for weddings and festivities.",
       created_at: new Date().toISOString()
     },
     {
@@ -301,7 +301,7 @@ if (currentCount === 0) {
       wash_care: "Gentle Hand Wash",
       stock_left: 7,
       delivery_days: "Tomorrow, 12:00 PM",
-      description: "Ladkiyo aur aurato ke liye mirror work Anarkali 3-piece suit with organza dupatta.",
+      description: "Handcrafted mirror-work Anarkali 3-piece ensemble paired with a scalloped organza dupatta.",
       created_at: new Date().toISOString()
     },
     {
@@ -353,7 +353,7 @@ if (currentCount === 0) {
       wash_care: "Machine Wash Delicate",
       stock_left: 19,
       delivery_days: "Tomorrow, 5:00 PM",
-      description: "College, party aur vacation ke liye stylish western floral dress.",
+      description: "Chic French floral print chiffon maxi dress featuring an elasticated smocked waist.",
       created_at: new Date().toISOString()
     }
   ];
@@ -426,7 +426,7 @@ const settingCount = db.prepare('SELECT COUNT(*) as count FROM store_settings').
 if (settingCount === 0) {
   const insertSetting = db.prepare('INSERT INTO store_settings (key, value) VALUES (?, ?)');
   insertSetting.run('storeName', 'RatuMart');
-  insertSetting.run('tagline', 'Chhote Bachhe, Bade Log aur Ladkiyo Ka Fashion Hub');
+  insertSetting.run('tagline', "India's Premium Fashion Destination for Kids, Men & Women");
   insertSetting.run('freeShippingThreshold', '499');
   insertSetting.run('deliveryCharge', '40');
   insertSetting.run('supportPhone', '080-4547-RATU');

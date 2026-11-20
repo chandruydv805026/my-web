@@ -31,7 +31,7 @@ export default function AdminDashboard({ onNavigate }) {
             Welcome to RatuMart Owner Console
           </h2>
           <p className="text-slate-300 text-xs sm:text-sm mt-1 max-w-xl">
-            Aapke store ka poora control yahan hai. Products add karein, prices change karein, orders track karein aur live sales monitor karein.
+            Complete store control at your fingertips. Add new collections, manage pricing, fulfill customer orders, and track real-time sales.
           </p>
         </div>
 

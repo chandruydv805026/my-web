@@ -7,25 +7,25 @@ export const CATEGORIES = [
   },
   {
     id: "kids",
-    name: "Chhote Bachhe",
+    name: "Kids Wear",
     icon: "Smile",
     image: "https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=300&auto=format&fit=crop&q=80"
   },
   {
     id: "men",
-    name: "Bade Log / Men",
+    name: "Men's Fashion",
     icon: "Shirt",
     image: "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?w=300&auto=format&fit=crop&q=80"
   },
   {
     id: "women-ethnic",
-    name: "Ladki (Ethnic)",
+    name: "Women Ethnic",
     icon: "Flame",
     image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300&auto=format&fit=crop&q=80"
   },
   {
     id: "women-western",
-    name: "Ladki (Western)",
+    name: "Women Western",
     icon: "Crown",
     image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=300&auto=format&fit=crop&q=80"
   },
@@ -144,7 +144,7 @@ export const PRODUCTS = [
     superCoins: 50,
     description: "Radiate grace in this intricately hand-worked Anarkali 3-piece ensemble. Features mirror work on the yoke, flared Kali borders, and a flowing scalloped organza dupatta.",
     reviews: [
-      { id: 301, user: "Sneha Kapoor", rating: 5, date: "5 days ago", comment: "Wedding ke liye lia tha, everyone was asking where I bought it! Highly recommend RatuMart.", verified: true }
+      { id: 301, user: "Sneha Kapoor", rating: 5, date: "5 days ago", comment: "Bought this for a wedding, everyone was asking where I bought it! Highly recommend RatuMart.", verified: true }
     ]
   },
   {
@@ -206,7 +206,7 @@ export const PRODUCTS = [
     superCoins: 25,
     description: "Effortlessly feminine and breezy. Features delicate flutter sleeves, a flattering sweetheart neckline, and tiered ruffled hem that twirls beautifully.",
     reviews: [
-      { id: 501, user: "Riya Sen", rating: 5, date: "4 days ago", comment: "So dreamy and comfortable! Vacation photos ke liye perfect outfit.", verified: true }
+      { id: 501, user: "Riya Sen", rating: 5, date: "4 days ago", comment: "So dreamy and comfortable! Perfect outfit for holiday and vacation photos.", verified: true }
     ]
   },
   {

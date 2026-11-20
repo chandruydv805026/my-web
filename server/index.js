@@ -104,9 +104,9 @@ async function seedInitialData() {
   try {
     const prodCount = await Product.countDocuments();
     if (prodCount === 0) {
-      console.log('Seeding initial clothes inventory in MongoDB (Chhote Bachhe, Bade Log, Ladki)...');
+      console.log('Seeding initial clothes inventory in MongoDB (Kids, Men, Women)...');
       await Product.insertMany([
-        // 1. Chhote Bachhe (Kids)
+        // 1. Kids Wear
         {
           name: "Boys 3-Piece Festive Royal Blazer, Waistcoat & Trouser Suit Set",
           brand: "Little Gentleman",
@@ -118,7 +118,7 @@ async function seedInitialData() {
           rating: 4.8,
           ratingCount: 890,
           assured: true,
-          tag: "Bachho Ka Party Bestseller",
+          tag: "Kids Party Bestseller",
           image: "https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=700&auto=format&fit=crop&q=80",
           images: [
             "https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=700&auto=format&fit=crop&q=80",
@@ -131,7 +131,7 @@ async function seedInitialData() {
           washCare: "Dry Clean Only",
           stockLeft: 15,
           deliveryDays: "Tomorrow, 2:00 PM",
-          description: "Chhote bachho ke birthday, wedding aur family functions ke liye royal 3-piece suit set."
+          description: "Royal 3-piece tailored suit set for boys, ideal for birthdays, weddings, and festive occasions."
         },
         {
           name: "Girls Princess Sparkle Sequin Tiered Birthday Party Frock Gown",
@@ -144,7 +144,7 @@ async function seedInitialData() {
           rating: 4.7,
           ratingCount: 960,
           assured: true,
-          tag: "Bacchi Ka Birthday Gown",
+          tag: "Girls Birthday Gown",
           image: "https://images.unsplash.com/photo-1518831959646-742c3a14ebf7?w=700&auto=format&fit=crop&q=80",
           images: [
             "https://images.unsplash.com/photo-1518831959646-742c3a14ebf7?w=700&auto=format&fit=crop&q=80"
@@ -156,7 +156,7 @@ async function seedInitialData() {
           washCare: "Gentle Hand Wash Cold",
           stockLeft: 22,
           deliveryDays: "Tomorrow, 4:00 PM",
-          description: "Chhoti bacchi ke liye pure soft cotton lining wala princess frock."
+          description: "Princess party frock for girls crafted with 100% scratch-free pure cotton inner lining."
         },
         {
           name: "Boys Traditional Silk Kurta & Dhoti Pant Festive Set",
@@ -179,10 +179,10 @@ async function seedInitialData() {
           washCare: "Gentle Machine Wash",
           stockLeft: 18,
           deliveryDays: "Delivery in 2 Days",
-          description: "Puja, Diwali aur shaadi me chhote bachho ke liye aaramdayak kurta dhoti set."
+          description: "Comfortable traditional art silk kurta dhoti set for boys, perfect for festivals and puja ceremonies."
         },
 
-        // 2. Bade Log / Men
+        // 2. Men's Fashion
         {
           name: "Men Slim Fit Washed Pure Denim Biker Jacket",
           brand: "RoadRider Urban",
@@ -207,7 +207,7 @@ async function seedInitialData() {
           washCare: "Machine Wash Cold inside out",
           stockLeft: 14,
           deliveryDays: "Tomorrow, 6:00 PM",
-          description: "Bade ladko aur mardo ke liye rugged denim biker jacket."
+          description: "Rugged denim biker jacket for men featuring heavyweight premium cotton."
         },
         {
           name: "Men's Luxury Jacquard Silk Kurta with Churidar Pyjama Set",
@@ -220,7 +220,7 @@ async function seedInitialData() {
           rating: 4.6,
           ratingCount: 1845,
           assured: true,
-          tag: "Shaadi & Festive Special",
+          tag: "Festive Wedding Special",
           image: "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?w=700&auto=format&fit=crop&q=80",
           images: ["https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?w=700&auto=format&fit=crop&q=80"],
           sizes: ["38 (S)", "40 (M)", "42 (L)", "44 (XL)", "46 (XXL)"],
@@ -230,7 +230,7 @@ async function seedInitialData() {
           washCare: "Dry Clean Only",
           stockLeft: 12,
           deliveryDays: "Tomorrow, 1:00 PM",
-          description: "Traditional Indian look ke liye Jacquard kurta pyjama set."
+          description: "Regal self-embossed floral Jacquard kurta set for men designed for traditional ceremonies."
         },
         {
           name: "Men Regular Fit Pure Linen Breathable Casual Shirt",
@@ -253,10 +253,10 @@ async function seedInitialData() {
           washCare: "Machine Wash Warm",
           stockLeft: 28,
           deliveryDays: "Tomorrow, 11:00 AM",
-          description: "Daily office wear aur casual look ke liye breathable pure linen shirt."
+          description: "Breathable pure linen-cotton casual shirt designed for all-day comfort and office wear."
         },
 
-        // 3. Ladki / Women
+        // 3. Women's Fashion
         {
           name: "Royal Banarasi Silk Embroidered Zari Saree with Blouse Piece",
           brand: "Ratu Heritage",
@@ -281,7 +281,7 @@ async function seedInitialData() {
           washCare: "Dry Clean Preferred",
           stockLeft: 9,
           deliveryDays: "Tomorrow, 3:00 PM",
-          description: "Shadi, festival aur puja ke liye heavy Zari Banarasi saree."
+          description: "Exquisite Banarasi silk saree featuring heavy gold Zari woven borders for weddings and festivities."
         },
         {
           name: "Embroidered Anarkali Kurta, Pant & Dupatta 3-Piece Festive Set",
@@ -304,7 +304,7 @@ async function seedInitialData() {
           washCare: "Gentle Hand Wash",
           stockLeft: 7,
           deliveryDays: "Tomorrow, 12:00 PM",
-          description: "Ladkiyo aur aurato ke liye mirror work Anarkali 3-piece suit."
+          description: "Handcrafted mirror-work Anarkali 3-piece ensemble paired with a scalloped organza dupatta."
         },
         {
           name: "Women Heavily Embroidered Velvet Bridal Lehenga Choli Set",
@@ -327,7 +327,7 @@ async function seedInitialData() {
           washCare: "Specialist Dry Clean Only",
           stockLeft: 4,
           deliveryDays: "Delivery in 3 Days",
-          description: "Heavy wedding bridal lehenga set with intricate gold threadwork."
+          description: "Heavy wedding bridal lehenga set with intricate gold threadwork and double dupatta."
         },
         {
           name: "Women French Floral Print Chiffon A-Line Maxi Dress",
@@ -350,7 +350,7 @@ async function seedInitialData() {
           washCare: "Machine Wash Delicate",
           stockLeft: 19,
           deliveryDays: "Tomorrow, 5:00 PM",
-          description: "College, party aur vacation ke liye stylish western floral dress."
+          description: "Chic French floral print chiffon maxi dress featuring an elasticated smocked waist."
         }
       ]);
       console.log('✅ Initial clothes inventory seeded in MongoDB!');
@@ -542,9 +542,9 @@ app.post('/api/products', async (req, res) => {
     let audience = body.audience || 'men';
     const cat = (body.category || '').toLowerCase();
     const nameLower = (body.name || '').toLowerCase();
-    if (cat.includes('kid') || nameLower.includes('boy') || nameLower.includes('girl') || nameLower.includes('bachhe')) {
+    if (cat.includes('kid') || nameLower.includes('boy') || nameLower.includes('girl') || nameLower.includes('child') || nameLower.includes('bachhe')) {
       audience = 'kids';
-    } else if (cat.includes('women') || cat.includes('ethnic') || nameLower.includes('saree') || nameLower.includes('kurti') || nameLower.includes('lehenga') || nameLower.includes('ladki')) {
+    } else if (cat.includes('women') || cat.includes('ethnic') || nameLower.includes('saree') || nameLower.includes('kurti') || nameLower.includes('lehenga') || nameLower.includes('dress') || nameLower.includes('gown') || nameLower.includes('ladki')) {
       audience = 'women';
     }
 

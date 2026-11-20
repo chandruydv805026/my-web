@@ -28,7 +28,7 @@ export default function AdminMarketing() {
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
         <h2 className="text-xl font-black text-slate-900 tracking-tight">Marketing &amp; Banner Controller</h2>
         <p className="text-xs text-slate-500 mt-0.5">
-          Storefront ke top announcement ticker, Deal of the Day timers aur bank offers ko customize karein.
+          Customize storefront announcement tickers, Deal of the Day timers, and partner bank offers.
         </p>
       </div>
 

@@ -113,7 +113,7 @@ export const sendOrderNotification = async (orderData) => {
         <!-- Header -->
         <div style="background-color: #2874f0; padding: 24px; text-align: center; color: #ffffff;">
           <h1 style="margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.5px;">RatuMart</h1>
-          <p style="margin: 6px 0 0 0; font-size: 13px; color: #dbeafe;">Chhote Bachhe, Bade Log aur Ladkiyo Ka Fashion Hub</p>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #dbeafe;">India's Premium Fashion Destination for Kids, Men &amp; Women</p>
         </div>
 
         <!-- Body -->
@@ -121,7 +121,7 @@ export const sendOrderNotification = async (orderData) => {
           <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
             <h2 style="margin: 0 0 4px 0; color: #15803d; font-size: 16px;">🎉 Order Placed Successfully!</h2>
             <p style="margin: 0; font-size: 13px; color: #166534;">
-              Namaste <strong>${customerName || 'Shopper'}</strong>, aapka kapdo ka order hume mil gaya hai aur dispatch ke liye taiyaar kiya ja raha hai.
+              Hello <strong>${customerName || 'Shopper'}</strong>, thank you for shopping with RatuMart. Your fashion order has been received and is being prepared for dispatch.
             </p>
           </div>
 
@@ -165,7 +165,7 @@ export const sendOrderNotification = async (orderData) => {
 
           <!-- Support & Footer -->
           <div style="text-align: center; border-top: 1px solid #e2e8f0; padding-top: 16px; font-size: 12px; color: #94a3b8;">
-            <p style="margin: 0;">Agar koi sawal hai, hamare helpline <strong>080-4547-RATU</strong> par contact karein.</p>
+            <p style="margin: 0;">If you have any questions, reach our customer care at <strong>080-4547-RATU</strong> or support@ratumart.com.</p>
             <p style="margin: 4px 0 0 0;">© 2026 RatuMart Fashion. 100% Genuine Quality Guarantee.</p>
           </div>
         </div>
@@ -281,21 +281,21 @@ export const sendWelcomeNotification = async (user) => {
       <div style="font-family: sans-serif; max-width: 550px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background-color: #2874f0; padding: 24px; text-align: center; color: white;">
           <h1 style="margin: 0; font-size: 24px; font-weight: 900;">Welcome to RatuMart!</h1>
-          <p style="margin: 4px 0 0 0; font-size: 12px; color: #dbeafe;">Chhote Bachhe, Bade Log aur Ladkiyo Ka Fashion</p>
+          <p style="margin: 4px 0 0 0; font-size: 12px; color: #dbeafe;">Fashion Destination for Kids, Men &amp; Women</p>
         </div>
         <div style="padding: 24px;">
-          <h2 style="color: #0f172a; font-size: 16px;">Namaste ${user.name},</h2>
+          <h2 style="color: #0f172a; font-size: 16px;">Hello ${user.name},</h2>
           <p style="font-size: 13px; color: #475569; line-height: 1.5;">
-            RatuMart family me aapka hardik swagat hai! Hamare paas premium ethnic wear, casual wear, aur festival clothes uplabdh hain.
+            Welcome to the RatuMart family! Explore our exclusive collections of premium ethnic wear, western fashion, party wear, and kids outfits.
           </p>
 
           <div style="background: #fefce8; border: 1px solid #fef08a; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: center;">
             <div style="font-size: 13px; color: #854d0e; font-weight: bold;">🪙 +150 Ratu SuperCoins Bonus!</div>
-            <div style="font-size: 11px; color: #a16207; margin-top: 4px;">Aap in coins ko apne agle order par discount ke roop me use kar sakte hain.</div>
+            <div style="font-size: 11px; color: #a16207; margin-top: 4px;">Use your SuperCoins at checkout for instant discounts on your next order.</div>
           </div>
 
           <div style="text-align: center; margin-top: 24px;">
-            <a href="http://localhost:5173" style="background-color: #ffc200; color: #0f172a; font-weight: 900; font-size: 13px; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block;">
+            <a href="https://ratufresh.me" style="background-color: #ffc200; color: #0f172a; font-weight: 900; font-size: 13px; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block;">
               START SHOPPING NOW
             </a>
           </div>
