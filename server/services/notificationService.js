@@ -1,20 +1,32 @@
 // Notification Service for RatuMart
 // Integrated with Resend (Transactional Email API) & OneSignal (Push Notifications API)
+import dotenv from 'dotenv';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Resend } from 'resend';
 
-const resendApiKey = process.env.RESEND_API_KEY;
-const resend = resendApiKey ? new Resend(resendApiKey) : null;
-const emailFrom = process.env.EMAIL_FROM || 'RatuMart <onboarding@resend.dev>';
-
-const onesignalAppId = process.env.ONESIGNAL_APP_ID;
-const onesignalRestKey = process.env.ONESIGNAL_REST_KEY;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 let notificationHistory = [];
 
 /**
+ * Get or create Resend client dynamically
+ */
+export function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  return new Resend(apiKey);
+}
+
+/**
  * Send Web & Mobile Push Notification via OneSignal REST API
  */
-export const sendOneSignalPush = async ({ title, message, url = 'http://localhost:5173', data = {} }) => {
+export const sendOneSignalPush = async ({ title, message, url = 'https://ratufresh.me', data = {} }) => {
+  const onesignalAppId = process.env.ONESIGNAL_APP_ID;
+  const onesignalRestKey = process.env.ONESIGNAL_REST_KEY;
+
   if (!onesignalAppId || !onesignalRestKey) {
     console.warn('⚠️ OneSignal credentials not found');
     return null;
@@ -50,10 +62,13 @@ export const sendOneSignalPush = async ({ title, message, url = 'http://localhos
  * Send Transactional Email via Resend API
  */
 export const sendResendEmail = async ({ to, subject, html }) => {
+  const resend = getResendClient();
   if (!resend) {
-    console.warn('⚠️ Resend API key not configured');
-    return null;
+    console.warn('⚠️ Resend API key not configured in process.env');
+    return { success: false, error: 'Resend API key missing' };
   }
+
+  const emailFrom = process.env.EMAIL_FROM || 'RatuMart <auth@ratufresh.me>';
 
   try {
     const recipients = Array.isArray(to) ? to : [to];
@@ -69,7 +84,7 @@ export const sendResendEmail = async ({ to, subject, html }) => {
       return { success: false, error: result.error.message };
     }
 
-    console.log(`📧 [RESEND EMAIL DELIVERED] ID: ${result.data?.id}`);
+    console.log(`📧 [RESEND EMAIL DELIVERED] Recipient: ${recipients.join(', ')} | ID: ${result.data?.id}`);
     return { success: true, id: result.data?.id };
   } catch (err) {
     console.error('⚠️ Resend Exception:', err.message);
@@ -266,7 +281,7 @@ export const sendOrderStatusUpdate = async (orderId, newStatus, customer = {}) =
  */
 export const sendWelcomeNotification = async (user) => {
   const pushTitle = `🎉 Welcome to RatuMart, ${user.name}!`;
-  const pushMessage = `Aapke account me 150 Ratu SuperCoins add kar diye gaye hain. Happy Fashion Shopping!`;
+  const pushMessage = `Aapka account successfully activate ho gaya hai. Happy Fashion Shopping!`;
 
   // OneSignal Push
   await sendOneSignalPush({
@@ -289,9 +304,9 @@ export const sendWelcomeNotification = async (user) => {
             Welcome to the RatuMart family! Explore our exclusive collections of premium ethnic wear, western fashion, party wear, and kids outfits.
           </p>
 
-          <div style="background: #fefce8; border: 1px solid #fef08a; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: center;">
-            <div style="font-size: 13px; color: #854d0e; font-weight: bold;">🪙 +150 Ratu SuperCoins Bonus!</div>
-            <div style="font-size: 11px; color: #a16207; margin-top: 4px;">Use your SuperCoins at checkout for instant discounts on your next order.</div>
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: center;">
+            <div style="font-size: 13px; color: #1e40af; font-weight: bold;">⚡ Fast Local Express Delivery!</div>
+            <div style="font-size: 11px; color: #3b82f6; margin-top: 4px;">Exclusive delivery within Ratu, Ranchi.</div>
           </div>
 
           <div style="text-align: center; margin-top: 24px;">
@@ -305,7 +320,7 @@ export const sendWelcomeNotification = async (user) => {
 
     await sendResendEmail({
       to: user.email,
-      subject: `Welcome to RatuMart, ${user.name}! Claimed 150 SuperCoins 🪙`,
+      subject: `Welcome to RatuMart, ${user.name}! 🎉`,
       html: welcomeHtml
     });
   }
@@ -324,6 +339,47 @@ export const sendWelcomeNotification = async (user) => {
   if (notificationHistory.length > 50) notificationHistory.pop();
 
   return { success: true, alert: alertRecord };
+};
+
+export const sendEmailVerificationOtp = async ({ email, name, code }) => {
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+      <div style="background-color: #2874f0; padding: 24px; text-align: center; color: #ffffff;">
+        <h1 style="margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.5px;">RatuMart</h1>
+        <p style="margin: 6px 0 0 0; font-size: 13px; color: #dbeafe;">Account Verification Code</p>
+      </div>
+      <div style="padding: 28px 24px; text-align: center;">
+        <h2 style="color: #0f172a; font-size: 18px; margin: 0 0 8px 0; font-weight: 800;">
+          Hello ${name || 'Shopper'}!
+        </h2>
+        <p style="color: #475569; font-size: 13px; margin: 0 0 24px 0; line-height: 1.5;">
+          Thank you for choosing RatuMart. Please enter the 6-digit confirmation code below to verify your email and activate your account:
+        </p>
+        <div style="background: #eff6ff; border: 2px dashed #93c5fd; border-radius: 10px; padding: 18px 24px; display: inline-block; letter-spacing: 10px; font-size: 32px; font-weight: 900; color: #1d4ed8; font-family: monospace; margin-bottom: 24px;">
+          ${code}
+        </div>
+        <p style="color: #64748b; font-size: 12px; margin: 0 0 8px 0;">
+          ⏱️ This confirmation code is valid for <strong>10 minutes</strong>.
+        </p>
+        <p style="color: #94a3b8; font-size: 11px; margin: 0;">
+          If you did not request this registration, please ignore this email.
+        </p>
+      </div>
+      <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 14px 20px; text-align: center; font-size: 11px; color: #94a3b8;">
+        © 2026 RatuMart Fashion. 100% Genuine Indian Fashion &amp; Lifestyle.
+      </div>
+    </div>
+  `;
+
+  const pushTitle = `Verification Code: ${code}`;
+  const pushMessage = `Use confirmation code ${code} to complete registration on RatuMart.`;
+  await sendOneSignalPush({ title: pushTitle, message: pushMessage, url: 'https://ratufresh.me' });
+
+  return await sendResendEmail({
+    to: email,
+    subject: `${code} is your RatuMart Verification Code`,
+    html
+  });
 };
 
 export const getNotificationLogs = () => {

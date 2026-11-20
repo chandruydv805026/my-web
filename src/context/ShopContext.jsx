@@ -6,9 +6,34 @@ const ShopContext = createContext();
 
 export const ShopProvider = ({ children }) => {
   // Navigation / View State (Store vs Admin)
-  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [isAdminMode, setIsAdminMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const p = window.location.pathname.toLowerCase();
+      const h = window.location.hash.toLowerCase();
+      return p === '/admin' || p.startsWith('/admin/') || h === '#admin';
+    }
+    return false;
+  });
   const [adminTab, setAdminTab] = useState('dashboard');
   const [backendConnected, setBackendConnected] = useState(false);
+
+  // Sync /admin URL with state
+  useEffect(() => {
+    const handleLocation = () => {
+      if (typeof window !== 'undefined') {
+        const p = window.location.pathname.toLowerCase();
+        const h = window.location.hash.toLowerCase();
+        setIsAdminMode(p === '/admin' || p.startsWith('/admin/') || h === '#admin');
+      }
+    };
+
+    window.addEventListener('popstate', handleLocation);
+    window.addEventListener('hashchange', handleLocation);
+    return () => {
+      window.removeEventListener('popstate', handleLocation);
+      window.removeEventListener('hashchange', handleLocation);
+    };
+  }, []);
 
   // Products Catalog (Synced with SQLite /api/products)
   const [products, setProducts] = useState(PRODUCTS);
@@ -48,11 +73,21 @@ export const ShopProvider = ({ children }) => {
 
   // Customers List
   const [customers, setCustomers] = useState([
-    { id: 1, name: "Rahul Sharma", phone: "+91 98765 43210", email: "rahul.sharma@example.com", superCoins: 280, totalOrders: 3, city: "New Delhi", joined: "12 Oct 2026", status: "Active" },
-    { id: 2, name: "Pooja Verma", phone: "+91 98112 33445", email: "pooja.v@example.com", superCoins: 150, totalOrders: 2, city: "Ranchi", joined: "24 Oct 2026", status: "Active" },
-    { id: 3, name: "Vikram Singhal", phone: "+91 97722 88990", email: "vikram.s@example.com", superCoins: 420, totalOrders: 5, city: "Mumbai", joined: "02 Nov 2026", status: "VIP" },
-    { id: 4, name: "Ananya Deshmukh", phone: "+91 99201 44556", email: "ananya.d@example.com", superCoins: 90, totalOrders: 1, city: "Pune", joined: "15 Nov 2026", status: "Active" }
+    { id: 1, name: "Pooja Verma", phone: "+91 98112 33445", email: "pooja.v@example.com", totalOrders: 2, city: "Ratu, Ranchi", joined: "24 Oct 2026", status: "Active" },
+    { id: 2, name: "Vikram Singhal", phone: "+91 97722 88990", email: "vikram.s@example.com", totalOrders: 5, city: "Ranchi", joined: "02 Nov 2026", status: "Active" },
+    { id: 3, name: "Ananya Deshmukh", phone: "+91 99201 44556", email: "ananya.d@example.com", totalOrders: 1, city: "Ranchi", joined: "15 Nov 2026", status: "Active" }
   ]);
+
+  // One-time purge of old demo data (Rahul Sharma demo cart & wishlist)
+  try {
+    if (typeof window !== 'undefined' && localStorage.getItem('ratumart_demo_purged_v2') !== 'true') {
+      localStorage.removeItem('ratumart_cart');
+      localStorage.removeItem('ratumart_wishlist');
+      localStorage.removeItem('ratumart_user');
+      localStorage.removeItem('ratumart_token');
+      localStorage.setItem('ratumart_demo_purged_v2', 'true');
+    }
+  } catch {}
 
   // Cart State (stored in localStorage)
   const [cart, setCart] = useState(() => {
@@ -68,9 +103,9 @@ export const ShopProvider = ({ children }) => {
   const [wishlist, setWishlist] = useState(() => {
     try {
       const saved = localStorage.getItem('ratumart_wishlist');
-      return saved ? JSON.parse(saved) : [1, 2];
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return [1, 2];
+      return [];
     }
   });
 
@@ -89,22 +124,16 @@ export const ShopProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('ratumart_user');
-      if (saved) return JSON.parse(saved);
-      return {
-        name: "Rahul Sharma",
-        phone: "+91 98765 43210",
-        email: "rahul.sharma@example.com",
-        isLoggedIn: true,
-        superCoins: 280,
-        address: {
-          name: "Rahul Sharma",
-          phone: "+91 98765 43210",
-          street: "Flat 402, Royal Palms Heights, Sector 18",
-          city: "New Delhi",
-          state: "Delhi",
-          pincode: "110001"
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.email === 'rahul.sharma@example.com' || parsed?.name === 'Rahul Sharma') {
+          localStorage.removeItem('ratumart_user');
+          localStorage.removeItem('ratumart_token');
+          return null;
         }
-      };
+        return parsed;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -120,8 +149,8 @@ export const ShopProvider = ({ children }) => {
   const [isPincodeModalOpen, setIsPincodeModalOpen] = useState(false);
 
   // Delivery Location
-  const [deliveryPincode, setDeliveryPincode] = useState("110001");
-  const [deliveryCity, setDeliveryCity] = useState("New Delhi");
+  const [deliveryPincode, setDeliveryPincode] = useState("835222");
+  const [deliveryCity, setDeliveryCity] = useState("Ratu, Ranchi");
 
   // Coupon state
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -412,30 +441,37 @@ export const ShopProvider = ({ children }) => {
     showToast('Settings saved!');
   };
 
-  // Customer Coins Update
-  const updateCustomerCoins = (customerId, delta) => {
-    setCustomers(prev => prev.map(c => {
-      if (c.id === customerId) {
-        return { ...c, superCoins: Math.max(0, c.superCoins + delta) };
-      }
-      return c;
-    }));
-    showToast(`Customer SuperCoins updated!`);
-  };
-
   // Reset to default sample
   const resetDefaultProducts = () => {
     fetchBackendData();
     showToast('Catalog refreshed from SQLite database');
   };
 
-  // ================= REAL EMAIL AUTHENTICATION ================= //
+  // ================= REAL EMAIL AUTHENTICATION & SESSION COOKIES ================= //
+
+  // Auto-sync session cookie on mount
+  useEffect(() => {
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.user) {
+          const restoredUser = {
+            ...data.user,
+            isLoggedIn: true
+          };
+          setUser(restoredUser);
+          localStorage.setItem('ratumart_user', JSON.stringify(restoredUser));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const loginWithEmail = async (email, password) => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
@@ -445,8 +481,7 @@ export const ShopProvider = ({ children }) => {
 
       const loggedUser = {
         ...data.user,
-        isLoggedIn: true,
-        superCoins: data.user.superCoins || 150
+        isLoggedIn: true
       };
 
       setToken(data.token);
@@ -461,11 +496,223 @@ export const ShopProvider = ({ children }) => {
     }
   };
 
+  // 1. Passwordless Login: Request OTP by Phone OR Email
+  const requestLoginOtp = async (identifier) => {
+    try {
+      const res = await fetch('/api/auth/login-otp-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { 
+          success: false, 
+          notFound: data.notFound || false, 
+          message: data.message || 'Failed to send login code' 
+        };
+      }
+      showToast(`OTP sent to your registered email! 🔑`);
+      return { 
+        success: true, 
+        email: data.email, 
+        maskedEmail: data.maskedEmail, 
+        message: data.message 
+      };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  // 2. Passwordless Login: Verify OTP
+  const verifyLoginOtp = async (email, code) => {
+    try {
+      const res = await fetch('/api/auth/login-otp-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, code })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Verification failed');
+      }
+
+      const loggedUser = {
+        ...data.user,
+        isLoggedIn: true
+      };
+
+      setToken(data.token);
+      setUser(loggedUser);
+      localStorage.setItem('ratumart_token', data.token);
+      localStorage.setItem('ratumart_user', JSON.stringify(loggedUser));
+      showToast(`Welcome back, ${loggedUser.name}! 🎉`);
+      return { success: true, user: loggedUser };
+    } catch (err) {
+      showToast(err.message, 'error');
+      return { success: false, message: err.message };
+    }
+  };
+
+  // 3. Create Account: Request OTP with Address & 5 KM Geofence
+  const requestRegisterOtp = async ({ name, email, phone, address, location }) => {
+    try {
+      const res = await fetch('/api/auth/register-otp-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone, address, location })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { 
+          success: false, 
+          distanceKm: data.distanceKm,
+          message: data.message || 'Registration request failed' 
+        };
+      }
+      showToast(data.message || 'Verification code sent to email!');
+      return { 
+        success: true, 
+        distanceKm: data.distanceKm,
+        message: data.message 
+      };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  // 4. Create Account: Verify OTP & Finalize
+  const verifyRegisterOtpWithAddress = async (email, code) => {
+    try {
+      const res = await fetch('/api/auth/register-otp-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, code })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Code verification failed');
+      }
+
+      const loggedUser = {
+        ...data.user,
+        isLoggedIn: true
+      };
+
+      setToken(data.token);
+      setUser(loggedUser);
+      localStorage.setItem('ratumart_token', data.token);
+      localStorage.setItem('ratumart_user', JSON.stringify(loggedUser));
+      showToast(`Account created! Welcome, ${loggedUser.name}! 🎉`);
+
+      try {
+        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+      } catch {}
+
+      return { success: true, user: loggedUser };
+    } catch (err) {
+      showToast(err.message, 'error');
+      return { success: false, message: err.message };
+    }
+  };
+
+  const sendRegisterOtp = async ({ name, email, phone }) => {
+    try {
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, email, phone })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to send confirmation code');
+      }
+      showToast(data.message || 'Confirmation code sent to your email!');
+      return { success: true, message: data.message };
+    } catch (err) {
+      showToast(err.message, 'error');
+      return { success: false, message: err.message };
+    }
+  };
+
+  const verifyRegisterOtp = async ({ email, code, name, phone }) => {
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, code, name, phone })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Confirmation code verification failed');
+      }
+
+      const loggedUser = {
+        ...data.user,
+        isLoggedIn: true
+      };
+
+      setToken(data.token);
+      setUser(loggedUser);
+      localStorage.setItem('ratumart_token', data.token);
+      localStorage.setItem('ratumart_user', JSON.stringify(loggedUser));
+      showToast(`Account created! Welcome, ${loggedUser.name}! 🎉`);
+
+      try {
+        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+      } catch {}
+
+      return { success: true, user: loggedUser };
+    } catch (err) {
+      showToast(err.message, 'error');
+      return { success: false, message: err.message };
+    }
+  };
+
+  const saveUserAddress = async (addressData) => {
+    try {
+      const email = user?.email || addressData.email;
+      const res = await fetch('/api/auth/save-address', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, address: addressData })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to save address');
+      }
+
+      const updatedUser = {
+        ...user,
+        address: data.address
+      };
+      setUser(updatedUser);
+      localStorage.setItem('ratumart_user', JSON.stringify(updatedUser));
+      showToast('Delivery address saved successfully! 🏠');
+      return { success: true, address: data.address };
+    } catch (err) {
+      const updatedUser = {
+        ...user,
+        address: addressData
+      };
+      setUser(updatedUser);
+      localStorage.setItem('ratumart_user', JSON.stringify(updatedUser));
+      showToast('Delivery address saved! 🏠');
+      return { success: true, address: addressData };
+    }
+  };
+
   const registerWithEmail = async ({ name, email, password, phone }) => {
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ name, email, password, phone })
       });
       const data = await res.json();
@@ -475,15 +722,14 @@ export const ShopProvider = ({ children }) => {
 
       const loggedUser = {
         ...data.user,
-        isLoggedIn: true,
-        superCoins: data.user.superCoins || 150
+        isLoggedIn: true
       };
 
       setToken(data.token);
       setUser(loggedUser);
       localStorage.setItem('ratumart_token', data.token);
       localStorage.setItem('ratumart_user', JSON.stringify(loggedUser));
-      showToast(`Account created! Welcome, ${loggedUser.name}! 🎉 (+150 Coins)`);
+      showToast(`Account created! Welcome, ${loggedUser.name}! 🎉`);
       return { success: true, user: loggedUser };
     } catch (err) {
       showToast(err.message, 'error');
@@ -491,7 +737,10 @@ export const ShopProvider = ({ children }) => {
     }
   };
 
-  const logoutUser = () => {
+  const logoutUser = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch {}
     setUser(null);
     setToken('');
     localStorage.removeItem('ratumart_token');
@@ -620,7 +869,6 @@ export const ShopProvider = ({ children }) => {
   const deliveryCharge = (cartPrice >= freeThreshold || cart.length === 0) ? 0 : (storeSettings?.deliveryCharge || 40);
   const finalTotal = Math.max(0, cartPrice - couponDiscount + deliveryCharge);
   const totalSavings = mrpDiscount + couponDiscount + (deliveryCharge === 0 && cart.length > 0 ? (storeSettings?.deliveryCharge || 40) : 0);
-  const totalEarnedCoins = Math.floor(finalTotal * 0.05);
 
   // Filtered Products
   const filteredProducts = products.filter(product => {
@@ -704,7 +952,6 @@ export const ShopProvider = ({ children }) => {
 
       // Customers
       customers,
-      updateCustomerCoins,
 
       // Filters
       searchTerm,
@@ -738,7 +985,6 @@ export const ShopProvider = ({ children }) => {
       deliveryCharge,
       finalTotal,
       totalSavings,
-      totalEarnedCoins,
 
       // Wishlist
       wishlist,
@@ -756,7 +1002,14 @@ export const ShopProvider = ({ children }) => {
       setUser,
       token,
       loginWithEmail,
+      requestLoginOtp,
+      verifyLoginOtp,
+      requestRegisterOtp,
+      verifyRegisterOtpWithAddress,
       registerWithEmail,
+      sendRegisterOtp,
+      verifyRegisterOtp,
+      saveUserAddress,
       logoutUser,
       deliveryPincode,
       setDeliveryPincode,

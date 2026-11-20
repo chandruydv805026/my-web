@@ -3,12 +3,12 @@ import { X, MapPin, Check } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 
 const POPULAR_LOCATIONS = [
-  { city: "New Delhi", pin: "110001" },
-  { city: "Mumbai", pin: "400001" },
-  { city: "Bengaluru", pin: "560001" },
-  { city: "Kolkata", pin: "700001" },
-  { city: "Ranchi (Ratu)", pin: "835222" },
-  { city: "Hyderabad", pin: "500001" }
+  { city: "Ratu Chowk (Hub)", pin: "835222" },
+  { city: "Kathitand", pin: "835222" },
+  { city: "Ratu Chati", pin: "835222" },
+  { city: "Tilta / Ratu", pin: "835222" },
+  { city: "Pandra / ITI", pin: "834005" },
+  { city: "Bajra / Ratu Rd", pin: "834005" }
 ];
 
 export default function PincodeModal() {

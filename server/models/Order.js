@@ -11,7 +11,10 @@ const orderSchema = new mongoose.Schema({
     street: String,
     city: String,
     state: String,
-    pincode: String
+    pincode: String,
+    lat: Number,
+    lng: Number,
+    distanceKm: Number
   },
   items: [
     {

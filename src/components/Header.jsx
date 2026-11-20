@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, ShoppingCart, Heart, User, MapPin, 
-  Sparkles, Mic, ChevronDown, Package, Coins, 
+  Sparkles, Mic, ChevronDown, Package, 
   HelpCircle, LogOut, CheckCircle2, X, Store, Flame,
-  ShieldCheck, LayoutDashboard
+  ShieldCheck
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 
@@ -26,9 +26,7 @@ export default function Header() {
     showToast,
     products,
     setSelectedProduct,
-    setSelectedCategory,
-    setIsAdminMode,
-    announcementText
+    setSelectedCategory
   } = useShop();
 
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
@@ -78,34 +76,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 bg-white shadow-md">
       
-      {/* 1. Top Sale & Announcement Strip */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white text-[11px] py-1 px-3 sm:px-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between font-medium">
-          <div className="flex items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap flex-1">
-            <span className="bg-yellow-400 text-blue-900 font-extrabold px-1.5 py-0.2 rounded text-[9px] uppercase tracking-wider flex-shrink-0 animate-pulse">
-              Sale
-            </span>
-            <span className="truncate">{announcementText}</span>
-          </div>
-
-          <div className="flex items-center gap-2.5 flex-shrink-0 ml-2">
-            <button
-              onClick={() => setIsAdminMode(true)}
-              className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-2 py-0.5 rounded text-[10px] shadow-xs flex items-center gap-1 active:scale-95"
-            >
-              <LayoutDashboard className="w-3 h-3" />
-              <span>Admin</span>
-            </button>
-
-            <span className="hidden sm:flex items-center gap-1 text-blue-100 text-[10px]">
-              <Coins className="w-3 h-3 text-yellow-300" />
-              <strong>{user?.superCoins || 0}</strong>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Primary Flipkart App Header */}
+      {/* Primary Flipkart App Header */}
       <div className="bg-[#2874f0] text-white pt-2.5 pb-2 px-3 sm:px-6">
         <div className="max-w-7xl mx-auto">
           
@@ -133,7 +104,7 @@ export default function Header() {
               </div>
             </div>
 
-            {/* Desktop Location Selector (hidden on mobile, shown in secondary bar on phone) */}
+            {/* Desktop Location Selector */}
             <div 
               onClick={() => setIsPincodeModalOpen(true)}
               className="hidden lg:flex items-center gap-1.5 cursor-pointer bg-blue-600/40 hover:bg-blue-600/70 border border-blue-400/30 px-3 py-1.5 rounded-md transition"
@@ -142,8 +113,8 @@ export default function Header() {
               <MapPin className="w-4 h-4 text-yellow-300 flex-shrink-0" />
               <div className="text-left text-xs leading-tight">
                 <span className="text-blue-200 text-[10px] block">Deliver to</span>
-                <strong className="text-white font-semibold truncate block max-w-[100px]">
-                  {deliveryCity} {deliveryPincode}
+                <strong className="text-white font-semibold truncate block max-w-[110px]">
+                  {deliveryCity || "Ratu, Ranchi"} {deliveryPincode || "835222"}
                 </strong>
               </div>
               <ChevronDown className="w-3.5 h-3.5 text-blue-200" />
@@ -229,14 +200,6 @@ export default function Header() {
                       <p className="text-[11px] text-slate-500">Welcome,</p>
                       <p className="font-bold text-slate-800 truncate">{user?.name}</p>
                     </div>
-
-                    <button 
-                      onClick={() => { setIsAdminMode(true); setIsUserDropdownOpen(false); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 transition"
-                    >
-                      <LayoutDashboard className="w-3.5 h-3.5 text-amber-600" />
-                      👑 Owner Admin Panel
-                    </button>
 
                     <button 
                       onClick={() => { setIsOrdersOpen(true); setIsUserDropdownOpen(false); }}
@@ -337,7 +300,7 @@ export default function Header() {
         </div>
       </div>
 
-      {/* 3. Mobile Location Bar (Flipkart Style Pill Strip) */}
+      {/* Mobile Location Bar */}
       <div 
         onClick={() => setIsPincodeModalOpen(true)}
         className="lg:hidden bg-blue-50/90 border-b border-blue-100 px-3 py-1.5 flex items-center justify-between text-[11px] text-blue-950 cursor-pointer"
@@ -345,7 +308,9 @@ export default function Header() {
         <div className="flex items-center gap-1.5 truncate">
           <MapPin className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
           <span className="text-slate-600">Deliver to:</span>
-          <strong className="text-slate-900 font-bold truncate">{deliveryCity} - {deliveryPincode}</strong>
+          <strong className="text-slate-900 font-bold truncate">
+            {deliveryCity || "Ratu, Ranchi"} - {deliveryPincode || "835222"}
+          </strong>
         </div>
         <span className="text-[10px] font-bold text-blue-600 underline flex-shrink-0 ml-1">Change</span>
       </div>

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Users, Coins, Plus, Search, ShieldCheck, Phone, Mail, MapPin } from 'lucide-react';
+import { Users, Search, ShieldCheck, Phone, Mail, MapPin } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 
 export default function AdminCustomers() {
-  const { customers, updateCustomerCoins, showToast } = useShop();
+  const { customers } = useShop();
   const [search, setSearch] = useState('');
 
   const filtered = customers.filter(c => 
@@ -20,7 +20,7 @@ export default function AdminCustomers() {
         <div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight">Customer &amp; Shopper Directory</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            View registered customers, monitor order counts, and reward Ratu SuperCoins.
+            View registered customer profiles, contact numbers, and delivery orders.
           </p>
         </div>
 
@@ -60,13 +60,9 @@ export default function AdminCustomers() {
                   </div>
                 </div>
 
-                {/* SuperCoins Badge */}
-                <div className="text-right">
-                  <span className="inline-flex items-center gap-1 bg-yellow-50 text-amber-900 font-extrabold text-xs px-2.5 py-1 rounded-lg border border-yellow-200">
-                    <Coins className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                    {cust.superCoins} Coins
-                  </span>
-                </div>
+                <span className="inline-flex items-center text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+                  Active User
+                </span>
               </div>
 
               {/* Details */}
@@ -87,25 +83,6 @@ export default function AdminCustomers() {
                   <span className="font-bold text-slate-700">Orders:</span>
                   <span className="text-blue-600 font-extrabold">{cust.totalOrders} orders</span>
                 </div>
-              </div>
-            </div>
-
-            {/* Gift SuperCoins button */}
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-400 text-[11px]">Reward Customer:</span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => updateCustomerCoins(cust.id, 50)}
-                  className="bg-yellow-100 hover:bg-yellow-200 text-amber-900 font-bold px-2.5 py-1 rounded-lg transition text-[11px] flex items-center gap-1"
-                >
-                  <Plus className="w-3 h-3" /> 50 Coins
-                </button>
-                <button
-                  onClick={() => updateCustomerCoins(cust.id, 100)}
-                  className="bg-yellow-400 hover:bg-yellow-500 text-blue-950 font-black px-2.5 py-1 rounded-lg transition text-[11px] flex items-center gap-1"
-                >
-                  <Plus className="w-3 h-3" /> 100 Coins
-                </button>
               </div>
             </div>
 

@@ -25,6 +25,8 @@ export default function CartDrawer() {
     removeCoupon,
     couponError,
     setIsCheckoutOpen,
+    setIsAuthOpen,
+    user,
     deliveryPincode
   } = useShop();
 
@@ -34,7 +36,11 @@ export default function CartDrawer() {
 
   const handleCheckout = () => {
     setIsCartOpen(false);
-    setIsCheckoutOpen(true);
+    if (!user || !user.isLoggedIn) {
+      setIsAuthOpen(true);
+    } else {
+      setIsCheckoutOpen(true);
+    }
   };
 
   return (

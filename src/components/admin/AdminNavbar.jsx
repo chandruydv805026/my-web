@@ -13,7 +13,10 @@ export default function AdminNavbar() {
         
         {/* Left: Brand & Admin Tag */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => setIsAdminMode(false)}>
+          <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => {
+            if (typeof window !== 'undefined') window.history.pushState({}, '', '/');
+            setIsAdminMode(false);
+          }}>
             <span className="text-xl sm:text-2xl font-black italic tracking-tight text-white font-sans">
               Ratu<span className="text-yellow-400">Mart</span>
             </span>
@@ -42,7 +45,10 @@ export default function AdminNavbar() {
         {/* Right: Switch to Live Store button */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsAdminMode(false)}
+            onClick={() => {
+              if (typeof window !== 'undefined') window.history.pushState({}, '', '/');
+              setIsAdminMode(false);
+            }}
             className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl shadow-md transition flex items-center gap-1.5 active:scale-95"
             title="Switch to customer storefront view"
           >

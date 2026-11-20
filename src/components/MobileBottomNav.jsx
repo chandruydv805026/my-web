@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Grid, Zap, Package, ShoppingBag, Heart, User, LayoutDashboard } from 'lucide-react';
+import { Home, Grid, Zap, Package, ShoppingBag, Heart, User } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 
 export default function MobileBottomNav() {
@@ -10,7 +10,6 @@ export default function MobileBottomNav() {
     setIsWishlistOpen, 
     setIsOrdersOpen, 
     setSelectedCategory,
-    setIsAdminMode,
     isAdminMode
   } = useShop();
 
@@ -21,13 +20,6 @@ export default function MobileBottomNav() {
   const scrollToCategories = () => {
     setSelectedCategory('all');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const scrollToDeals = () => {
-    const deals = document.getElementById('deals-section');
-    if (deals) {
-      deals.scrollIntoView({ behavior: 'smooth' });
-    }
   };
 
   return (

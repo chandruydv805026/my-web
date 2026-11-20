@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Clock, Flame, CreditCard } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Flame } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
-import { BANK_OFFERS } from '../data/products';
 
 const BANNERS = [
   {
@@ -162,24 +161,6 @@ export default function HeroBanner() {
             />
           ))}
         </div>
-      </div>
-
-      {/* Bank Strip: 2 cols on mobile, 4 on desktop */}
-      <div className="mt-2 grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2">
-        {BANK_OFFERS.slice(0, 4).map((item, index) => (
-          <div 
-            key={index} 
-            className="bg-white border border-slate-200/90 rounded-lg p-2 flex items-center gap-2 shadow-xs"
-          >
-            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
-              <CreditCard className="w-3.5 h-3.5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="text-[10px] font-bold text-blue-900 block truncate">{item.bank}</span>
-              <span className="text-[9px] text-slate-500 block truncate">{item.offer}</span>
-            </div>
-          </div>
-        ))}
       </div>
 
     </div>

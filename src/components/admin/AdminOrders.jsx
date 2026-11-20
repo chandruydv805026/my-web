@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Package, Truck, CheckCircle2, Clock, MapPin, 
-  Phone, Trash2, Printer, Search, Filter, ShieldCheck 
+  Phone, Trash2, Printer, Search, Filter, ShieldCheck, Navigation 
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 
@@ -156,6 +156,34 @@ export default function AdminOrders() {
                     <p className="text-blue-700 font-semibold text-xs mt-1.5 flex items-center gap-1">
                       <Phone className="w-3 h-3" /> {order.address?.phone}
                     </p>
+
+                    {/* Exact GPS Navigation Link */}
+                    {order.address?.lat && order.address?.lng ? (
+                      <div className="mt-2.5 pt-2 border-t border-slate-200/80">
+                        <div className="flex items-center justify-between text-[11px] mb-1.5">
+                          <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
+                            📍 {order.address.distanceKm || 'Within 5'} KM away
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {Number(order.address.lat).toFixed(4)}, {Number(order.address.lng).toFixed(4)}
+                          </span>
+                        </div>
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${order.address.lat},${order.address.lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#1a73e8] hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition shadow-xs"
+                          title="Open turn-by-turn navigation in Google Maps"
+                        >
+                          <Navigation className="w-3.5 h-3.5" />
+                          <span>Google Maps Navigation</span>
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="mt-2 text-[10px] text-slate-400 italic">
+                        Standard Address (Manual Route)
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-3 pt-2 border-t border-slate-200/80 flex items-center justify-between">

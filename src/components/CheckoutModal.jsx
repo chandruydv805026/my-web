@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, CheckCircle2, MapPin, CreditCard, ShieldCheck, 
   Smartphone, Building, Truck, Sparkles, Check, ArrowRight, 
@@ -25,14 +25,37 @@ export default function CheckoutModal() {
 
   // Address State
   const [address, setAddress] = useState({
-    name: user?.name || "Rahul Sharma",
-    phone: user?.phone || "+91 98765 43210",
-    street: "Flat 402, Royal Palms Heights, Sector 18",
-    city: deliveryCity || "New Delhi",
-    state: "Delhi",
-    pincode: deliveryPincode || "110001",
-    type: "HOME"
+    name: user?.address?.name || user?.name || "",
+    phone: user?.address?.phone || user?.phone || "",
+    street: user?.address?.street || "",
+    city: user?.address?.city || "",
+    state: user?.address?.state || "",
+    pincode: user?.address?.pincode || "",
+    type: user?.address?.type || "HOME",
+    lat: user?.address?.lat,
+    lng: user?.address?.lng,
+    distanceKm: user?.address?.distanceKm
   });
+
+  useEffect(() => {
+    if (user && user.address) {
+      setAddress({
+        name: user.address.name || user.name || "",
+        phone: user.address.phone || user.phone || "",
+        street: user.address.street || "",
+        city: user.address.city || "",
+        state: user.address.state || "",
+        pincode: user.address.pincode || "",
+        type: user.address.type || "HOME",
+        lat: user.address.lat,
+        lng: user.address.lng,
+        distanceKm: user.address.distanceKm
+      });
+      if (user.address.street) {
+        setCurrentStep(2);
+      }
+    }
+  }, [user]);
 
   // Payment State
   const [paymentMethod, setPaymentMethod] = useState("UPI");
@@ -48,8 +71,13 @@ export default function CheckoutModal() {
 
   if (!isCheckoutOpen) return null;
 
-  const handlePlaceOrder = () => {
-    const order = placeOrder({
+  const handlePlaceOrder = async () => {
+    if (!address.street.trim()) {
+      alert("Please provide your delivery address.");
+      setCurrentStep(1);
+      return;
+    }
+    const order = await placeOrder({
       address,
       paymentMethod: paymentMethod === 'UPI' ? `UPI (${upiApp.toUpperCase()})` : paymentMethod
     });
@@ -119,7 +147,7 @@ export default function CheckoutModal() {
                   Select Delivery Address
                 </h3>
                 <span className="text-xs bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded border border-emerald-200">
-                  Default Address
+                  Ratu Hyperlocal
                 </span>
               </div>
 
@@ -131,6 +159,7 @@ export default function CheckoutModal() {
                     value={address.name}
                     onChange={(e) => setAddress({ ...address, name: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-600 font-medium"
+                    required
                   />
                 </div>
 
@@ -141,6 +170,7 @@ export default function CheckoutModal() {
                     value={address.phone}
                     onChange={(e) => setAddress({ ...address, phone: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-600 font-medium"
+                    required
                   />
                 </div>
 
@@ -150,7 +180,9 @@ export default function CheckoutModal() {
                     type="text"
                     value={address.street}
                     onChange={(e) => setAddress({ ...address, street: e.target.value })}
+                    placeholder="e.g. Dandai Phutaltoli, Near Shiv Mandir, Ratu"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-600 font-medium"
+                    required
                   />
                 </div>
 
@@ -161,6 +193,7 @@ export default function CheckoutModal() {
                     value={address.city}
                     onChange={(e) => setAddress({ ...address, city: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-600 font-medium"
+                    required
                   />
                 </div>
 
@@ -172,16 +205,33 @@ export default function CheckoutModal() {
                     value={address.pincode}
                     onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-600 font-medium"
+                    required
                   />
                 </div>
               </div>
 
               <div className="pt-4 flex justify-end">
                 <button
-                  onClick={() => setCurrentStep(2)}
-                  className="bg-yellow-400 hover:bg-yellow-500 text-blue-950 font-extrabold text-xs py-2.5 px-6 rounded-lg shadow-sm transition flex items-center gap-1.5"
+                  type="button"
+                  onClick={() => {
+                    if (!address.name.trim() || !address.phone.trim()) {
+                      alert("Please enter receiver name and mobile number.");
+                      return;
+                    }
+                    if (!address.street.trim()) {
+                      alert("Please enter your House / Flat / Street address.");
+                      return;
+                    }
+                    if (!address.pincode.trim() || address.pincode.length !== 6) {
+                      alert("Please enter a valid 6-digit Pincode.");
+                      return;
+                    }
+                    setCurrentStep(2);
+                  }}
+                  className="bg-yellow-400 hover:bg-yellow-500 text-blue-950 font-black text-xs py-2.5 px-6 rounded-lg shadow-sm transition flex items-center gap-1.5 cursor-pointer active:scale-95"
                 >
-                  Deliver Here & Continue <ArrowRight className="w-4 h-4" />
+                  <span>Deliver Here &amp; Continue</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>

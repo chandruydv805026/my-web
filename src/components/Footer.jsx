@@ -73,7 +73,7 @@ export default function Footer() {
             <h5 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Registered Office:</h5>
             <p className="text-[11px] text-slate-400 leading-relaxed">
               RatuMart Fashion Retail Complex,<br />
-              Main Road, Ratu Chawk,<br />
+              Dandai Phutaltoli, Ratu,<br />
               Ranchi - 835222, Jharkhand, India<br />
               CIN: U51109JH2026PTC04921<br />
               Telephone: <a href="tel:18002029898" className="text-blue-400 hover:underline">080-4547-RATU</a>
@@ -82,9 +82,9 @@ export default function Footer() {
 
         </div>
 
-        {/* Bottom Bar Flipkart Style */}
-        <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
-          <div className="flex flex-wrap items-center gap-6 text-white font-medium">
+        {/* Bottom Bar Centered Style */}
+        <div className="pt-6 flex flex-col items-center justify-center gap-3 text-[11px] text-slate-400 border-t border-slate-700/60 mt-4">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-white font-medium">
             <span className="flex items-center gap-1.5 hover:text-yellow-300 cursor-pointer transition">
               <Store className="w-3.5 h-3.5 text-yellow-400" />
               Become a Seller
@@ -99,17 +99,8 @@ export default function Footer() {
             </span>
           </div>
 
-          <div>
+          <div className="text-center text-slate-400">
             &copy; 2026-2027 RatuMart.com. All Rights Reserved.
-          </div>
-
-          {/* Payment Gateways */}
-          <div className="flex items-center gap-2">
-            <span className="bg-white/10 px-2 py-0.5 rounded text-[10px] font-bold text-slate-200">VISA</span>
-            <span className="bg-white/10 px-2 py-0.5 rounded text-[10px] font-bold text-slate-200">Mastercard</span>
-            <span className="bg-white/10 px-2 py-0.5 rounded text-[10px] font-bold text-slate-200">RuPay</span>
-            <span className="bg-white/10 px-2 py-0.5 rounded text-[10px] font-bold text-yellow-300">UPI</span>
-            <span className="bg-white/10 px-2 py-0.5 rounded text-[10px] font-bold text-emerald-400">COD</span>
           </div>
         </div>
       </div>

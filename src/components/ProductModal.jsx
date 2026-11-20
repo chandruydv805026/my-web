@@ -4,7 +4,6 @@ import {
   Truck, RotateCcw, Check, MapPin, Tag, ChevronRight, Share2, ArrowLeft 
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
-import { BANK_OFFERS } from '../data/products';
 
 export default function ProductModal() {
   const { 
@@ -15,6 +14,8 @@ export default function ProductModal() {
     toggleWishlist,
     setIsCartOpen,
     setIsCheckoutOpen,
+    setIsAuthOpen,
+    user,
     setIsSizeGuideOpen,
     deliveryPincode,
     showToast
@@ -38,7 +39,11 @@ export default function ProductModal() {
   const handleBuyNow = () => {
     addToCart(selectedProduct, currentSize, currentColor, 1);
     setSelectedProduct(null);
-    setIsCheckoutOpen(true);
+    if (!user || !user.isLoggedIn) {
+      setIsAuthOpen(true);
+    } else {
+      setIsCheckoutOpen(true);
+    }
   };
 
   const handleAddToCart = () => {

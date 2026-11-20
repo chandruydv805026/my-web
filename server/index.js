@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import multer from 'multer';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -26,6 +27,7 @@ import {
   sendOrderNotification, 
   sendOrderStatusUpdate, 
   sendWelcomeNotification, 
+  sendEmailVerificationOtp,
   getNotificationLogs 
 } from './services/notificationService.js';
 
@@ -57,8 +59,22 @@ if (isCloudinaryConfigured) {
 }
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+app.use(cookieParser());
 app.use(express.json());
+
+// Helper function to set bank-grade HTTP-only session cookie
+const setSessionCookie = (res, token) => {
+  res.cookie('ratumart_session', token, {
+    httpOnly: true, // Prevents XSS script attacks from stealing token
+    secure: process.env.NODE_ENV === 'production', // Encrypted over HTTPS in production
+    sameSite: 'lax', // CSRF protection
+    maxAge: 90 * 24 * 60 * 60 * 1000 // 90 Days (3 Months) Persistent Session
+  });
+};
 
 // Uploads directory
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -375,7 +391,6 @@ async function seedInitialData() {
         password: 'adminpassword123',
         phone: '+91 9876543210',
         role: 'admin',
-        superCoins: 500,
         address: {
           name: 'RatuMart Admin',
           phone: '+91 9876543210',
@@ -396,49 +411,132 @@ async function seedInitialData() {
 // Connect to MongoDB
 connectDB();
 
-// ================= EMAIL AUTHENTICATION ROUTES ================= //
+// In-memory OTP storage for registration confirmation (keyed by lowercase email)
+const emailOtpStore = new Map();
 
-// 1. Register with Email + Password
-app.post('/api/auth/register', async (req, res) => {
+// Store Location Center: Dandai Phutaltoli, Ratu, Ranchi - 835222
+const STORE_COORDS = {
+  lat: 23.414532,
+  lng: 85.216414,
+  name: "Dandai Phutaltoli, Ratu, Ranchi",
+  pincode: "835222",
+  maxRadiusKm: 5.0
+};
+
+function calcHaversineDistanceKm(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+  const R = 6371; // Earth radius in KM
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+    Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+
+// ================= PASSWORDLESS OTP LOGIN & GEOFENCE AUTH ROUTES ================= //
+
+// A. Request Login OTP (by Phone Number OR Email)
+app.post('/api/auth/login-otp-request', async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide name, email and password' });
+    const { identifier } = req.body;
+    if (!identifier || !identifier.trim()) {
+      return res.status(400).json({ success: false, message: 'Please enter your Mobile Number or Email Address.' });
     }
 
-    const existing = await User.findOne({ email: email.toLowerCase() });
-    if (existing) {
-      return res.status(400).json({ success: false, message: 'This email is already registered! Please login.' });
-    }
+    const cleanInput = identifier.trim();
+    let user;
 
-    const user = await User.create({
-      name,
-      email: email.toLowerCase(),
-      password,
-      phone: phone || '',
-      superCoins: 150,
-      address: {
-        name,
-        phone: phone || '',
-        street: 'Main Road',
-        city: 'New Delhi',
-        state: 'Delhi',
-        pincode: '110001'
+    if (cleanInput.includes('@')) {
+      user = await User.findOne({ email: cleanInput.toLowerCase() });
+    } else {
+      const phoneDigits = cleanInput.replace(/\D/g, '').slice(-10);
+      if (phoneDigits.length < 10) {
+        return res.status(400).json({ success: false, message: 'Please enter a valid 10-digit mobile number or email.' });
       }
+      user = await User.findOne({ phone: new RegExp(phoneDigits + '$') });
+    }
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        notFound: true,
+        message: 'No account found with this Phone/Email. Please create a new account.'
+      });
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    emailOtpStore.set(user.email, {
+      code,
+      userId: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      type: 'LOGIN',
+      expiresAt: Date.now() + 10 * 60 * 1000
     });
 
-    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+    console.log(`🔑 [LOGIN OTP] User: ${user.name} (${user.email}) | Phone: ${user.phone} | Code: ${code}`);
 
-    // Send Welcome Notification
     try {
-      await sendWelcomeNotification(user);
-    } catch (notifErr) {
-      console.warn('Welcome notification log error:', notifErr.message);
+      await sendEmailVerificationOtp({ email: user.email, name: user.name, code });
+    } catch (e) {
+      console.warn('⚠️ Login OTP email send error:', e.message);
     }
 
-    res.status(201).json({
+    const maskedEmail = user.email.replace(/(.{2})(.*)(?=@)/, (_, g1, g2) => g1 + '*'.repeat(Math.max(1, g2.length)));
+
+    res.json({
       success: true,
-      message: 'Account created successfully in MongoDB!',
+      email: user.email,
+      maskedEmail,
+      message: `Verification code sent to your registered email (${maskedEmail}).`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// B. Verify Login OTP
+app.post('/api/auth/login-otp-verify', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({ success: false, message: 'Please provide Email and 6-digit verification code.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const stored = emailOtpStore.get(cleanEmail);
+
+    if (!stored || stored.type !== 'LOGIN') {
+      return res.status(400).json({ success: false, message: 'No active login code found or it has expired. Please request a new code.' });
+    }
+
+    if (Date.now() > stored.expiresAt) {
+      emailOtpStore.delete(cleanEmail);
+      return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new code.' });
+    }
+
+    if (stored.code !== code.trim()) {
+      return res.status(400).json({ success: false, message: 'Incorrect verification code. Please check your email and try again.' });
+    }
+
+    emailOtpStore.delete(cleanEmail);
+
+    const user = await User.findOne({ email: cleanEmail });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '90d' });
+    setSessionCookie(res, token);
+
+    res.json({
+      success: true,
+      message: `Welcome back, ${user.name}! 🎉`,
       token,
       user
     });
@@ -447,25 +545,371 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// 2. Login with Email + Password
+// C. Request Register OTP with Address and 5 KM Geofence Check
+app.post('/api/auth/register-otp-request', async (req, res) => {
+  try {
+    const { name, email, phone, address, location } = req.body;
+    if (!name || !email || !phone || !address) {
+      return res.status(400).json({ success: false, message: 'Please fill all required personal and delivery details.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const phoneDigits = phone.replace(/\D/g, '').slice(-10);
+
+    const existingEmail = await User.findOne({ email: cleanEmail });
+    if (existingEmail) {
+      return res.status(400).json({ success: false, message: 'An account is already registered with this email. Please sign in.' });
+    }
+
+    const existingPhone = await User.findOne({ phone: new RegExp(phoneDigits + '$') });
+    if (existingPhone) {
+      return res.status(400).json({ success: false, message: 'An account is already registered with this mobile number. Please sign in.' });
+    }
+
+    // 5 KM Geofence Check
+    let distanceKm = 0;
+    if (location && location.lat && location.lng) {
+      distanceKm = calcHaversineDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, location.lat, location.lng);
+      if (distanceKm > STORE_COORDS.maxRadiusKm) {
+        return res.status(400).json({
+          success: false,
+          distanceKm,
+          message: `Delivery Unavailable: We strictly deliver within a 5.0 KM radius of Ratu, Ranchi. Your location is ${distanceKm} KM away.`
+        });
+      }
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    emailOtpStore.set(cleanEmail, {
+      code,
+      name: name.trim(),
+      email: cleanEmail,
+      phone: phone.trim(),
+      address: {
+        ...address,
+        lat: location?.lat || STORE_COORDS.lat,
+        lng: location?.lng || STORE_COORDS.lng,
+        distanceKm
+      },
+      type: 'REGISTER',
+      expiresAt: Date.now() + 10 * 60 * 1000
+    });
+
+    console.log(`🔑 [REGISTER OTP] Name: ${name} | Email: ${cleanEmail} | Distance: ${distanceKm} km | Code: ${code}`);
+
+    try {
+      await sendEmailVerificationOtp({ email: cleanEmail, name: name.trim(), code });
+    } catch (e) {
+      console.warn('⚠️ Register OTP email send error:', e.message);
+    }
+
+    res.json({
+      success: true,
+      distanceKm,
+      message: `Verification code sent to ${cleanEmail}.`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// D. Verify Register OTP & Create Account
+app.post('/api/auth/register-otp-verify', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({ success: false, message: 'Please enter Email and 6-digit confirmation code.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const stored = emailOtpStore.get(cleanEmail);
+
+    if (!stored || stored.type !== 'REGISTER') {
+      return res.status(400).json({ success: false, message: 'No pending registration code found or it has expired.' });
+    }
+
+    if (Date.now() > stored.expiresAt) {
+      emailOtpStore.delete(cleanEmail);
+      return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new code.' });
+    }
+
+    if (stored.code !== code.trim()) {
+      return res.status(400).json({ success: false, message: 'Incorrect verification code. Please check your email.' });
+    }
+
+    emailOtpStore.delete(cleanEmail);
+
+    const user = await User.create({
+      name: stored.name,
+      email: stored.email,
+      phone: stored.phone,
+      password: '',
+      address: stored.address
+    });
+
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '90d' });
+    setSessionCookie(res, token);
+
+    try {
+      await sendWelcomeNotification(user);
+    } catch {}
+
+    res.status(201).json({
+      success: true,
+      message: `Account created successfully! Welcome, ${user.name}! 🎉`,
+      token,
+      user
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ================= EMAIL AUTHENTICATION ROUTES ================= //
+
+// 1. Send 6-Digit Email Confirmation Code
+app.post('/api/auth/send-otp', async (req, res) => {
+  try {
+    const { name, email, phone } = req.body;
+    if (!name || !email || !phone) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please provide Full Name, Email Address, and Mobile Number.' 
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const existing = await User.findOne({ email: cleanEmail });
+    if (existing) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'This email is already registered! Please login directly.' 
+      });
+    }
+
+    // Generate random 6-digit verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    emailOtpStore.set(cleanEmail, {
+      code,
+      name: name.trim(),
+      phone: phone.trim(),
+      expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes
+    });
+
+    console.log(`🔑 [EMAIL OTP GENERATED] Email: ${cleanEmail} | Code: ${code} | Name: ${name} | Phone: ${phone}`);
+
+    // Send confirmation email via Resend
+    try {
+      await sendEmailVerificationOtp({ email: cleanEmail, name: name.trim(), code });
+    } catch (err) {
+      console.warn('⚠️ OTP Email delivery notice:', err.message);
+    }
+
+    res.json({
+      success: true,
+      message: `Confirmation code sent to ${cleanEmail}. Please check your inbox.`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 2. Verify Confirmation Code & Create New Account (Passwordless)
+app.post('/api/auth/verify-otp', async (req, res) => {
+  try {
+    const { email, code, name, phone } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please provide Email and the 6-digit confirmation code.' 
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const stored = emailOtpStore.get(cleanEmail);
+
+    if (!stored) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No pending confirmation code found or it has expired. Please request a new code.' 
+      });
+    }
+
+    if (Date.now() > stored.expiresAt) {
+      emailOtpStore.delete(cleanEmail);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Confirmation code has expired. Please request a new code.' 
+      });
+    }
+
+    if (stored.code !== code.trim()) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Incorrect confirmation code! Please verify the code in your email.' 
+      });
+    }
+
+    // Code verified! Remove from pending store
+    emailOtpStore.delete(cleanEmail);
+
+    // Create user without password
+    const user = await User.create({
+      name: stored.name || name || 'Shopper',
+      email: cleanEmail,
+      phone: stored.phone || phone || '',
+      password: '',
+      address: null
+    });
+
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '90d' });
+
+    // Send Welcome Notification
+    try {
+      await sendWelcomeNotification(user);
+    } catch (notifErr) {
+      console.warn('Welcome notification error:', notifErr.message);
+    }
+
+    // Set persistent secure HTTP-Only session cookie
+    setSessionCookie(res, token);
+
+    res.status(201).json({
+      success: true,
+      message: 'Account verified and created successfully! 🎉',
+      token,
+      user
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 3. Save User Delivery Address (Triggered right after signup)
+app.post('/api/auth/save-address', async (req, res) => {
+  try {
+    const { email, address } = req.body;
+    if (!email || !address) {
+      return res.status(400).json({ success: false, message: 'Missing email or address details.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await User.findOneAndUpdate(
+      { email: cleanEmail },
+      { address },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Delivery address saved successfully! 🏠',
+      address: user.address,
+      user
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 4. Register with Email (Fallback direct endpoint)
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, password, phone } = req.body;
+    if (!name || !email || !phone) {
+      return res.status(400).json({ success: false, message: 'Please provide Full Name, Email, and Mobile Number.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const existing = await User.findOne({ email: cleanEmail });
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'This email is already registered! Please login.' });
+    }
+
+    const user = await User.create({
+      name,
+      email: cleanEmail,
+      password: password || '',
+      phone: phone || '',
+      address: null
+    });
+
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '90d' });
+
+    // Set persistent session cookie
+    setSessionCookie(res, token);
+
+    try {
+      await sendWelcomeNotification(user);
+    } catch (notifErr) {
+      console.warn('Welcome notification error:', notifErr.message);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully!',
+      token,
+      user
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 5. Login with Email + Password or Email OTP
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Please enter email and password' });
+    const { email, password, code } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Please enter your email address.' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: cleanEmail });
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+      return res.status(401).json({ success: false, message: 'No account found with this email. Please create a new account.' });
     }
 
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    // If logging in with password (e.g. Admin or legacy users)
+    if (password) {
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(401).json({ success: false, message: 'Invalid password. Please check and try again.' });
+      }
+    } else if (code) {
+      const stored = emailOtpStore.get(cleanEmail);
+      if (!stored || stored.code !== code.trim()) {
+        return res.status(401).json({ success: false, message: 'Invalid or expired confirmation code.' });
+      }
+      emailOtpStore.delete(cleanEmail);
+    } else {
+      // Send login OTP if no password provided
+      const loginCode = Math.floor(100000 + Math.random() * 900000).toString();
+      emailOtpStore.set(cleanEmail, {
+        code: loginCode,
+        name: user.name,
+        phone: user.phone,
+        expiresAt: Date.now() + 10 * 60 * 1000
+      });
+      try {
+        await sendEmailVerificationOtp({ email: cleanEmail, name: user.name, code: loginCode });
+      } catch (e) {
+        console.warn('Login OTP send error:', e.message);
+      }
+      return res.json({
+        success: true,
+        requiresOtp: true,
+        message: `Login code sent to ${cleanEmail}`
+      });
     }
 
-    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '90d' });
+
+    // Set persistent session cookie
+    setSessionCookie(res, token);
 
     res.json({
       success: true,
@@ -476,6 +920,39 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
+});
+
+// 6. Get Current Authenticated User via Session Cookie (GET /api/auth/me)
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const token = req.cookies.ratumart_session || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'No active session' });
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'User session not found' });
+    }
+
+    res.json({
+      success: true,
+      user
+    });
+  } catch (err) {
+    res.status(401).json({ success: false, message: 'Session expired or invalid' });
+  }
+});
+
+// 7. Logout & Clear Session Cookie (POST /api/auth/logout)
+app.post('/api/auth/logout', (req, res) => {
+  res.clearCookie('ratumart_session', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
+  });
+  res.json({ success: true, message: 'Session cookie cleared successfully' });
 });
 
 // ================= PRODUCT ENDPOINTS (MONGODB) ================= //
@@ -686,6 +1163,18 @@ app.post('/api/orders', async (req, res) => {
     const addr = body.address || {};
     const items = body.items || [];
 
+    // Verify 5 KM Delivery Radius
+    if (addr.lat && addr.lng) {
+      const dist = calcHaversineDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, addr.lat, addr.lng);
+      addr.distanceKm = dist;
+      if (dist > STORE_COORDS.maxRadiusKm) {
+        return res.status(400).json({
+          success: false,
+          message: `Delivery Unavailable: We strictly deliver within a 5.0 KM radius of Ratu, Ranchi. Your location is ${dist} KM away.`
+        });
+      }
+    }
+
     const order = await Order.create({
       orderId,
       customerName: addr.name || 'Customer',
@@ -866,13 +1355,13 @@ app.post('/api/notifications/test', async (req, res) => {
 
 // ================= SERVE FRONTEND IN PRODUCTION (RENDER) ================= //
 
-const distPath = path.join(__dirname, '../dist');
+const distPath = path.resolve(__dirname, '../dist');
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
   // SPA Fallback for Express 5
   app.use((req, res, next) => {
     if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
-      return res.sendFile(path.join(distPath, 'index.html'));
+      return res.sendFile('index.html', { root: distPath });
     }
     next();
   });

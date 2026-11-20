@@ -76,7 +76,6 @@ export const PRODUCTS = [
     deliveryDays: "Tomorrow, 2:00 PM",
     inStock: true,
     stockLeft: 7,
-    superCoins: 45,
     description: "Crafted with immaculate royal craftsmanship, this Banarasi Saree is embellished with opulent metallic Zari weave, perfect for weddings, Karwa Chauth, Diwali, and festive receptions.",
     reviews: [
       { id: 101, user: "Pooja Sharma", rating: 5, date: "2 days ago", comment: "Fabric quality is beyond expectations! Flipkart pe aisa premium saree 1500 me milna impossible lag raha tha. Super vibrant!", verified: true },
@@ -109,7 +108,6 @@ export const PRODUCTS = [
     deliveryDays: "Delivery in 2 Days",
     inStock: true,
     stockLeft: 12,
-    superCoins: 35,
     description: "Rugged yet ultra-stylish, this denim jacket gives your casual outfit an iconic edge. Features dual flap chest pockets, brass button closures, and reinforced stitched hems.",
     reviews: [
       { id: 201, user: "Vikram Malhotra", rating: 5, date: "Yesterday", comment: "Bhai ekdum tagda jacket hai! Heavy quality denim aur fitting bilkul tailor-made jaisi hai.", verified: true },
@@ -141,7 +139,6 @@ export const PRODUCTS = [
     deliveryDays: "Tomorrow, 11:00 AM",
     inStock: true,
     stockLeft: 5,
-    superCoins: 50,
     description: "Radiate grace in this intricately hand-worked Anarkali 3-piece ensemble. Features mirror work on the yoke, flared Kali borders, and a flowing scalloped organza dupatta.",
     reviews: [
       { id: 301, user: "Sneha Kapoor", rating: 5, date: "5 days ago", comment: "Bought this for a wedding, everyone was asking where I bought it! Highly recommend RatuMart.", verified: true }
@@ -172,7 +169,6 @@ export const PRODUCTS = [
     deliveryDays: "Tomorrow, 4:00 PM",
     inStock: true,
     stockLeft: 9,
-    superCoins: 40,
     description: "Step into traditional luxury with self-embossed floral Jacquard patterns, antique-finish metallic buttons, and a matching comfortable drawstring churidar.",
     reviews: [
       { id: 401, user: "Aman Gupta", rating: 5, date: "3 days ago", comment: "Fitting is super crisp! Looks like a 5000 Rs designer kurta.", verified: true }
@@ -203,7 +199,6 @@ export const PRODUCTS = [
     deliveryDays: "Delivery in 2 Days",
     inStock: true,
     stockLeft: 18,
-    superCoins: 25,
     description: "Effortlessly feminine and breezy. Features delicate flutter sleeves, a flattering sweetheart neckline, and tiered ruffled hem that twirls beautifully.",
     reviews: [
       { id: 501, user: "Riya Sen", rating: 5, date: "4 days ago", comment: "So dreamy and comfortable! Perfect outfit for holiday and vacation photos.", verified: true }
@@ -234,7 +229,6 @@ export const PRODUCTS = [
     deliveryDays: "Tomorrow, 6:00 PM",
     inStock: true,
     stockLeft: 22,
-    superCoins: 25,
     description: "Built for maximum warmth and streetwear swagger. Features high-density back typography print, deep kangaroo pocket, double-lined warm hood with metal aglets.",
     reviews: [
       { id: 601, user: "Karan Singh", rating: 5, date: "6 days ago", comment: "Heavy 380 GSM cloth! Bilkul cozy and warm. Street look is insane.", verified: true }
@@ -265,7 +259,6 @@ export const PRODUCTS = [
     deliveryDays: "Delivery in 2 Days",
     inStock: true,
     stockLeft: 8,
-    superCoins: 30,
     description: "Give your little champ a royal party look. Includes single-breasted blazer with satin shawl lapel, matching printed waistcoat, bowtie, and adjustable-waist trousers.",
     reviews: [
       { id: 701, user: "Shalini Trivedi", rating: 5, date: "1 week ago", comment: "My son looked so handsome at his birthday party! Fit is spot on.", verified: true }
@@ -296,7 +289,6 @@ export const PRODUCTS = [
     deliveryDays: "Tomorrow, 8:00 PM",
     inStock: true,
     stockLeft: 14,
-    superCoins: 30,
     description: "Engineered for style, cushion, and all-day walking comfort. Grippy anti-skid rubber cupsole with shock-absorbing memory foam cushioning.",
     reviews: [
       { id: 801, user: "Mohit Kumar", rating: 4, date: "3 days ago", comment: "Very comfortable sole. Looks like Nike Jordans at a fraction of the cost!", verified: true }
@@ -327,7 +319,6 @@ export const PRODUCTS = [
     deliveryDays: "Delivery in 3 Days",
     inStock: true,
     stockLeft: 4,
-    superCoins: 90,
     description: "A show-stopping bridal creation featuring dense intricate gold Zari threadwork, shimmering micro sequins, heavy latkan tassels, and a double dupatta set.",
     reviews: [
       { id: 901, user: "Meera Singhal", rating: 5, date: "Yesterday", comment: "Breathtaking! The velvet and embroidery have a royal heavy feel. Absolutely in love with RatuMart!", verified: true }
@@ -358,7 +349,6 @@ export const PRODUCTS = [
     deliveryDays: "Tomorrow, 12:00 PM",
     inStock: true,
     stockLeft: 30,
-    superCoins: 20,
     description: "Keep it effortlessly crisp and stylish in warm Indian weather. Cut from natural linen fibres that soften with every wash, featuring mother-of-pearl buttons.",
     reviews: [
       { id: 1001, user: "Sameer Joshi", rating: 5, date: "3 days ago", comment: "Best linen shirt at this price tag. Highly breathable and premium texture.", verified: true }
@@ -388,7 +378,6 @@ export const PRODUCTS = [
     deliveryDays: "Tomorrow, 7:00 PM",
     inStock: true,
     stockLeft: 6,
-    superCoins: 40,
     description: "The ultimate cozy winter statement piece. Ultra-soft faux shearling texture, notched lapels, deep side pockets, and tortoise-shell button fastenings.",
     reviews: [
       { id: 1101, user: "Priya Nair", rating: 5, date: "1 week ago", comment: "So soft and cozy! Felt like wearing a warm cloud on my trip to Manali.", verified: true }
@@ -418,19 +407,11 @@ export const PRODUCTS = [
     deliveryDays: "Delivery in 2 Days",
     inStock: true,
     stockLeft: 11,
-    superCoins: 20,
     description: "Designed to make every girl feel like royalty on her birthday! Fluffy multi-tier tulle layers with zero scratchy inner fabric, completely lined in pure soft cotton.",
     reviews: [
       { id: 1201, user: "Divya Agarwal", rating: 5, date: "4 days ago", comment: "My daughter refused to take it off! Zero itching and pure princess feel.", verified: true }
     ]
   }
-];
-
-export const BANK_OFFERS = [
-  { bank: "Flipkart Axis Bank", offer: "5% Unlimited Cashback on every purchase" },
-  { bank: "HDFC Bank Cards", offer: "Flat ₹150 Instant Off on orders above ₹1,499" },
-  { bank: "UPI Payment", offer: "Extra ₹50 Off via Google Pay, PhonePe & Paytm" },
-  { bank: "Ratu VIP Club", offer: "Free Express Delivery + 2X RatuCoins Reward" }
 ];
 
 export const COUPONS = [

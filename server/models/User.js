@@ -4,29 +4,34 @@ import bcrypt from 'bcryptjs';
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-  password: { type: String, required: true },
-  phone: { type: String, default: '' },
+  password: { type: String, default: '' },
+  phone: { type: String, required: true },
   role: { type: String, default: 'customer' }, // 'customer' or 'admin'
-  superCoins: { type: Number, default: 150 },
   address: {
     name: String,
     phone: String,
     street: String,
     city: String,
     state: String,
-    pincode: String
+    pincode: String,
+    landmark: String,
+    type: { type: String, default: 'Home' },
+    lat: Number,
+    lng: Number,
+    distanceKm: Number
   },
   createdAt: { type: Date, default: Date.now }
 });
 
 // Hash password before saving
 userSchema.pre('save', async function() {
-  if (!this.isModified('password')) return;
+  if (!this.isModified('password') || !this.password) return;
   this.password = await bcrypt.hash(this.password, 10);
 });
 
 // Compare password
 userSchema.methods.comparePassword = async function(candidatePassword) {
+  if (!this.password) return false;
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
