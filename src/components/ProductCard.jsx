@@ -20,6 +20,7 @@ export default function ProductCard({ product }) {
           alt={product.name}
           className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
+          decoding="async"
         />
 
         {/* Discount & Tag Badge */}
@@ -40,10 +41,10 @@ export default function ProductCard({ product }) {
             e.stopPropagation();
             toggleWishlist(product.id);
           }}
-          className={`absolute top-1.5 right-1.5 p-1.5 sm:p-2 rounded-full backdrop-blur-md shadow transition-all active:scale-75 ${
+          className={`absolute top-1.5 right-1.5 p-1.5 sm:p-2 rounded-full shadow-xs transition-all active:scale-75 ${
             isWishlisted
-              ? 'bg-rose-50 text-rose-500'
-              : 'bg-white/80 text-slate-400 hover:text-rose-500'
+              ? 'bg-rose-50 text-rose-500 border border-rose-200'
+              : 'bg-white/95 text-slate-500 hover:text-rose-500 border border-slate-200/80'
           }`}
           title={isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
         >
@@ -52,7 +53,7 @@ export default function ProductCard({ product }) {
 
         {/* Assured Badge (Overlaid on bottom left of image) */}
         {product.assured && (
-          <div className="absolute bottom-1.5 left-1.5 bg-white/95 backdrop-blur-xs text-blue-700 font-extrabold text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded shadow-xs flex items-center gap-0.5 border border-blue-200">
+          <div className="absolute bottom-1.5 left-1.5 bg-white text-blue-700 font-extrabold text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded shadow-xs flex items-center gap-0.5 border border-blue-200">
             <span className="text-yellow-500">★</span> Assured
           </div>
         )}

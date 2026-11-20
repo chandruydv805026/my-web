@@ -31,7 +31,7 @@ export default function MobileBottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] md:hidden">
+    <nav className="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-slate-200 shadow-lg md:hidden mobile-gpu">
       <div className="grid grid-cols-5 items-center h-14 px-1">
         
         {/* 1. Home */}

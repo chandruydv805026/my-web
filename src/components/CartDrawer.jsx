@@ -38,7 +38,7 @@ export default function CartDrawer() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-black/75 flex justify-end animate-in fade-in duration-150">
       
       {/* Drawer */}
       <div className="relative w-full max-w-md bg-slate-50 h-full shadow-2xl flex flex-col justify-between overflow-hidden">

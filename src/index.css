@@ -1,34 +1,38 @@
 @import "tailwindcss";
 
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
+  }
   body {
     font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    background-color: #f8fafc;
   }
 }
 
-/* Custom scrollbar for horizontal product sliders and categories */
+/* Mobile Smooth Momentum Scrolling without stutter */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 
-/* Shimmer animation for loading states or badges */
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+/* GPU Performance Optimization for Smooth 60fps Mobile Scrolling */
+.mobile-gpu {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
 }
 
-.animate-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-.animate-shimmer::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  animation: shimmer 2s infinite;
+/* Image rendering optimizations */
+img {
+  content-visibility: auto;
 }

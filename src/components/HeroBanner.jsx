@@ -39,12 +39,9 @@ const BANNERS = [
   }
 ];
 
-export default function HeroBanner() {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const { setSelectedCategory, storeSettings } = useShop();
-
+function DealCountdown({ defaultHours = 3 }) {
   const [timeLeft, setTimeLeft] = useState({
-    hours: storeSettings.dealTimerHours || 3,
+    hours: defaultHours,
     minutes: 42,
     seconds: 18
   });
@@ -52,18 +49,31 @@ export default function HeroBanner() {
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(prev => {
-        if (prev.seconds > 0) {
-          return { ...prev, seconds: prev.seconds - 1 };
-        } else if (prev.minutes > 0) {
-          return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
-        } else if (prev.hours > 0) {
-          return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        }
-        return { hours: storeSettings.dealTimerHours || 4, minutes: 0, seconds: 0 };
+        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
+        if (prev.minutes > 0) return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
+        if (prev.hours > 0) return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
+        return { hours: defaultHours, minutes: 0, seconds: 0 };
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [storeSettings.dealTimerHours]);
+  }, [defaultHours]);
+
+  return (
+    <div className="mt-3 inline-flex items-center gap-1.5 bg-black/70 border border-white/20 px-2.5 py-1 rounded-lg">
+      <Clock className="w-3.5 h-3.5 text-yellow-300 animate-spin" style={{ animationDuration: '10s' }} />
+      <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Ends in:</span>
+      <div className="flex items-center gap-1 font-mono font-bold text-[10px] sm:text-xs text-yellow-300">
+        <span className="bg-white/20 px-1 rounded">{String(timeLeft.hours).padStart(2, '0')}h</span>:
+        <span className="bg-white/20 px-1 rounded">{String(timeLeft.minutes).padStart(2, '0')}m</span>:
+        <span className="bg-white/20 px-1 rounded text-yellow-400">{String(timeLeft.seconds).padStart(2, '0')}s</span>
+      </div>
+    </div>
+  );
+}
+
+export default function HeroBanner() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const { setSelectedCategory, storeSettings } = useShop();
 
   useEffect(() => {
     const slideTimer = setInterval(() => {
@@ -78,14 +88,14 @@ export default function HeroBanner() {
     <div className="max-w-7xl mx-auto px-2 sm:px-4 pt-2 sm:pt-3 pb-1">
       
       {/* Banner Carousel Card */}
-      <div className="relative rounded-2xl overflow-hidden shadow-md min-h-[240px] sm:min-h-[320px] md:min-h-[380px] flex items-center bg-slate-900 text-white">
+      <div className="relative rounded-2xl overflow-hidden shadow-md min-h-[240px] sm:min-h-[320px] md:min-h-[380px] flex items-center bg-slate-900 text-white mobile-gpu">
         
         {/* Background image */}
         <div 
-          className="absolute inset-0 bg-cover bg-center transition-all duration-1000 transform scale-105"
+          className="absolute inset-0 bg-cover bg-center transition-opacity duration-500"
           style={{ backgroundImage: `url(${slide.bgImage})` }}
         />
-        <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient} backdrop-blur-[1px]`} />
+        <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient} opacity-95`} />
 
         {/* Content */}
         <div className="relative z-10 p-4 sm:p-8 md:p-12 max-w-xl">
@@ -107,16 +117,8 @@ export default function HeroBanner() {
             {slide.tagline}
           </p>
 
-          {/* Flipkart Flash Deal Timer */}
-          <div className="mt-3 inline-flex items-center gap-1.5 bg-black/50 backdrop-blur-md border border-white/20 px-2.5 py-1 rounded-lg">
-            <Clock className="w-3.5 h-3.5 text-yellow-300 animate-spin" style={{ animationDuration: '8s' }} />
-            <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Ends in:</span>
-            <div className="flex items-center gap-1 font-mono font-bold text-[10px] sm:text-xs text-yellow-300">
-              <span className="bg-white/10 px-1 rounded">{String(timeLeft.hours).padStart(2, '0')}h</span>:
-              <span className="bg-white/10 px-1 rounded">{String(timeLeft.minutes).padStart(2, '0')}m</span>:
-              <span className="bg-white/10 px-1 rounded text-yellow-400">{String(timeLeft.seconds).padStart(2, '0')}s</span>
-            </div>
-          </div>
+          {/* Flipkart Flash Deal Timer Component (Isolated Re-render) */}
+          <DealCountdown defaultHours={storeSettings.dealTimerHours || 3} />
 
           {/* CTA Button */}
           <div className="mt-4 flex items-center gap-3">
@@ -136,14 +138,14 @@ export default function HeroBanner() {
         {/* Carousel Arrow Controls (hidden on small phone screens, shown on tablet/desktop) */}
         <button
           onClick={() => setCurrentSlide((prev) => (prev - 1 + BANNERS.length) % BANNERS.length)}
-          className="hidden sm:block absolute left-2 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-md transition"
+          className="hidden sm:block absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
 
         <button
           onClick={() => setCurrentSlide((prev) => (prev + 1) % BANNERS.length)}
-          className="hidden sm:block absolute right-2 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-md transition"
+          className="hidden sm:block absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition"
         >
           <ChevronRight className="w-4 h-4" />
         </button>

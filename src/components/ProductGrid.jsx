@@ -121,8 +121,8 @@ export default function ProductGrid() {
 
       {/* Flipkart Mobile Bottom-Sheet Sort Drawer */}
       {isMobileSortOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end justify-center animate-in fade-in sm:hidden">
-          <div className="w-full bg-white rounded-t-2xl p-4 space-y-3 shadow-2xl animate-in slide-in-from-bottom duration-200">
+        <div className="fixed inset-0 z-50 bg-black/75 flex items-end justify-center animate-in fade-in sm:hidden">
+          <div className="w-full bg-white rounded-t-2xl p-4 space-y-3 shadow-2xl animate-in slide-in-from-bottom duration-150">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <h4 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
                 <ArrowUpDown className="w-4 h-4 text-blue-600" />
@@ -156,7 +156,7 @@ export default function ProductGrid() {
 
       {/* Flipkart Mobile Full-Screen Filter Drawer */}
       {isMobileFilterOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end animate-in fade-in lg:hidden">
+        <div className="fixed inset-0 z-50 bg-black/75 flex justify-end animate-in fade-in lg:hidden">
           <div className="w-full max-w-sm bg-white h-full p-4 overflow-y-auto">
             <FilterSidebar isMobile onCloseMobile={() => setIsMobileFilterOpen(false)} />
           </div>

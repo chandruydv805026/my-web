@@ -41,7 +41,7 @@ export default function DealOfTheDay() {
         </div>
 
         {/* Horizontal Scroll Shelf - Optimized for Mobile Thumb Swipe */}
-        <div className="mt-3 flex gap-2.5 sm:gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-1 -mx-1 px-1">
+        <div className="mt-3 flex gap-2.5 sm:gap-4 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 touch-pan-x">
           {hotDeals.map((item) => (
             <div
               key={item.id}
@@ -53,6 +53,8 @@ export default function DealOfTheDay() {
                   src={item.image}
                   alt={item.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <span className="absolute top-1 left-1 bg-green-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded shadow">
                   {item.discount}% OFF

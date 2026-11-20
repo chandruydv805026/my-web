@@ -319,7 +319,7 @@ export default function AdminProducts() {
 
       {/* Add / Edit Product Modal with Real Photo Upload */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-in fade-in">
+        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-in fade-in">
           <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-4 sm:p-6 border border-slate-200 max-h-[92vh] overflow-y-auto no-scrollbar">
             
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">

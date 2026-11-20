@@ -58,13 +58,13 @@ export default function ProductModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-xs flex sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 flex sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150">
       
       {/* Container - Full-screen on mobile, rounded card on tablet/desktop */}
       <div className="relative bg-white w-full sm:max-w-4xl min-h-screen sm:min-h-0 sm:rounded-2xl shadow-2xl sm:max-h-[92vh] overflow-y-auto no-scrollbar border-0 sm:border border-slate-200 flex flex-col justify-between">
         
         {/* Mobile Sticky Top Navigation Bar */}
-        <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-3 py-2.5 border-b border-slate-100 flex items-center justify-between sm:hidden shadow-xs">
+        <div className="sticky top-0 z-30 bg-white px-3 py-2.5 border-b border-slate-100 flex items-center justify-between sm:hidden shadow-xs">
           <button
             onClick={() => setSelectedProduct(null)}
             className="p-1 text-slate-700 hover:bg-slate-100 rounded-full flex items-center gap-1 text-xs font-bold"
@@ -123,8 +123,8 @@ export default function ProductModal() {
                   </button>
                   <button
                     onClick={() => toggleWishlist(selectedProduct.id)}
-                    className={`p-2 rounded-full backdrop-blur-md shadow transition ${
-                      isWishlisted ? 'bg-rose-50 text-rose-500' : 'bg-white/80 text-slate-500 hover:bg-white'
+                    className={`p-2 rounded-full shadow transition ${
+                      isWishlisted ? 'bg-rose-50 text-rose-500 border border-rose-200' : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-200'
                     }`}
                   >
                     <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-rose-500' : ''}`} />

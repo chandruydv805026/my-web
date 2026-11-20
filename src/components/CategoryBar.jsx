@@ -18,7 +18,7 @@ export default function CategoryBar() {
   return (
     <div className="bg-white border-b border-slate-200/80 shadow-xs">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-3">
-        <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto no-scrollbar scroll-smooth px-1">
+        <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto no-scrollbar px-1 touch-pan-x">
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.id;
 
@@ -26,7 +26,7 @@ export default function CategoryBar() {
               <button
                 key={cat.id}
                 onClick={() => handleSelect(cat.id)}
-                className="group flex flex-col items-center flex-shrink-0 min-w-[62px] sm:min-w-[80px] text-center focus:outline-none transition active:scale-90"
+                className="group flex flex-col items-center flex-shrink-0 min-w-[62px] sm:min-w-[80px] text-center focus:outline-none transition active:scale-95"
               >
                 <div className={`w-13 h-13 sm:w-16 sm:h-16 rounded-full overflow-hidden p-0.5 border-2 transition-all shadow-xs ${
                   isSelected 
@@ -37,6 +37,8 @@ export default function CategoryBar() {
                     src={cat.image}
                     alt={cat.name}
                     className="w-full h-full object-cover rounded-full"
+                    loading="eager"
+                    decoding="async"
                   />
                 </div>
                 <span className={`mt-1 text-[10px] sm:text-xs font-semibold whitespace-nowrap transition ${

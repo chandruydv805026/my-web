@@ -134,7 +134,7 @@ export default function AdminCoupons() {
 
       {/* Create Coupon Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 animate-in fade-in">
+        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-3 animate-in fade-in">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
             
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
