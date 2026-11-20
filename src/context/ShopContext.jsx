@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { PRODUCTS, COUPONS } from '../data/products';
 
@@ -165,6 +165,136 @@ export const ShopProvider = ({ children }) => {
       setToast(null);
     }, 3200);
   };
+
+  // ================= BROWSER & MOBILE BACK-BUTTON CONTROLLER ================= //
+  // Prevents mobile/browser back-button from exiting the website when viewing products, modals, or categories
+  const stateSnapshotRef = useRef({});
+  const lastExitPressRef = useRef(0);
+
+  // Keep snapshot updated on every render
+  stateSnapshotRef.current = {
+    selectedProduct,
+    isCartOpen,
+    isWishlistOpen,
+    isCheckoutOpen,
+    isOrdersOpen,
+    isAuthOpen,
+    isSizeGuideOpen,
+    isPincodeModalOpen,
+    selectedCategory,
+    searchTerm,
+    isAdminMode
+  };
+
+  // Setup Root and Guard states on initial load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (!window.history.state || !window.history.state.ratumartRoot) {
+          window.history.replaceState({ ratumartRoot: true }, '');
+          window.history.pushState({ ratumartGuard: true }, '');
+        }
+      } catch (e) {}
+    }
+  }, []);
+
+  // Popstate Listener: Intercepts device/browser back button
+  useEffect(() => {
+    const handlePopState = (event) => {
+      // Sync Admin URL if route changed
+      if (typeof window !== 'undefined') {
+        const p = window.location.pathname.toLowerCase();
+        const h = window.location.hash.toLowerCase();
+        if (p === '/admin' || p.startsWith('/admin/') || h === '#admin') {
+          setIsAdminMode(true);
+          return;
+        }
+      }
+
+      const s = stateSnapshotRef.current;
+
+      // 1. Size Guide Modal
+      if (s.isSizeGuideOpen) {
+        setIsSizeGuideOpen(false);
+        try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
+        return;
+      }
+      // 2. Pincode Modal
+      if (s.isPincodeModalOpen) {
+        setIsPincodeModalOpen(false);
+        try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
+        return;
+      }
+      // 3. Auth Modal (Login/Register)
+      if (s.isAuthOpen) {
+        setIsAuthOpen(false);
+        try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
+        return;
+      }
+      // 4. Checkout Modal
+      if (s.isCheckoutOpen) {
+        setIsCheckoutOpen(false);
+        try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
+        return;
+      }
+      // 5. Orders Modal
+      if (s.isOrdersOpen) {
+        setIsOrdersOpen(false);
+        try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
+        return;
+      }
+      // 6. Cart Drawer
+      if (s.isCartOpen) {
+        setIsCartOpen(false);
+        try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
+        return;
+      }
+      // 7. Wishlist Drawer
+      if (s.isWishlistOpen) {
+        setIsWishlistOpen(false);
+        try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
+        return;
+      }
+      // 8. Product Details Modal (Crucial: User browsing clothing items)
+      if (s.selectedProduct) {
+        setSelectedProduct(null);
+        try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
+        return;
+      }
+      // 9. Search Bar Active
+      if (s.searchTerm && s.searchTerm.trim() !== '') {
+        setSearchTerm('');
+        try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
+        return;
+      }
+      // 10. Category Filter Active
+      if (s.selectedCategory && s.selectedCategory !== 'all') {
+        setSelectedCategory('all');
+        try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
+        return;
+      }
+      // 11. Admin Mode Active
+      if (s.isAdminMode) {
+        setIsAdminMode(false);
+        try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
+        return;
+      }
+
+      // 12. Root Store Homepage - Accidental Exit Protection (Double Back to Exit)
+      const now = Date.now();
+      if (now - lastExitPressRef.current < 2500) {
+        // Double-tap detected within 2.5 seconds: allow normal exit
+        window.history.back();
+      } else {
+        lastExitPressRef.current = now;
+        showToast("Press Back again to exit RatuMart", "info");
+        try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // ================= REAL BACKEND DATA FETCHING ================= //
 
