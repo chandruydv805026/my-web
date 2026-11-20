@@ -166,10 +166,13 @@ export const ShopProvider = ({ children }) => {
     }, 3200);
   };
 
-  // ================= BROWSER & MOBILE BACK-BUTTON CONTROLLER ================= //
+  // ================= BROWSER & MOBILE BACK-BUTTON & SCROLL-LOCK CONTROLLER ================= //
   // Prevents mobile/browser back-button from exiting the website when viewing products, modals, or categories
+  // Locks background scroll during open modals and restores exact scroll position on close
   const stateSnapshotRef = useRef({});
   const lastExitPressRef = useRef(0);
+  const savedScrollPositionRef = useRef(0);
+  const authModalBackHandlerRef = useRef(null);
 
   // Keep snapshot updated on every render
   stateSnapshotRef.current = {
@@ -185,6 +188,52 @@ export const ShopProvider = ({ children }) => {
     searchTerm,
     isAdminMode
   };
+
+  const isModalActive = Boolean(
+    selectedProduct || 
+    isAuthOpen || 
+    isCartOpen || 
+    isWishlistOpen || 
+    isCheckoutOpen || 
+    isOrdersOpen || 
+    isPincodeModalOpen || 
+    isSizeGuideOpen
+  );
+
+  // Scroll Position Keeper & Background Scroll Lock
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (isModalActive) {
+      // 1. Capture exact scroll position BEFORE locking body (only if not already fixed)
+      if (document.body.style.position !== 'fixed') {
+        const currentScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+        savedScrollPositionRef.current = currentScrollY;
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${currentScrollY}px`;
+        document.body.style.left = '0';
+        document.body.style.right = '0';
+        document.body.style.width = '100%';
+        document.body.style.overflow = 'hidden';
+      }
+    } else {
+      // 2. Restore exact scroll position when all modals are closed
+      if (document.body.style.position === 'fixed') {
+        const targetScrollY = savedScrollPositionRef.current;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        
+        // Immediately restore scroll without jump to top
+        requestAnimationFrame(() => {
+          window.scrollTo(0, targetScrollY);
+        });
+      }
+    }
+  }, [isModalActive]);
 
   // Setup Root and Guard states on initial load
   useEffect(() => {
@@ -227,6 +276,10 @@ export const ShopProvider = ({ children }) => {
       }
       // 3. Auth Modal (Login/Register)
       if (s.isAuthOpen) {
+        if (authModalBackHandlerRef.current && authModalBackHandlerRef.current()) {
+          try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
+          return;
+        }
         setIsAuthOpen(false);
         try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
         return;
@@ -1167,6 +1220,7 @@ export const ShopProvider = ({ children }) => {
       setIsSizeGuideOpen,
       isPincodeModalOpen,
       setIsPincodeModalOpen,
+      authModalBackHandlerRef,
 
       // Toast
       toast,
