@@ -18,15 +18,12 @@ export default function ProductModal() {
     setIsAuthOpen,
     user,
     setIsSizeGuideOpen,
-    deliveryPincode,
     showToast
   } = useShop();
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [chosenSize, setChosenSize] = useState(null);
   const [chosenColor, setChosenColor] = useState(null);
-  const [pincodeInput, setPincodeInput] = useState(deliveryPincode || '110001');
-  const [pincodeChecked, setPincodeChecked] = useState(true);
 
   if (!selectedProduct) return null;
 
@@ -252,38 +249,27 @@ export default function ProductModal() {
                 </div>
               )}
 
-              {/* Pincode & Delivery Checker */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                <span className="font-bold text-slate-800 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-blue-600" />
-                  Check Delivery Time
-                </span>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={pincodeInput}
-                    onChange={(e) => setPincodeInput(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Enter 6-digit Pincode"
-                    className="w-32 px-2.5 py-1.5 border border-slate-300 rounded-lg font-bold text-slate-800"
-                  />
-                  <button
-                    onClick={() => {
-                      if (pincodeInput.length === 6) {
-                        setPincodeChecked(true);
-                        showToast(`Pincode ${pincodeInput} is serviceable!`);
-                      }
-                    }}
-                    className="bg-blue-600 text-white font-bold px-3 py-1.5 rounded-lg"
-                  >
-                    Check
-                  </button>
+              {/* 7 Days Return Policy & Cash on Delivery (COD) Available */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 py-1">
+                <div className="flex items-center gap-2.5 p-3 bg-emerald-50/80 border border-emerald-200/90 rounded-xl">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-2xs">
+                    <RotateCcw className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <strong className="text-slate-900 block font-bold text-xs sm:text-sm">7 Days Return Policy</strong>
+                    <span className="text-[11px] text-emerald-800 font-medium">Easy doorstep return &amp; exchange</span>
+                  </div>
                 </div>
-                {pincodeChecked && (
-                  <p className="mt-1.5 text-emerald-700 font-bold flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5" /> {selectedProduct.deliveryDays} &bull; FREE Delivery
-                  </p>
-                )}
+
+                <div className="flex items-center gap-2.5 p-3 bg-blue-50/80 border border-blue-200/90 rounded-xl">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-2xs">
+                    <Truck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <strong className="text-slate-900 block font-bold text-xs sm:text-sm">Cash on Delivery (COD)</strong>
+                    <span className="text-[11px] text-blue-800 font-medium">Pay cash at your doorstep</span>
+                  </div>
+                </div>
               </div>
 
               {/* Highlights & Fabric */}

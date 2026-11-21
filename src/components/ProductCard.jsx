@@ -98,9 +98,14 @@ export default function ProductCard({ product }) {
             </span>
           </div>
 
-          {/* Free delivery tag */}
-          <div className="mt-1 text-[9px] text-emerald-700 font-semibold truncate hidden sm:block">
-            Free Delivery
+          {/* COD & Return Policy */}
+          <div className="mt-1 flex items-center gap-1.5 text-[9px] font-semibold truncate">
+            <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-bold">
+              COD Available
+            </span>
+            <span className="text-slate-500 hidden sm:inline">
+              &bull; 7 Days Return
+            </span>
           </div>
         </div>
 
