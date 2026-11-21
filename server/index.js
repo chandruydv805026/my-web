@@ -28,6 +28,7 @@ import {
   sendOrderStatusUpdate, 
   sendWelcomeNotification, 
   sendEmailVerificationOtp,
+  sendMarketingBroadcast,
   getNotificationLogs 
 } from './services/notificationService.js';
 
@@ -1607,7 +1608,26 @@ app.post('/api/notifications/test', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Test notification triggered via OneSignal & Resend!',
+      message: 'Test notification triggered via Resend Email!',
+      result
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Broadcast Marketing / Promotional Push Notification (Offers, Discounts, Sales)
+app.post('/api/notifications/broadcast', async (req, res) => {
+  try {
+    const { title, message, url = 'https://ratufresh.me' } = req.body;
+    if (!title || !message) {
+      return res.status(400).json({ success: false, message: 'Title and message are required for marketing push.' });
+    }
+
+    const result = await sendMarketingBroadcast({ title, message, url });
+    res.json({
+      success: true,
+      message: 'Marketing push notification sent successfully to all subscribers!',
       result
     });
   } catch (err) {

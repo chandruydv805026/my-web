@@ -93,7 +93,7 @@ export const sendResendEmail = async ({ to, subject, html }) => {
 };
 
 /**
- * 1. Dispatch Real Order Notification (Resend Email + OneSignal Push)
+ * 1. Dispatch Real Order Notification (Private Resend Email to Customer)
  */
 export const sendOrderNotification = async (orderData) => {
   const { orderId, customerName, customerEmail, customerPhone, items = [], totalAmount = 0, status = 'Confirmed' } = orderData;
@@ -102,14 +102,7 @@ export const sendOrderNotification = async (orderData) => {
   const pushTitle = `🎉 Order Confirmed: #${orderId}`;
   const pushMessage = `Namaste ${customerName || 'Shopper'}! Aapka order #${orderId} (₹${totalAmount}, ${itemsCount} items) safalta-poorvak confirm ho gaya hai!`;
 
-  // 1. OneSignal Web & App Push
-  const pushResult = await sendOneSignalPush({
-    title: pushTitle,
-    message: pushMessage,
-    data: { orderId, totalAmount, type: 'ORDER_PLACED' }
-  });
-
-  // 2. Resend Premium Flipkart-Style HTML Email
+  // Private Resend Premium Flipkart-Style HTML Email to customer only (NO broadcast push!)
   let emailResult = null;
   if (customerEmail && customerEmail.includes('@')) {
     const itemsHtml = items.map(it => `
@@ -216,20 +209,13 @@ export const sendOrderNotification = async (orderData) => {
 };
 
 /**
- * 2. Dispatch Order Status Change Notification
+ * 2. Dispatch Order Status Change Notification (Private Email to Customer)
  */
 export const sendOrderStatusUpdate = async (orderId, newStatus, customer = {}) => {
   const pushTitle = `📦 Order Update: #${orderId}`;
   const pushMessage = `Aapke RatuMart order #${orderId} ka status ab "${newStatus}" ho gaya hai!`;
 
-  // OneSignal Push
-  const pushResult = await sendOneSignalPush({
-    title: pushTitle,
-    message: pushMessage,
-    data: { orderId, newStatus, type: 'STATUS_UPDATE' }
-  });
-
-  // Resend Email (if email provided)
+  // Resend Email directly to customer (NO broadcast push!)
   let emailResult = null;
   if (customer.email && customer.email.includes('@')) {
     const emailHtml = `
@@ -277,20 +263,13 @@ export const sendOrderStatusUpdate = async (orderId, newStatus, customer = {}) =
 };
 
 /**
- * 3. Welcome Notification for Newly Registered Users
+ * 3. Welcome Notification for Newly Registered Users (Private Email to User)
  */
 export const sendWelcomeNotification = async (user) => {
   const pushTitle = `🎉 Welcome to RatuMart, ${user.name}!`;
   const pushMessage = `Aapka account successfully activate ho gaya hai. Happy Fashion Shopping!`;
 
-  // OneSignal Push
-  await sendOneSignalPush({
-    title: pushTitle,
-    message: pushMessage,
-    data: { userId: user._id, type: 'WELCOME' }
-  });
-
-  // Resend Welcome Email
+  // Resend Welcome Email to user only (NO broadcast push!)
   if (user.email && user.email.includes('@')) {
     const welcomeHtml = `
       <div style="font-family: sans-serif; max-width: 550px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
@@ -371,10 +350,7 @@ export const sendEmailVerificationOtp = async ({ email, name, code }) => {
     </div>
   `;
 
-  const pushTitle = `Verification Code: ${code}`;
-  const pushMessage = `Use confirmation code ${code} to complete registration on RatuMart.`;
-  await sendOneSignalPush({ title: pushTitle, message: pushMessage, url: 'https://ratufresh.me' });
-
+  // Private Resend Email only (NO broadcast push - OTP is 100% private to user's email!)
   return await sendResendEmail({
     to: email,
     subject: `${code} is your RatuMart Verification Code`,
@@ -384,4 +360,16 @@ export const sendEmailVerificationOtp = async ({ email, name, code }) => {
 
 export const getNotificationLogs = () => {
   return notificationHistory;
+};
+
+/**
+ * 4. Marketing & Promotional Push Broadcast (Exclusively for Offers, Sales & Discounts)
+ */
+export const sendMarketingBroadcast = async ({ title, message, url = 'https://ratufresh.me', data = {} }) => {
+  return await sendOneSignalPush({
+    title,
+    message,
+    url,
+    data: { ...data, type: 'PROMOTION' }
+  });
 };
