@@ -387,8 +387,8 @@ export const ShopProvider = ({ children }) => {
         }
       }
 
-      // 2. Fetch Orders
-      const orderRes = await fetch('/api/orders');
+      // 2. Fetch Orders (Pass credentials so admin sees all, or customer sees their own)
+      const orderRes = await fetch('/api/orders', { credentials: 'include' });
       if (orderRes.ok) {
         const orderData = await orderRes.json();
         if (orderData.success) {
@@ -405,8 +405,8 @@ export const ShopProvider = ({ children }) => {
         }
       }
 
-      // 4. Fetch Real Customers (MongoDB)
-      const custRes = await fetch('/api/customers');
+      // 4. Fetch Real Customers (MongoDB - Admin Session Protected)
+      const custRes = await fetch('/api/customers', { credentials: 'include' });
       if (custRes.ok) {
         const custData = await custRes.json();
         if (custData.success && Array.isArray(custData.customers)) {
@@ -433,7 +433,7 @@ export const ShopProvider = ({ children }) => {
 
   // ================= REAL BACKEND ACTIONS ================= //
 
-  // 1. Upload Real Clothing Photo to Backend
+  // 1. Upload Real Clothing Photo to Backend (Cloudinary CDN)
   const uploadPhoto = async (file) => {
     const formData = new FormData();
     formData.append('photo', file);
@@ -441,6 +441,7 @@ export const ShopProvider = ({ children }) => {
     try {
       const res = await fetch('/api/upload', {
         method: 'POST',
+        credentials: 'include',
         body: formData
       });
       const data = await res.json();
@@ -457,12 +458,13 @@ export const ShopProvider = ({ children }) => {
     }
   };
 
-  // 2. Add New Product (Saves to SQLite Database)
+  // 2. Add New Product (Saves to MongoDB Database)
   const addProduct = async (productData) => {
     try {
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(productData)
       });
       const data = await res.json();
@@ -508,12 +510,13 @@ export const ShopProvider = ({ children }) => {
     return newLocal;
   };
 
-  // 3. Edit / Update Product (Updates SQLite Database)
+  // 3. Edit / Update Product (Updates MongoDB Database)
   const updateProduct = async (id, updatedFields) => {
     try {
       await fetch(`/api/products/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(updatedFields)
       });
     } catch (err) {
@@ -532,10 +535,10 @@ export const ShopProvider = ({ children }) => {
     showToast(`Product updated in database!`);
   };
 
-  // 4. Delete Product (Deletes from SQLite Database)
+  // 4. Delete Product (Deletes from MongoDB Database)
   const deleteProduct = async (id) => {
     try {
-      await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      await fetch(`/api/products/${id}`, { method: 'DELETE', credentials: 'include' });
     } catch (err) {
       console.warn('Backend delete error:', err);
     }
@@ -543,12 +546,13 @@ export const ShopProvider = ({ children }) => {
     showToast(`Product removed from database`, 'info');
   };
 
-  // 5. Update Order Status (Updates SQLite Database)
+  // 5. Update Order Status (Updates MongoDB Database)
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       await fetch(`/api/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ status: newStatus })
       });
     } catch (err) {
@@ -564,10 +568,10 @@ export const ShopProvider = ({ children }) => {
     showToast(`Order ${orderId} marked as "${newStatus}"!`);
   };
 
-  // 6. Delete Order
+  // 6. Delete Order (Deletes from MongoDB Database)
   const deleteOrder = async (orderId) => {
     try {
-      await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
+      await fetch(`/api/orders/${orderId}`, { method: 'DELETE', credentials: 'include' });
     } catch (err) {}
     setOrders(prev => prev.filter(o => o.id !== orderId));
     showToast(`Order ${orderId} deleted`, 'info');
@@ -646,6 +650,7 @@ export const ShopProvider = ({ children }) => {
       await fetch('/api/coupons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(coupon)
       });
     } catch (err) {}
@@ -655,7 +660,7 @@ export const ShopProvider = ({ children }) => {
 
   const deleteCoupon = async (code) => {
     try {
-      await fetch(`/api/coupons/${code}`, { method: 'DELETE' });
+      await fetch(`/api/coupons/${code}`, { method: 'DELETE', credentials: 'include' });
     } catch (err) {}
     setCoupons(prev => prev.filter(c => c.code !== code));
     showToast(`Coupon "${code}" deleted`, 'info');
@@ -715,6 +720,10 @@ export const ShopProvider = ({ children }) => {
       localStorage.setItem('ratumart_token', data.token);
       localStorage.setItem('ratumart_user', JSON.stringify(loggedUser));
       showToast(`Welcome back, ${loggedUser.name}! 🎉`);
+
+      // Refresh data with newly acquired privileges (e.g. admin orders & customers)
+      fetchBackendData();
+
       return { success: true, user: loggedUser };
     } catch (err) {
       showToast(err.message, 'error');
@@ -774,6 +783,10 @@ export const ShopProvider = ({ children }) => {
       localStorage.setItem('ratumart_token', data.token);
       localStorage.setItem('ratumart_user', JSON.stringify(loggedUser));
       showToast(`Welcome back, ${loggedUser.name}! 🎉`);
+
+      // Refresh data with newly acquired privileges (e.g. admin orders & customers)
+      fetchBackendData();
+
       return { success: true, user: loggedUser };
     } catch (err) {
       showToast(err.message, 'error');

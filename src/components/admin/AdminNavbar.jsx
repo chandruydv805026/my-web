@@ -1,9 +1,9 @@
 import React from 'react';
-import { Store, ShieldCheck, Sparkles, ExternalLink, ArrowLeft, Bell } from 'lucide-react';
+import { Store, ShieldCheck, Sparkles, ExternalLink, ArrowLeft, Bell, LogOut } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 
 export default function AdminNavbar() {
-  const { setIsAdminMode, orders, products, storeSettings } = useShop();
+  const { setIsAdminMode, orders, products, storeSettings, logoutUser } = useShop();
 
   const totalSales = orders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
 
@@ -42,8 +42,8 @@ export default function AdminNavbar() {
           <span>Gross: <strong className="text-white">₹{totalSales.toLocaleString('en-IN')}</strong></span>
         </div>
 
-        {/* Right: Switch to Live Store button */}
-        <div className="flex items-center gap-3">
+        {/* Right: Switch to Live Store button & Logout */}
+        <div className="flex items-center gap-2">
           <button
             onClick={() => {
               if (typeof window !== 'undefined') window.history.pushState({}, '', '/');
@@ -55,6 +55,19 @@ export default function AdminNavbar() {
             <Store className="w-4 h-4" />
             <span>Customer View</span>
             <ExternalLink className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            onClick={async () => {
+              await logoutUser();
+              if (typeof window !== 'undefined') window.history.pushState({}, '', '/');
+              setIsAdminMode(false);
+            }}
+            className="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5 active:scale-95"
+            title="Log out and lock Admin Panel"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
 

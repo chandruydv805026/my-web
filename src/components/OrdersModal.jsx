@@ -3,9 +3,21 @@ import { X, Package, Truck, CheckCircle2, Download, ArrowRight, Clock } from 'lu
 import { useShop } from '../context/ShopContext';
 
 export default function OrdersModal() {
-  const { orders, isOrdersOpen, setIsOrdersOpen, showToast } = useShop();
+  const { orders, isOrdersOpen, setIsOrdersOpen, showToast, user } = useShop();
 
   if (!isOrdersOpen) return null;
+
+  // Filter orders for active user
+  const displayedOrders = user?.role === 'admin'
+    ? orders
+    : orders.filter(o => {
+        if (!user) return false;
+        const uPhone = (user.phone || '').replace(/\D/g, '').slice(-10);
+        const uEmail = (user.email || '').toLowerCase().trim();
+        const oPhone = (o.customerPhone || o.address?.phone || '').replace(/\D/g, '').slice(-10);
+        const oEmail = (o.customerEmail || '').toLowerCase().trim();
+        return (uPhone && oPhone === uPhone) || (uEmail && oEmail === uEmail);
+      });
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-150">
@@ -16,7 +28,7 @@ export default function OrdersModal() {
         <div className="bg-white px-5 py-4 border-b border-slate-200 flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <Package className="w-5 h-5 text-blue-600" />
-            <h2 className="text-base sm:text-lg font-black text-slate-900">My Orders ({orders.length})</h2>
+            <h2 className="text-base sm:text-lg font-black text-slate-900">My Orders ({displayedOrders.length})</h2>
           </div>
 
           <button
@@ -29,14 +41,14 @@ export default function OrdersModal() {
 
         {/* Content */}
         <div className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto">
-          {orders.length === 0 ? (
+          {displayedOrders.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
               <Package className="w-12 h-12 mx-auto text-slate-300 mb-3" />
-              <h3 className="text-base font-bold text-slate-800">No Orders Yet!</h3>
+              <h3 className="text-base font-bold text-slate-800">No Orders Placed Yet!</h3>
               <p className="text-xs text-slate-500 mt-1">Place your first order to track it live here.</p>
             </div>
           ) : (
-            orders.map((ord) => (
+            displayedOrders.map((ord) => (
               <div 
                 key={ord.id}
                 className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3 hover:border-blue-300 transition"

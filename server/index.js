@@ -77,6 +77,51 @@ const setSessionCookie = (res, token) => {
   });
 };
 
+// Security Middleware: Protect Admin endpoints via HTTP-only Session Cookie
+const requireAdmin = async (req, res, next) => {
+  try {
+    const token = req.cookies?.ratumart_session || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Admin authentication required. Please sign in.' });
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (!decoded || decoded.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Forbidden: Admin privileges required.' });
+    }
+
+    req.admin = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Invalid or expired session. Please log in again.' });
+  }
+};
+
+// Rate Limiter for OTP & Auth endpoints
+const rateLimitMap = new Map();
+const rateLimiter = (limit = 15, windowMs = 60 * 1000) => (req, res, next) => {
+  const ip = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+  const now = Date.now();
+  const record = rateLimitMap.get(ip) || { count: 0, resetAt: now + windowMs };
+
+  if (now > record.resetAt) {
+    record.count = 0;
+    record.resetAt = now + windowMs;
+  }
+
+  record.count++;
+  rateLimitMap.set(ip, record);
+
+  if (record.count > limit) {
+    return res.status(429).json({
+      success: false,
+      message: 'Too many requests. Please wait a minute and try again.'
+    });
+  }
+
+  next();
+};
+
 // Uploads directory
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -383,25 +428,31 @@ async function seedInitialData() {
       ]);
     }
 
-    // Seed default Admin User if doesn't exist
-    const adminUser = await User.findOne({ email: 'admin@ratumart.com' });
+    // Seed / Update Admin User with password 'localmart1234'
+    const adminEmail = 'admin@ratumart.com';
+    let adminUser = await User.findOne({ email: adminEmail });
     if (!adminUser) {
       await User.create({
         name: 'Ratu Store Admin',
-        email: 'admin@ratumart.com',
-        password: 'adminpassword123',
-        phone: '+91 9876543210',
+        email: adminEmail,
+        password: 'localmart1234',
+        phone: '+91 9955054109',
         role: 'admin',
         address: {
           name: 'RatuMart Admin',
-          phone: '+91 9876543210',
-          street: 'Main Road, Ratu',
+          phone: '+91 9955054109',
+          street: 'Dandai Phutaltoli, Ratu',
           city: 'Ranchi',
           state: 'Jharkhand',
           pincode: '835222'
         }
       });
-      console.log('✅ Default Admin User created in MongoDB: admin@ratumart.com');
+      console.log('✅ Default Admin User created in MongoDB: admin@ratumart.com (password: localmart1234)');
+    } else {
+      adminUser.password = 'localmart1234';
+      adminUser.role = 'admin';
+      await adminUser.save();
+      console.log('✅ Admin User password verified & updated in MongoDB: admin@ratumart.com (password: localmart1234)');
     }
 
   } catch (err) {
@@ -516,7 +567,7 @@ app.get('/api/location/reverse-geocode', async (req, res) => {
 // ================= PASSWORDLESS OTP LOGIN & GEOFENCE AUTH ROUTES ================= //
 
 // A. Request Login OTP (by Phone Number OR Email)
-app.post('/api/auth/login-otp-request', async (req, res) => {
+app.post('/api/auth/login-otp-request', rateLimiter(10, 60000), async (req, res) => {
   try {
     const { identifier } = req.body;
     if (!identifier || !identifier.trim()) {
@@ -937,8 +988,8 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// 5. Login with Email + Password or Email OTP
-app.post('/api/auth/login', async (req, res) => {
+// 5. Login with Email + Password or Email OTP (Rate Limited)
+app.post('/api/auth/login', rateLimiter(15, 60000), async (req, res) => {
   try {
     const { email, password, code } = req.body;
     if (!email) {
@@ -989,11 +1040,14 @@ app.post('/api/auth/login', async (req, res) => {
     // Set persistent session cookie
     setSessionCookie(res, token);
 
+    const safeUser = user.toObject();
+    delete safeUser.password;
+
     res.json({
       success: true,
       message: `Welcome back, ${user.name}!`,
       token,
-      user
+      user: safeUser
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -1003,13 +1057,13 @@ app.post('/api/auth/login', async (req, res) => {
 // 6. Get Current Authenticated User via Session Cookie (GET /api/auth/me)
 app.get('/api/auth/me', async (req, res) => {
   try {
-    const token = req.cookies.ratumart_session || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+    const token = req.cookies?.ratumart_session || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
     if (!token) {
       return res.status(401).json({ success: false, message: 'No active session' });
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.id);
+    const user = await User.findById(decoded.id, '-password');
     if (!user) {
       return res.status(401).json({ success: false, message: 'User session not found' });
     }
@@ -1270,8 +1324,8 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-// POST /api/products (Save to MongoDB)
-app.post('/api/products', async (req, res) => {
+// POST /api/products (Save to MongoDB - Protected by Admin Session)
+app.post('/api/products', requireAdmin, async (req, res) => {
   try {
     const body = req.body;
     const price = Number(body.price);
@@ -1322,8 +1376,8 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
-// PUT /api/products/:id
-app.put('/api/products/:id', async (req, res) => {
+// PUT & PATCH /api/products/:id (Admin Session Protected)
+const handleProductUpdate = async (req, res) => {
   try {
     const body = req.body;
     if (body.price && body.originalPrice) {
@@ -1337,10 +1391,12 @@ app.put('/api/products/:id', async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
-});
+};
+app.put('/api/products/:id', requireAdmin, handleProductUpdate);
+app.patch('/api/products/:id', requireAdmin, handleProductUpdate);
 
-// DELETE /api/products/:id
-app.delete('/api/products/:id', async (req, res) => {
+// DELETE /api/products/:id (Admin Session Protected)
+app.delete('/api/products/:id', requireAdmin, async (req, res) => {
   try {
     await Product.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Product deleted from MongoDB' });
@@ -1351,7 +1407,7 @@ app.delete('/api/products/:id', async (req, res) => {
 
 // ================= REAL PHOTO UPLOAD (CLOUDINARY / LOCAL) ================= //
 
-app.post('/api/upload', upload.single('photo'), async (req, res) => {
+app.post('/api/upload', requireAdmin, upload.single('photo'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No photo selected' });
@@ -1408,11 +1464,51 @@ app.post('/api/upload', upload.single('photo'), async (req, res) => {
 
 // ================= ORDER ENDPOINTS (MONGODB) ================= //
 
-// GET /api/orders
+// GET /api/orders (Admins get all orders; customers get only their own orders)
 app.get('/api/orders', async (req, res) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 });
-    res.json({ success: true, orders });
+    const token = req.cookies?.ratumart_session || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+    let caller = null;
+    if (token) {
+      try {
+        caller = jwt.verify(token, JWT_SECRET);
+      } catch (e) {}
+    }
+
+    const { phone, email } = req.query;
+
+    let filter = {};
+    if (caller && caller.role === 'admin') {
+      // Admin sees all customer orders
+      filter = {};
+    } else if (caller) {
+      // Logged in customer only sees their own orders
+      const userDoc = await User.findById(caller.id);
+      const userPhone = userDoc?.phone ? userDoc.phone.replace(/\D/g, '').slice(-10) : '';
+      const userEmail = (userDoc?.email || caller.email || '').toLowerCase().trim();
+
+      const conditions = [];
+      if (userEmail) conditions.push({ customerEmail: userEmail });
+      if (userPhone) conditions.push({ customerPhone: new RegExp(userPhone + '$') });
+
+      filter = conditions.length > 0 ? { $or: conditions } : { _id: null };
+    } else if (phone || email) {
+      // Guest query with explicit matching parameter
+      const phoneDigits = phone ? phone.replace(/\D/g, '').slice(-10) : '';
+      const cleanEmail = email ? email.toLowerCase().trim() : '';
+
+      const conditions = [];
+      if (cleanEmail) conditions.push({ customerEmail: cleanEmail });
+      if (phoneDigits) conditions.push({ customerPhone: new RegExp(phoneDigits + '$') });
+
+      filter = conditions.length > 0 ? { $or: conditions } : { _id: null };
+    } else {
+      // Unauthenticated caller with no identifiers gets empty array
+      return res.json({ success: true, count: 0, orders: [] });
+    }
+
+    const orders = await Order.find(filter).sort({ createdAt: -1 });
+    res.json({ success: true, count: orders.length, orders });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1422,9 +1518,28 @@ app.get('/api/orders', async (req, res) => {
 app.post('/api/orders', async (req, res) => {
   try {
     const body = req.body;
-    const orderId = `RATU-ORD-${Math.floor(100000 + Math.random() * 900000)}`;
     const addr = body.address || {};
     const items = body.items || [];
+
+    // Robust input validation
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: 'Your cart is empty. Please select clothes to place an order.' });
+    }
+
+    if (items.length > 50) {
+      return res.status(400).json({ success: false, message: 'Too many items in a single order (Max 50).' });
+    }
+
+    const totalAmount = Number(body.totalAmount);
+    if (isNaN(totalAmount) || totalAmount < 0) {
+      return res.status(400).json({ success: false, message: 'Invalid order amount.' });
+    }
+
+    if (!addr.name || !addr.phone) {
+      return res.status(400).json({ success: false, message: 'Recipient name and phone number are required.' });
+    }
+
+    const orderId = `RATU-ORD-${Math.floor(100000 + Math.random() * 900000)}`;
 
     // Verify 5 KM Delivery Radius
     if (addr.lat && addr.lng) {
@@ -1445,9 +1560,9 @@ app.post('/api/orders', async (req, res) => {
       customerEmail: addr.email || '',
       shippingAddress: addr,
       items,
-      totalAmount: Number(body.totalAmount) || 0,
+      totalAmount,
       savings: Number(body.savings) || 0,
-      paymentMethod: body.paymentMethod || 'UPI',
+      paymentMethod: body.paymentMethod || 'COD',
       status: 'Confirmed',
       deliveryDate: 'Expected in 2 Days'
     });
@@ -1482,8 +1597,8 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
-// PATCH /api/orders/:id/status
-app.patch('/api/orders/:id/status', async (req, res) => {
+// PATCH /api/orders/:id/status (Admin Session Protected)
+app.patch('/api/orders/:id/status', requireAdmin, async (req, res) => {
   try {
     const { status } = req.body;
     const order = await Order.findOneAndUpdate(
@@ -1509,8 +1624,8 @@ app.patch('/api/orders/:id/status', async (req, res) => {
   }
 });
 
-// DELETE /api/orders/:id
-app.delete('/api/orders/:id', async (req, res) => {
+// DELETE /api/orders/:id (Admin Session Protected)
+app.delete('/api/orders/:id', requireAdmin, async (req, res) => {
   try {
     await Order.findOneAndDelete({
       $or: [{ orderId: req.params.id }, { _id: mongoose.Types.ObjectId.isValid(req.params.id) ? req.params.id : null }]
@@ -1532,7 +1647,7 @@ app.get('/api/coupons', async (req, res) => {
   }
 });
 
-app.post('/api/coupons', async (req, res) => {
+app.post('/api/coupons', requireAdmin, async (req, res) => {
   try {
     const { code, type, value, maxDiscount, minOrder, description } = req.body;
     const coupon = await Coupon.findOneAndUpdate(
@@ -1546,7 +1661,7 @@ app.post('/api/coupons', async (req, res) => {
   }
 });
 
-app.delete('/api/coupons/:code', async (req, res) => {
+app.delete('/api/coupons/:code', requireAdmin, async (req, res) => {
   try {
     await Coupon.findOneAndDelete({ code: req.params.code.toUpperCase() });
     res.json({ success: true, message: 'Coupon deleted from MongoDB' });
@@ -1555,9 +1670,9 @@ app.delete('/api/coupons/:code', async (req, res) => {
   }
 });
 
-// ================= REAL CUSTOMERS DIRECTORY (MONGODB) ================= //
+// ================= REAL CUSTOMERS DIRECTORY (MONGODB - Admin Protected) ================= //
 
-app.get('/api/customers', async (req, res) => {
+app.get('/api/customers', requireAdmin, async (req, res) => {
   try {
     const users = await User.find({ role: { $ne: 'admin' } }, '-password').sort({ createdAt: -1 });
     const allOrders = await Order.find({}, 'customerName customerPhone customerEmail shippingAddress totalAmount createdAt');
@@ -1651,8 +1766,8 @@ app.get('/api/customers', async (req, res) => {
   }
 });
 
-// DELETE /api/customers/:id
-app.delete('/api/customers/:id', async (req, res) => {
+// DELETE /api/customers/:id (Admin Session Protected)
+app.delete('/api/customers/:id', requireAdmin, async (req, res) => {
   try {
     const id = req.params.id;
     if (mongoose.Types.ObjectId.isValid(id)) {
@@ -1725,8 +1840,8 @@ app.post('/api/notifications/test', async (req, res) => {
   }
 });
 
-// Broadcast Marketing / Promotional Push Notification (Offers, Discounts, Sales)
-app.post('/api/notifications/broadcast', async (req, res) => {
+// Broadcast Marketing / Promotional Push Notification (Admin Session Protected)
+app.post('/api/notifications/broadcast', requireAdmin, async (req, res) => {
   try {
     const { title, message, url = 'https://ratufresh.me' } = req.body;
     if (!title || !message) {
