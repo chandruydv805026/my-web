@@ -19,6 +19,7 @@ import OrdersModal from './components/OrdersModal';
 import AuthModal from './components/AuthModal';
 import SizeGuideModal from './components/SizeGuideModal';
 import PincodeModal from './components/PincodeModal';
+import UserAddressModal from './components/UserAddressModal';
 import Toast from './components/Toast';
 
 function StoreApp() {
@@ -66,6 +67,7 @@ function StoreApp() {
       <AuthModal />
       <SizeGuideModal />
       <PincodeModal />
+      <UserAddressModal />
       <Toast />
 
     </div>

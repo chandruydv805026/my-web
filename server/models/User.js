@@ -1,25 +1,32 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+const addressSchema = new mongoose.Schema({
+  name: { type: String, default: '' },
+  phone: { type: String, default: '' },
+  street: { type: String, default: '' },
+  city: { type: String, default: 'Ranchi' },
+  state: { type: String, default: 'Jharkhand' },
+  pincode: { type: String, default: '835222' },
+  landmark: { type: String, default: '' },
+  type: { type: String, default: 'Home' }, // 'Home', 'Work', 'Other'
+  lat: { type: Number, default: 23.414532 },
+  lng: { type: Number, default: 85.216414 },
+  distanceKm: { type: Number, default: 0 }
+}, { _id: true });
+
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, default: '' },
   phone: { type: String, required: true },
   role: { type: String, default: 'customer' }, // 'customer' or 'admin'
-  address: {
-    name: String,
-    phone: String,
-    street: String,
-    city: String,
-    state: String,
-    pincode: String,
-    landmark: String,
-    type: { type: String, default: 'Home' },
-    lat: Number,
-    lng: Number,
-    distanceKm: Number
+  address: addressSchema,
+  addresses: {
+    type: [addressSchema],
+    validate: [val => val.length <= 2, 'A user can only have a maximum of 2 saved addresses.']
   },
+  activeAddressIndex: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -35,14 +42,4 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-userSchema.set('toJSON', {
-  virtuals: true,
-  transform: (doc, ret) => {
-    ret.id = ret._id.toString();
-    delete ret.password;
-    return ret;
-  }
-});
-
-const User = mongoose.model('User', userSchema);
-export default User;
+export default mongoose.model('User', userSchema);

@@ -23,6 +23,9 @@ export default function Header() {
     deliveryPincode,
     deliveryCity,
     setIsPincodeModalOpen,
+    setIsAddressModalOpen,
+    userAddresses,
+    activeAddressIndex,
     showToast,
     products,
     setSelectedProduct,
@@ -50,6 +53,9 @@ export default function Header() {
   }, []);
 
   const totalCartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+  // Active delivery address for current user
+  const activeAddress = (userAddresses && userAddresses[activeAddressIndex]) || user?.address;
 
   // Voice Search Simulation
   const handleVoiceSearch = () => {
@@ -104,21 +110,25 @@ export default function Header() {
               </div>
             </div>
 
-            {/* Desktop Location Selector */}
-            <div 
-              onClick={() => setIsPincodeModalOpen(true)}
-              className="hidden lg:flex items-center gap-2 cursor-pointer bg-blue-700/60 hover:bg-blue-600/80 border border-blue-300/40 px-3.5 py-2 rounded-lg transition shadow-2xs"
-              title="Change Delivery Location"
-            >
-              <MapPin className="w-4.5 h-4.5 text-yellow-300 flex-shrink-0" />
-              <div className="text-left leading-tight">
-                <span className="text-blue-200 text-[11px] font-medium block">Deliver to</span>
-                <strong className="text-white font-bold text-xs truncate block max-w-[130px]">
-                  {deliveryCity || "Ratu, Ranchi"} {deliveryPincode || "835222"}
-                </strong>
+            {/* Desktop Location Selector - Shown only when user is logged in */}
+            {user && (
+              <div 
+                onClick={() => setIsAddressModalOpen(true)}
+                className="hidden lg:flex items-center gap-2 cursor-pointer bg-blue-700/60 hover:bg-blue-600/80 border border-blue-300/40 px-3.5 py-2 rounded-lg transition shadow-2xs group"
+                title="Click to view, edit or switch delivery address"
+              >
+                <MapPin className="w-4.5 h-4.5 text-yellow-300 flex-shrink-0 group-hover:animate-bounce" />
+                <div className="text-left leading-tight">
+                  <span className="text-blue-200 text-[11px] font-medium block">
+                    Deliver to {activeAddress?.name ? activeAddress.name.split(' ')[0] : (user.name ? user.name.split(' ')[0] : '')}
+                  </span>
+                  <strong className="text-white font-bold text-xs truncate block max-w-[150px]">
+                    {activeAddress?.street || activeAddress?.area || activeAddress?.city || 'Ratu, Ranchi'} {activeAddress?.pincode ? `- ${activeAddress.pincode}` : ''}
+                  </strong>
+                </div>
+                <ChevronDown className="w-3.5 h-3.5 text-blue-200 ml-0.5" />
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-blue-200" />
-            </div>
+            )}
 
             {/* Desktop Search Bar */}
             <div ref={searchRef} className="hidden md:block relative flex-1 max-w-xl mx-2 lg:mx-3">
@@ -300,22 +310,24 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile Location Bar */}
-      <div 
-        onClick={() => setIsPincodeModalOpen(true)}
-        className="lg:hidden bg-gradient-to-r from-blue-50 via-sky-50 to-blue-50 border-b border-blue-200/60 px-3.5 py-2 flex items-center justify-between text-xs text-slate-800 cursor-pointer shadow-2xs"
-      >
-        <div className="flex items-center gap-2 truncate">
-          <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0" />
-          <span className="text-slate-600 font-medium">Deliver to:</span>
-          <strong className="text-slate-900 font-bold truncate">
-            {deliveryCity || "Ratu, Ranchi"} - {deliveryPincode || "835222"}
-          </strong>
+      {/* Mobile Location Bar - Shown only when user is logged in */}
+      {user && (
+        <div 
+          onClick={() => setIsAddressModalOpen(true)}
+          className="lg:hidden bg-gradient-to-r from-blue-50 via-sky-50 to-blue-50 border-b border-blue-200/60 px-3.5 py-2 flex items-center justify-between text-xs text-slate-800 cursor-pointer shadow-2xs active:bg-blue-100"
+        >
+          <div className="flex items-center gap-2 truncate">
+            <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0" />
+            <span className="text-slate-600 font-medium flex-shrink-0">Deliver to:</span>
+            <strong className="text-slate-900 font-bold truncate">
+              {activeAddress ? `${activeAddress.name ? activeAddress.name + ' - ' : ''}${activeAddress.street || activeAddress.area || activeAddress.city || 'Ratu, Ranchi'} ${activeAddress.pincode ? `(${activeAddress.pincode})` : ''}` : 'Ratu, Ranchi'}
+            </strong>
+          </div>
+          <span className="text-[11px] font-bold text-blue-600 bg-white border border-blue-200 px-2 py-0.5 rounded-md flex-shrink-0 ml-1 shadow-2xs">
+            Edit / Change
+          </span>
         </div>
-        <span className="text-[11px] font-bold text-white bg-blue-600 hover:bg-blue-700 px-2.5 py-0.5 rounded-full flex-shrink-0 ml-1 shadow-2xs">
-          Change
-        </span>
-      </div>
+      )}
 
     </header>
   );

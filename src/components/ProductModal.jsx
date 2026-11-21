@@ -10,6 +10,7 @@ export default function ProductModal() {
     selectedProduct, 
     setSelectedProduct, 
     addToCart, 
+    startBuyNow,
     wishlist, 
     toggleWishlist,
     setIsCartOpen,
@@ -37,13 +38,7 @@ export default function ProductModal() {
     : [selectedProduct.image];
 
   const handleBuyNow = () => {
-    addToCart(selectedProduct, currentSize, currentColor, 1);
-    setSelectedProduct(null);
-    if (!user || !user.isLoggedIn) {
-      setIsAuthOpen(true);
-    } else {
-      setIsCheckoutOpen(true);
-    }
+    startBuyNow(selectedProduct, currentSize, currentColor, 1);
   };
 
   const handleAddToCart = () => {

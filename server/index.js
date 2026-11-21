@@ -719,7 +719,9 @@ app.post('/api/auth/register-otp-verify', async (req, res) => {
       email: stored.email,
       phone: stored.phone,
       password: '',
-      address: stored.address
+      address: stored.address,
+      addresses: stored.address ? [stored.address] : [],
+      activeAddressIndex: 0
     });
 
     const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '90d' });
@@ -1011,12 +1013,197 @@ app.get('/api/auth/me', async (req, res) => {
       return res.status(401).json({ success: false, message: 'User session not found' });
     }
 
+    if (user.address && (!user.addresses || user.addresses.length === 0)) {
+      user.addresses = [user.address];
+      user.activeAddressIndex = 0;
+      await user.save();
+    }
+
     res.json({
       success: true,
       user
     });
   } catch (err) {
     res.status(401).json({ success: false, message: 'Session expired or invalid' });
+  }
+});
+
+// ================= USER MULTI-ADDRESS MANAGEMENT (MAX 2 ADDRESSES) ================= //
+
+// 1. Get user addresses
+app.get('/api/user/addresses', async (req, res) => {
+  try {
+    const token = req.cookies.ratumart_session || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    if ((!user.addresses || user.addresses.length === 0) && user.address) {
+      user.addresses = [user.address];
+      user.activeAddressIndex = 0;
+      await user.save();
+    }
+
+    res.json({
+      success: true,
+      addresses: user.addresses || [],
+      activeAddressIndex: user.activeAddressIndex || 0,
+      activeAddress: user.address || (user.addresses && user.addresses[0]) || null
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 2. Manage user addresses (Add, Edit, Select, Delete - Max 2)
+app.post('/api/user/addresses', async (req, res) => {
+  try {
+    const token = req.cookies.ratumart_session || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (!user.addresses) user.addresses = [];
+    if (user.addresses.length === 0 && user.address) {
+      user.addresses.push(user.address);
+      user.activeAddressIndex = 0;
+    }
+
+    const { action, address, index } = req.body;
+
+    if (action === 'add') {
+      if (user.addresses.length >= 2) {
+        return res.status(400).json({
+          success: false,
+          message: 'Maximum 2 delivery locations allowed per account. Please edit an existing one.'
+        });
+      }
+
+      let dist = 0;
+      if (address?.lat && address?.lng) {
+        dist = calcHaversineDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, address.lat, address.lng);
+      }
+
+      if (dist > STORE_COORDS.maxRadiusKm) {
+        return res.status(400).json({
+          success: false,
+          message: `This location is ${dist} KM away. We strictly deliver within 5.0 KM of Ratu Hub.`
+        });
+      }
+
+      const newAddr = {
+        name: address.name || user.name,
+        phone: address.phone || user.phone,
+        street: address.street || '',
+        city: address.city || 'Ranchi',
+        state: address.state || 'Jharkhand',
+        pincode: address.pincode || '835222',
+        landmark: address.landmark || '',
+        type: address.type || 'Home',
+        lat: address.lat || STORE_COORDS.lat,
+        lng: address.lng || STORE_COORDS.lng,
+        distanceKm: dist
+      };
+
+      user.addresses.push(newAddr);
+      user.activeAddressIndex = user.addresses.length - 1;
+      user.address = newAddr;
+      await user.save();
+
+      return res.json({
+        success: true,
+        message: 'New delivery address added successfully! 📍',
+        addresses: user.addresses,
+        activeAddressIndex: user.activeAddressIndex,
+        user
+      });
+    }
+
+    if (action === 'edit') {
+      const idx = Number(index);
+      if (idx < 0 || idx >= user.addresses.length) {
+        return res.status(400).json({ success: false, message: 'Invalid address index.' });
+      }
+
+      let dist = user.addresses[idx].distanceKm || 0;
+      if (address?.lat && address?.lng) {
+        dist = calcHaversineDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, address.lat, address.lng);
+      }
+
+      if (dist > STORE_COORDS.maxRadiusKm) {
+        return res.status(400).json({
+          success: false,
+          message: `This location is ${dist} KM away. We strictly deliver within 5.0 KM of Ratu Hub.`
+        });
+      }
+
+      const updated = {
+        ...user.addresses[idx].toObject(),
+        ...address,
+        distanceKm: dist
+      };
+
+      user.addresses[idx] = updated;
+      if (user.activeAddressIndex === idx) {
+        user.address = updated;
+      }
+      await user.save();
+
+      return res.json({
+        success: true,
+        message: 'Delivery address updated successfully! ✏️',
+        addresses: user.addresses,
+        activeAddressIndex: user.activeAddressIndex,
+        user
+      });
+    }
+
+    if (action === 'select') {
+      const idx = Number(index);
+      if (idx < 0 || idx >= user.addresses.length) {
+        return res.status(400).json({ success: false, message: 'Invalid address index.' });
+      }
+
+      user.activeAddressIndex = idx;
+      user.address = user.addresses[idx];
+      await user.save();
+
+      return res.json({
+        success: true,
+        message: `Delivery location set to ${user.address.street || user.address.city}! 🚚`,
+        addresses: user.addresses,
+        activeAddressIndex: user.activeAddressIndex,
+        user
+      });
+    }
+
+    if (action === 'delete') {
+      const idx = Number(index);
+      if (user.addresses.length <= 1) {
+        return res.status(400).json({ success: false, message: 'At least one delivery address is required.' });
+      }
+
+      user.addresses.splice(idx, 1);
+      user.activeAddressIndex = 0;
+      user.address = user.addresses[0];
+      await user.save();
+
+      return res.json({
+        success: true,
+        message: 'Address removed successfully.',
+        addresses: user.addresses,
+        activeAddressIndex: 0,
+        user
+      });
+    }
+
+    return res.status(400).json({ success: false, message: 'Unknown address action.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

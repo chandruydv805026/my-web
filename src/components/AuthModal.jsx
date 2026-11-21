@@ -40,6 +40,7 @@ export default function AuthModal() {
     requestRegisterOtp,
     verifyRegisterOtpWithAddress,
     cart,
+    buyNowItem,
     setIsCheckoutOpen,
     authModalBackHandlerRef
   } = useShop();
@@ -136,7 +137,7 @@ export default function AuthModal() {
   const proceedPostAuth = () => {
     setIsAuthOpen(false);
     resetAll();
-    if (cart && cart.length > 0) {
+    if (buyNowItem || (cart && cart.length > 0)) {
       setIsCheckoutOpen(true);
     }
   };

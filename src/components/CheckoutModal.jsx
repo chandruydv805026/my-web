@@ -13,12 +13,22 @@ export default function CheckoutModal() {
     cart, 
     finalTotal, 
     totalSavings, 
+    buyNowItem,
+    setBuyNowItem,
+    checkoutItems,
+    checkoutFinalTotal,
+    checkoutTotalSavings,
     user, 
     placeOrder, 
     deliveryPincode,
     deliveryCity,
     setIsOrdersOpen 
   } = useShop();
+
+  const handleClose = () => {
+    setIsCheckoutOpen(false);
+    if (setBuyNowItem) setBuyNowItem(null);
+  };
 
   // Steps: 1: Address, 2: Order Summary, 3: Payment, 4: Success
   const [currentStep, setCurrentStep] = useState(1);
@@ -101,7 +111,7 @@ export default function CheckoutModal() {
           </div>
 
           <button
-            onClick={() => setIsCheckoutOpen(false)}
+            onClick={handleClose}
             className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition"
           >
             <X className="w-5 h-5" />
@@ -252,7 +262,7 @@ export default function CheckoutModal() {
 
               {/* Items List */}
               <div className="space-y-2 max-h-56 overflow-y-auto no-scrollbar pr-1">
-                {cart.map((item, idx) => (
+                {checkoutItems.map((item, idx) => (
                   <div key={idx} className="flex gap-3 p-2 bg-white rounded-lg border border-slate-200 text-xs">
                     <img src={item.image} alt={item.name} className="w-14 h-16 object-cover rounded flex-shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -271,11 +281,11 @@ export default function CheckoutModal() {
               <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex justify-between items-center text-xs">
                 <div>
                   <span className="text-slate-600 block">Order confirmation email sent to: <strong>{user?.email || 'user@example.com'}</strong></span>
-                  <span className="text-emerald-700 font-bold">You are saving ₹{totalSavings.toLocaleString('en-IN')} on this order!</span>
+                  <span className="text-emerald-700 font-bold">You are saving ₹{checkoutTotalSavings.toLocaleString('en-IN')} on this order!</span>
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] text-slate-500 uppercase block">Total Payable</span>
-                  <span className="text-base font-black text-blue-900">₹{finalTotal.toLocaleString('en-IN')}</span>
+                  <span className="text-base font-black text-blue-900">₹{checkoutFinalTotal.toLocaleString('en-IN')}</span>
                 </div>
               </div>
 
@@ -415,7 +425,7 @@ export default function CheckoutModal() {
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-3 px-8 rounded-xl shadow-md transition flex items-center gap-2 active:scale-95"
                 >
                   <Lock className="w-4 h-4" />
-                  PAY ₹{finalTotal.toLocaleString('en-IN')} & PLACE ORDER
+                  PAY ₹{checkoutFinalTotal.toLocaleString('en-IN')} & PLACE ORDER
                 </button>
               </div>
             </div>
@@ -494,7 +504,7 @@ export default function CheckoutModal() {
               <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
                 <button
                   onClick={() => {
-                    setIsCheckoutOpen(false);
+                    handleClose();
                     setIsOrdersOpen(true);
                   }}
                   className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 px-6 rounded-xl shadow transition"
@@ -502,7 +512,7 @@ export default function CheckoutModal() {
                   View in My Orders
                 </button>
                 <button
-                  onClick={() => setIsCheckoutOpen(false)}
+                  onClick={handleClose}
                   className="bg-yellow-400 hover:bg-yellow-500 text-blue-950 font-bold text-xs py-2.5 px-6 rounded-xl shadow transition"
                 >
                   Continue Shopping

@@ -99,6 +99,9 @@ export const ShopProvider = ({ children }) => {
     }
   });
 
+  // Direct Buy Now Item (Bypasses Cart Completely)
+  const [buyNowItem, setBuyNowItem] = useState(null);
+
   // Wishlist State
   const [wishlist, setWishlist] = useState(() => {
     try {
@@ -147,6 +150,30 @@ export const ShopProvider = ({ children }) => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isPincodeModalOpen, setIsPincodeModalOpen] = useState(false);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+
+  // User Delivery Addresses (Maximum 2)
+  const [userAddresses, setUserAddresses] = useState([]);
+  const [activeAddressIndex, setActiveAddressIndex] = useState(0);
+
+  // Sync addresses whenever user profile updates
+  useEffect(() => {
+    if (user) {
+      if (user.addresses && user.addresses.length > 0) {
+        setUserAddresses(user.addresses);
+        setActiveAddressIndex(user.activeAddressIndex || 0);
+      } else if (user.address) {
+        setUserAddresses([user.address]);
+        setActiveAddressIndex(0);
+      } else {
+        setUserAddresses([]);
+        setActiveAddressIndex(0);
+      }
+    } else {
+      setUserAddresses([]);
+      setActiveAddressIndex(0);
+    }
+  }, [user]);
 
   // Delivery Location
   const [deliveryPincode, setDeliveryPincode] = useState("835222");
@@ -287,6 +314,7 @@ export const ShopProvider = ({ children }) => {
       // 4. Checkout Modal
       if (s.isCheckoutOpen) {
         setIsCheckoutOpen(false);
+        setBuyNowItem(null);
         try { window.history.pushState({ ratumartGuard: true }, ''); } catch {}
         return;
       }
@@ -542,11 +570,15 @@ export const ShopProvider = ({ children }) => {
 
   // 7. Place Order (Saves Order & Deducts Stock in SQLite)
   const placeOrder = async (orderData) => {
+    const activeItems = buyNowItem ? [buyNowItem] : cart;
+    const activeTotal = buyNowItem ? checkoutFinalTotal : finalTotal;
+    const activeSavings = buyNowItem ? checkoutTotalSavings : totalSavings;
+
     const payload = {
       address: orderData.address || user?.address,
-      items: cart,
-      totalAmount: finalTotal,
-      savings: totalSavings,
+      items: activeItems,
+      totalAmount: activeTotal,
+      savings: activeSavings,
       paymentMethod: orderData.paymentMethod
     };
 
@@ -574,15 +606,21 @@ export const ShopProvider = ({ children }) => {
         date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
         status: "Confirmed",
         deliveryDate: "Expected in 2 Days",
-        items: [...cart],
-        totalAmount: finalTotal,
+        items: [...activeItems],
+        totalAmount: activeTotal,
         paymentMethod: orderData.paymentMethod,
         address: orderData.address || user?.address
       };
       setOrders(prev => [confirmed, ...prev]);
     }
 
-    setCart([]);
+    if (buyNowItem) {
+      // Direct buy completed: clear buyNowItem, regular cart remains untouched!
+      setBuyNowItem(null);
+    } else {
+      // Cart checkout: empty the cart
+      setCart([]);
+    }
     setAppliedCoupon(null);
 
     // Trigger Celebration Confetti
@@ -931,6 +969,107 @@ export const ShopProvider = ({ children }) => {
     showToast('Logged out successfully', 'info');
   };
 
+  // Multi-Address Management (Max 2 addresses)
+  const addUserAddress = async (newAddress) => {
+    try {
+      const res = await fetch('/api/user/addresses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action: 'add', address: newAddress })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.message || 'Could not add address', 'error');
+        return { success: false, message: data.message };
+      }
+      setUser(data.user);
+      setUserAddresses(data.addresses);
+      setActiveAddressIndex(data.activeAddressIndex);
+      localStorage.setItem('ratumart_user', JSON.stringify(data.user));
+      showToast(data.message || 'New address added! 📍');
+      return { success: true };
+    } catch (err) {
+      showToast(err.message, 'error');
+      return { success: false, message: err.message };
+    }
+  };
+
+  const editUserAddress = async (index, updatedAddress) => {
+    try {
+      const res = await fetch('/api/user/addresses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action: 'edit', index, address: updatedAddress })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.message || 'Could not update address', 'error');
+        return { success: false, message: data.message };
+      }
+      setUser(data.user);
+      setUserAddresses(data.addresses);
+      setActiveAddressIndex(data.activeAddressIndex);
+      localStorage.setItem('ratumart_user', JSON.stringify(data.user));
+      showToast(data.message || 'Address updated! ✏️');
+      return { success: true };
+    } catch (err) {
+      showToast(err.message, 'error');
+      return { success: false, message: err.message };
+    }
+  };
+
+  const selectUserAddress = async (index) => {
+    try {
+      const res = await fetch('/api/user/addresses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action: 'select', index })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.message || 'Could not select address', 'error');
+        return { success: false, message: data.message };
+      }
+      setUser(data.user);
+      setUserAddresses(data.addresses);
+      setActiveAddressIndex(data.activeAddressIndex);
+      localStorage.setItem('ratumart_user', JSON.stringify(data.user));
+      showToast(data.message || 'Delivery address selected! 🚚');
+      return { success: true };
+    } catch (err) {
+      showToast(err.message, 'error');
+      return { success: false, message: err.message };
+    }
+  };
+
+  const deleteUserAddress = async (index) => {
+    try {
+      const res = await fetch('/api/user/addresses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action: 'delete', index })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.message || 'Could not delete address', 'error');
+        return { success: false, message: data.message };
+      }
+      setUser(data.user);
+      setUserAddresses(data.addresses);
+      setActiveAddressIndex(data.activeAddressIndex);
+      localStorage.setItem('ratumart_user', JSON.stringify(data.user));
+      showToast('Address removed', 'info');
+      return { success: true };
+    } catch (err) {
+      showToast(err.message, 'error');
+      return { success: false, message: err.message };
+    }
+  };
+
   // ================= CART LOGIC ================= //
 
   const addToCart = (product, size = null, color = null, qty = 1) => {
@@ -1030,7 +1169,7 @@ export const ShopProvider = ({ children }) => {
     showToast('Coupon removed', 'info');
   };
 
-  // Price Calculations
+  // Price Calculations (Normal Cart)
   const cartSubtotal = cart.reduce((acc, item) => acc + (item.originalPrice * item.quantity), 0);
   const cartPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const mrpDiscount = cartSubtotal - cartPrice;
@@ -1052,6 +1191,56 @@ export const ShopProvider = ({ children }) => {
   const deliveryCharge = (cartPrice >= freeThreshold || cart.length === 0) ? 0 : (storeSettings?.deliveryCharge || 40);
   const finalTotal = Math.max(0, cartPrice - couponDiscount + deliveryCharge);
   const totalSavings = mrpDiscount + couponDiscount + (deliveryCharge === 0 && cart.length > 0 ? (storeSettings?.deliveryCharge || 40) : 0);
+
+  // Active items for Checkout: direct Buy Now item or normal Cart
+  const checkoutItems = buyNowItem ? [buyNowItem] : cart;
+  const checkoutSubtotal = checkoutItems.reduce((acc, item) => acc + (item.originalPrice * item.quantity), 0);
+  const checkoutPrice = checkoutItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const checkoutMrpDiscount = checkoutSubtotal - checkoutPrice;
+
+  let checkoutCouponDiscount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.type === 'percent' || appliedCoupon.discountPercent) {
+      const pct = appliedCoupon.value || appliedCoupon.discountPercent;
+      checkoutCouponDiscount = Math.min(
+        Math.round((checkoutPrice * pct) / 100),
+        appliedCoupon.maxDiscount || appliedCoupon.max_discount || 500
+      );
+    } else if (appliedCoupon.type === 'flat' || appliedCoupon.flatDiscount) {
+      checkoutCouponDiscount = appliedCoupon.value || appliedCoupon.flatDiscount;
+    }
+  }
+
+  const checkoutDeliveryCharge = (checkoutPrice >= freeThreshold || checkoutItems.length === 0) ? 0 : (storeSettings?.deliveryCharge || 40);
+  const checkoutFinalTotal = Math.max(0, checkoutPrice - checkoutCouponDiscount + checkoutDeliveryCharge);
+  const checkoutTotalSavings = checkoutMrpDiscount + checkoutCouponDiscount + (checkoutDeliveryCharge === 0 && checkoutItems.length > 0 ? (storeSettings?.deliveryCharge || 40) : 0);
+
+  // Direct Buy Now without adding to cart
+  const startBuyNow = (product, size = null, color = null, qty = 1) => {
+    const chosenSize = size || (product.sizes && product.sizes[0]) || 'Standard';
+    const chosenColor = color || (product.colors && product.colors[0]) || 'Standard';
+
+    const item = {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      image: product.image,
+      selectedSize: chosenSize,
+      selectedColor: chosenColor,
+      quantity: qty,
+      rating: product.rating
+    };
+
+    setBuyNowItem(item);
+    setSelectedProduct(null);
+
+    if (!user || !user.isLoggedIn) {
+      setIsAuthOpen(true);
+    } else {
+      setIsCheckoutOpen(true);
+    }
+  };
 
   // Filtered Products
   const filteredProducts = products.filter(product => {
@@ -1169,6 +1358,14 @@ export const ShopProvider = ({ children }) => {
       finalTotal,
       totalSavings,
 
+      // Direct Buy Now (bypasses cart)
+      buyNowItem,
+      setBuyNowItem,
+      startBuyNow,
+      checkoutItems,
+      checkoutFinalTotal,
+      checkoutTotalSavings,
+
       // Wishlist
       wishlist,
       toggleWishlist,
@@ -1220,6 +1417,14 @@ export const ShopProvider = ({ children }) => {
       setIsSizeGuideOpen,
       isPincodeModalOpen,
       setIsPincodeModalOpen,
+      isAddressModalOpen,
+      setIsAddressModalOpen,
+      userAddresses,
+      activeAddressIndex,
+      addUserAddress,
+      editUserAddress,
+      selectUserAddress,
+      deleteUserAddress,
       authModalBackHandlerRef,
 
       // Toast
