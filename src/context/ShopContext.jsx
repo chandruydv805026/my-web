@@ -445,7 +445,7 @@ export const ShopProvider = ({ children }) => {
       });
       const data = await res.json();
       if (data.success) {
-        showToast('Photo uploaded successfully to server!');
+        showToast('Photo uploaded successfully to Cloudinary CDN! ☁️');
         return data.url;
       } else {
         throw new Error(data.message || 'Upload failed');
