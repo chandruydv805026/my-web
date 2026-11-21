@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  X, CheckCircle2, MapPin, CreditCard, ShieldCheck, 
-  Smartphone, Building, Truck, Sparkles, Check, ArrowRight, 
-  ShoppingBag, QrCode, Lock
+  X, CheckCircle2, MapPin, ShieldCheck, 
+  Truck, Sparkles, Check, ArrowRight, 
+  ShoppingBag, Lock
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 
@@ -67,14 +67,8 @@ export default function CheckoutModal() {
     }
   }, [user]);
 
-  // Payment State
-  const [paymentMethod, setPaymentMethod] = useState("UPI");
-  const [upiApp, setUpiApp] = useState("gpay");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvv, setCardCvv] = useState("");
-  const [captchaInput, setCaptchaInput] = useState("");
-  const [captchaCode] = useState("7492");
+  // Payment State: 100% Cash on Delivery (COD) Only
+  const paymentMethod = "Cash on Delivery (COD)";
 
   // Confirmed Order Info
   const [confirmedOrder, setConfirmedOrder] = useState(null);
@@ -89,7 +83,7 @@ export default function CheckoutModal() {
     }
     const order = await placeOrder({
       address,
-      paymentMethod: paymentMethod === 'UPI' ? `UPI (${upiApp.toUpperCase()})` : paymentMethod
+      paymentMethod: 'Cash on Delivery (COD)'
     });
     setConfirmedOrder(order);
     setCurrentStep(4);
@@ -295,137 +289,72 @@ export default function CheckoutModal() {
                 </button>
                 <button
                   onClick={() => setCurrentStep(3)}
-                  className="bg-yellow-400 hover:bg-yellow-500 text-blue-950 font-extrabold text-xs py-2.5 px-6 rounded-lg shadow-sm transition flex items-center gap-1.5"
+                  className="bg-yellow-400 hover:bg-yellow-500 text-blue-950 font-extrabold text-xs py-2.5 px-6 rounded-lg shadow-sm transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
                 >
-                  Proceed to Payment <ArrowRight className="w-4 h-4" />
+                  Proceed to Payment (COD) <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
           )}
 
-          {/* STEP 3: PAYMENT METHOD */}
+          {/* STEP 3: PAYMENT METHOD (100% COD ONLY) */}
           {currentStep === 3 && (
             <div className="space-y-4">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                <Lock className="w-4 h-4 text-emerald-600" />
-                Select Payment Option
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-emerald-600" />
+                  Payment Method
+                </h3>
+                <span className="text-xs bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded border border-emerald-200">
+                  Cash on Delivery Only
+                </span>
+              </div>
 
-              <div className="space-y-3">
-                {/* UPI Option */}
-                <div className={`p-3.5 rounded-xl border transition cursor-pointer ${
-                  paymentMethod === 'UPI' ? 'border-blue-600 bg-blue-50/40 ring-1 ring-blue-500' : 'border-slate-200 bg-white'
-                }`} onClick={() => setPaymentMethod('UPI')}>
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-slate-800">
-                      <input type="radio" checked={paymentMethod === 'UPI'} onChange={() => setPaymentMethod('UPI')} className="accent-blue-600" />
-                      <Smartphone className="w-4 h-4 text-blue-600" />
-                      UPI (Google Pay, PhonePe, Paytm, BHIM)
-                    </label>
-                    <span className="text-[10px] bg-green-100 text-green-700 font-bold px-1.5 py-0.5 rounded">Fastest</span>
-                  </div>
-
-                  {paymentMethod === 'UPI' && (
-                    <div className="mt-3 pt-3 border-t border-blue-200/50 flex flex-wrap gap-2">
-                      {['gpay', 'phonepe', 'paytm', 'bhim'].map(app => (
-                        <button
-                          key={app}
-                          onClick={() => setUpiApp(app)}
-                          className={`text-xs font-bold px-3 py-1.5 rounded-lg border capitalize transition ${
-                            upiApp === app ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-300'
-                          }`}
-                        >
-                          {app === 'gpay' ? 'Google Pay' : app}
-                        </button>
-                      ))}
+              {/* COD Active Box */}
+              <div className="p-4 sm:p-5 rounded-2xl border-2 border-emerald-500 bg-emerald-50/40 shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white text-sm font-black shadow-xs">
+                      ✓
                     </div>
-                  )}
-                </div>
-
-                {/* Credit/Debit Card */}
-                <div className={`p-3.5 rounded-xl border transition cursor-pointer ${
-                  paymentMethod === 'CARD' ? 'border-blue-600 bg-blue-50/40 ring-1 ring-blue-500' : 'border-slate-200 bg-white'
-                }`} onClick={() => setPaymentMethod('CARD')}>
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-slate-800">
-                      <input type="radio" checked={paymentMethod === 'CARD'} onChange={() => setPaymentMethod('CARD')} className="accent-blue-600" />
-                      <CreditCard className="w-4 h-4 text-blue-600" />
-                      Credit / Debit / ATM Card
-                    </label>
-                    <span className="text-[10px] text-slate-400">Visa, Mastercard, RuPay</span>
-                  </div>
-
-                  {paymentMethod === 'CARD' && (
-                    <div className="mt-3 pt-3 border-t border-blue-200/50 space-y-2 text-xs">
-                      <input
-                        type="text"
-                        placeholder="Card Number (e.g. 4532 8920 1209 8492)"
-                        value={cardNumber}
-                        onChange={(e) => setCardNumber(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                      />
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="MM/YY"
-                          value={cardExpiry}
-                          onChange={(e) => setCardExpiry(e.target.value)}
-                          className="w-1/2 px-3 py-2 border border-slate-300 rounded-lg"
-                        />
-                        <input
-                          type="password"
-                          placeholder="CVV"
-                          maxLength={3}
-                          value={cardCvv}
-                          onChange={(e) => setCardCvv(e.target.value)}
-                          className="w-1/2 px-3 py-2 border border-slate-300 rounded-lg"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Cash on Delivery */}
-                <div className={`p-3.5 rounded-xl border transition cursor-pointer ${
-                  paymentMethod === 'COD' ? 'border-blue-600 bg-blue-50/40 ring-1 ring-blue-500' : 'border-slate-200 bg-white'
-                }`} onClick={() => setPaymentMethod('COD')}>
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-slate-800">
-                      <input type="radio" checked={paymentMethod === 'COD'} onChange={() => setPaymentMethod('COD')} className="accent-blue-600" />
-                      <Truck className="w-4 h-4 text-amber-600" />
-                      Cash on Delivery (COD)
-                    </label>
-                    <span className="text-[10px] text-slate-500">Pay cash at doorstep</span>
-                  </div>
-
-                  {paymentMethod === 'COD' && (
-                    <div className="mt-3 pt-3 border-t border-blue-200/50 flex items-center gap-3 text-xs">
-                      <span className="font-mono bg-slate-200 font-black px-3 py-1.5 rounded tracking-widest text-slate-700">
-                        {captchaCode}
+                    <div>
+                      <strong className="text-sm sm:text-base font-black text-slate-900 block">
+                        Cash on Delivery (COD)
+                      </strong>
+                      <span className="text-xs text-slate-600 font-medium">
+                        Pay cash directly at doorstep when your order is delivered
                       </span>
-                      <input
-                        type="text"
-                        placeholder="Enter code"
-                        value={captchaInput}
-                        onChange={(e) => setCaptchaInput(e.target.value)}
-                        className="w-28 px-3 py-1.5 border border-slate-300 rounded-lg"
-                      />
                     </div>
-                  )}
+                  </div>
+                  <span className="text-[11px] bg-emerald-100 text-emerald-800 font-black px-2.5 py-1 rounded-full border border-emerald-200 flex-shrink-0">
+                    COD Active
+                  </span>
+                </div>
+
+                <div className="bg-white border border-emerald-200/80 rounded-xl p-3.5 text-xs text-slate-700 flex items-start gap-2.5 shadow-2xs">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-slate-900">
+                      No Online Payment / No Advance Money Required!
+                    </p>
+                    <p className="text-slate-600 leading-relaxed">
+                      Google Pay, PhonePe ya card se pehle paise dene ki koi zaroorat nahi hai. Jab parcel aapke ghar pahunchega, tab aap cash me <strong>₹{checkoutFinalTotal.toLocaleString('en-IN')}</strong> delivery executive ko de sakte hain.
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Pay Now Button */}
+              {/* Confirm COD Order Button */}
               <div className="pt-3 flex justify-between items-center">
                 <button onClick={() => setCurrentStep(2)} className="text-xs font-semibold text-slate-500 hover:text-slate-800">
                   &larr; Back to Summary
                 </button>
                 <button
                   onClick={handlePlaceOrder}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-3 px-8 rounded-xl shadow-md transition flex items-center gap-2 active:scale-95"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm py-3 px-8 rounded-xl shadow-md transition flex items-center gap-2 active:scale-95 cursor-pointer"
                 >
-                  <Lock className="w-4 h-4" />
-                  PAY ₹{checkoutFinalTotal.toLocaleString('en-IN')} & PLACE ORDER
+                  <Check className="w-4 h-4" />
+                  PLACE CASH ON DELIVERY ORDER (₹{checkoutFinalTotal.toLocaleString('en-IN')})
                 </button>
               </div>
             </div>
