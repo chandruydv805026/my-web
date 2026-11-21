@@ -11,7 +11,7 @@ export default function TrustBadges() {
     },
     {
       icon: RotateCcw,
-      title: "10 Days Return & Exchange",
+      title: "7 Days Return & Exchange",
       desc: "Hassle-free doorstep pickup & instant refund processing",
       color: "text-emerald-600 bg-emerald-50"
     },
