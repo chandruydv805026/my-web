@@ -73,6 +73,9 @@ export default function AuthModal() {
   const [isDeliverable, setIsDeliverable] = useState(false);
   const [distanceKm, setDistanceKm] = useState(null);
   const [coords, setCoords] = useState(null);
+  const [detectedAddress, setDetectedAddress] = useState('');
+  const [locationStatusText, setLocationStatusText] = useState('');
+  const [gpsAccuracy, setGpsAccuracy] = useState(null);
 
   // Handle Back-Button Hierarchy in AuthModal
   useEffect(() => {
@@ -181,7 +184,7 @@ export default function AuthModal() {
     }
   };
 
-  // 3. Live Location Detection (GPS)
+  // 3. Exact Sateek Live Location Detection (GPS Hardware)
   const detectLiveLocation = () => {
     setErrorMessage('');
     if (!navigator.geolocation) {
@@ -190,32 +193,81 @@ export default function AuthModal() {
     }
 
     setLocationChecking(true);
+    setLocationStatusText('Acquiring high-accuracy GPS satellite fix...');
+
+    const geoOptions = {
+      enableHighAccuracy: true, // Forces hardware GPS sensor
+      timeout: 15000,           // 15 seconds for GPS satellite lock
+      maximumAge: 0             // Strictly no cached/stale locations
+    };
+
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const userLat = pos.coords.latitude;
-        const userLng = pos.coords.longitude;
-        const dist = calcDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, userLat, userLng);
+      async (pos) => {
+        try {
+          const userLat = pos.coords.latitude;
+          const userLng = pos.coords.longitude;
+          const accuracy = Math.round(pos.coords.accuracy || 0);
 
-        setCoords({ lat: userLat, lng: userLng });
-        setDistanceKm(dist);
-        setLocationVerified(true);
-        setLocationChecking(false);
+          setCoords({ lat: userLat, lng: userLng });
+          setGpsAccuracy(accuracy);
+          setLocationStatusText('Reverse-geocoding your exact street & locality...');
 
-        if (dist <= STORE_COORDS.maxRadiusKm) {
-          setIsDeliverable(true);
-        } else {
-          setIsDeliverable(false);
+          // Call backend for precise reverse-geocoding & strict distance calculation
+          const res = await fetch(`/api/location/reverse-geocode?lat=${userLat}&lng=${userLng}`);
+          const data = await res.json();
+
+          if (data.success) {
+            setDistanceKm(data.distanceKm);
+            setIsDeliverable(data.isDeliverable);
+            setLocationVerified(true);
+            setDetectedAddress(data.address?.formatted || `${userLat.toFixed(5)}°N, ${userLng.toFixed(5)}°E`);
+
+            // Auto-fill address fields with exact detected details if empty
+            if (data.address?.area) {
+              setRegArea(prev => prev.trim() ? prev : data.address.area);
+            }
+            if (data.address?.city) {
+              setRegCity(prev => prev.trim() ? prev : data.address.city);
+            }
+            if (data.address?.pincode) {
+              setRegPincode(prev => prev.trim() ? prev : data.address.pincode);
+            }
+            if (data.address?.state) {
+              setRegState(data.address.state);
+            }
+          } else {
+            // Local fallback calculation
+            const dist = calcDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, userLat, userLng);
+            setDistanceKm(dist);
+            setIsDeliverable(dist <= STORE_COORDS.maxRadiusKm);
+            setLocationVerified(true);
+            setDetectedAddress(`GPS: ${userLat.toFixed(5)}°N, ${userLng.toFixed(5)}°E`);
+          }
+        } catch (fetchErr) {
+          const dist = calcDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, pos.coords.latitude, pos.coords.longitude);
+          setDistanceKm(dist);
+          setIsDeliverable(dist <= STORE_COORDS.maxRadiusKm);
+          setLocationVerified(true);
+          setDetectedAddress(`GPS: ${pos.coords.latitude.toFixed(5)}°N, ${pos.coords.longitude.toFixed(5)}°E`);
+        } finally {
+          setLocationChecking(false);
+          setLocationStatusText('');
         }
       },
       (err) => {
         setLocationChecking(false);
-        setErrorMessage(
-          err.code === 1
-            ? 'Location permission denied. Please allow location access to verify delivery range.'
-            : 'Could not fetch device location. Please try again or use the test button.'
-        );
+        setLocationStatusText('');
+        if (err.code === 1) {
+          setErrorMessage('Location permission denied. Please allow GPS / Location access in your browser to verify delivery range.');
+        } else if (err.code === 2) {
+          setErrorMessage('GPS signal unavailable. Please ensure your device Location / GPS is turned ON and try again.');
+        } else if (err.code === 3) {
+          setErrorMessage('GPS request timed out. Please ensure GPS is active and click "Verify My Live Location" again.');
+        } else {
+          setErrorMessage('Could not fetch exact live location. Please try again.');
+        }
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      geoOptions
     );
   };
 
@@ -612,37 +664,86 @@ export default function AuthModal() {
                     type="button"
                     onClick={detectLiveLocation}
                     disabled={locationChecking}
-                    className="w-full bg-[#2874f0] hover:bg-blue-700 text-white font-black py-3 sm:py-3.5 px-4 rounded-xl text-sm sm:text-base shadow-md transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
+                    className="w-full bg-[#2874f0] hover:bg-blue-700 text-white font-black py-3.5 sm:py-4 px-4 rounded-xl text-sm sm:text-base shadow-md transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
                   >
                     {locationChecking ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Detecting GPS Coordinates...</span>
+                        <span>{locationStatusText || 'Detecting exact GPS coordinates...'}</span>
                       </>
                     ) : (
                       <>
                         <Navigation className="w-5 h-5" />
-                        <span>📍 Verify My Live Location</span>
+                        <span>📍 Detect &amp; Verify Exact Live Location</span>
                       </>
                     )}
                   </button>
 
-                  {/* Verification Results */}
+                  {/* Verification Results - Sateek Exact GPS */}
                   {locationVerified && isDeliverable && (
-                    <div className="p-3.5 bg-emerald-50 border-2 border-emerald-300 rounded-xl flex items-center gap-3 text-emerald-900 font-extrabold text-xs sm:text-sm shadow-2xs">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                      <span>
-                        Verified: You are within our 5.0 KM delivery zone ({distanceKm} km away). Delivery Available!
-                      </span>
+                    <div className="p-4 bg-emerald-50 border-2 border-emerald-300 rounded-2xl space-y-2.5 shadow-xs animate-in fade-in">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-emerald-950 font-black text-xs sm:text-sm">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                          <span>Exact GPS Location Verified!</span>
+                        </div>
+                        <span className="bg-emerald-600 text-white font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                          Within 5.0 KM Zone
+                        </span>
+                      </div>
+
+                      <div className="bg-white rounded-xl p-3 border border-emerald-200 text-xs space-y-1.5 shadow-2xs">
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-extrabold text-slate-900 text-xs sm:text-sm block">
+                              {detectedAddress || 'Dandai Phutaltoli, Ratu, Ranchi - 835222'}
+                            </span>
+                            <span className="text-slate-500 text-[11px] block mt-0.5 font-medium">
+                              Exact Coordinates: {coords?.lat?.toFixed(5)}°N, {coords?.lng?.toFixed(5)}°E {gpsAccuracy ? `• GPS Accuracy: ±${gpsAccuracy}m` : ''}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-700">
+                          <span>Distance from Ratu Hub: <strong className="text-emerald-700">{distanceKm} KM</strong></span>
+                          <span className="text-emerald-600 font-extrabold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Fast Delivery Available
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   )}
 
                   {locationVerified && !isDeliverable && (
-                    <div className="p-3.5 bg-rose-50 border-2 border-rose-300 rounded-xl flex items-start gap-3 text-rose-900 font-bold text-xs sm:text-sm shadow-2xs">
-                      <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
-                      <span>
-                        Delivery Unavailable: We strictly deliver within a 5.0 KM radius of Ratu, Ranchi. Your location is {distanceKm} KM away.
-                      </span>
+                    <div className="p-4 bg-rose-50 border-2 border-rose-300 rounded-2xl space-y-2.5 shadow-xs animate-in fade-in">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-rose-950 font-black text-xs sm:text-sm">
+                          <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+                          <span>Delivery Unavailable (Outside 5.0 KM)</span>
+                        </div>
+                        <span className="bg-rose-600 text-white font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                          {distanceKm} KM Away
+                        </span>
+                      </div>
+
+                      <div className="bg-white rounded-xl p-3 border border-rose-200 text-xs space-y-1.5 shadow-2xs">
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-extrabold text-slate-900 text-xs sm:text-sm block">
+                              Detected: {detectedAddress || `${coords?.lat?.toFixed(5)}°N, ${coords?.lng?.toFixed(5)}°E`}
+                            </span>
+                            <span className="text-slate-500 text-[11px] block mt-0.5 font-medium">
+                              Exact Coordinates: {coords?.lat?.toFixed(5)}°N, {coords?.lng?.toFixed(5)}°E {gpsAccuracy ? `• GPS Accuracy: ±${gpsAccuracy}m` : ''}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-100 text-xs text-rose-700 font-semibold">
+                          Your exact location is <strong>{distanceKm} KM</strong> away from Dandai Phutaltoli, Ratu, Ranchi. We strictly deliver within a 5.0 KM radius.
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

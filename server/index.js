@@ -437,6 +437,81 @@ function calcHaversineDistanceKm(lat1, lon1, lat2, lon2) {
   return Math.round(R * c * 10) / 10;
 }
 
+// Exact Sateek Reverse-Geocode & Live Location Verification Endpoint
+app.get('/api/location/reverse-geocode', async (req, res) => {
+  try {
+    const lat = parseFloat(req.query.lat);
+    const lng = parseFloat(req.query.lng);
+
+    if (isNaN(lat) || isNaN(lng)) {
+      return res.status(400).json({ success: false, message: 'Invalid GPS coordinates provided.' });
+    }
+
+    const distanceKm = Math.round(calcHaversineDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, lat, lng) * 10) / 10;
+    const isDeliverable = distanceKm <= STORE_COORDS.maxRadiusKm;
+
+    let locationDetails = {
+      area: '',
+      town: 'Ratu',
+      city: 'Ranchi',
+      state: 'Jharkhand',
+      pincode: '835222',
+      formatted: ''
+    };
+
+    try {
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'RatuMart-Geo/1.0 (support@ratumart.com)',
+            'Accept-Language': 'en'
+          },
+          signal: AbortSignal.timeout(4500)
+        }
+      );
+
+      if (geoRes.ok) {
+        const data = await geoRes.json();
+        const addr = data.address || {};
+        
+        const area = addr.suburb || addr.neighbourhood || addr.village || addr.residential || addr.road || addr.county || 'Ratu Area';
+        const town = addr.town || addr.city_district || addr.county || 'Ratu';
+        const city = addr.city || addr.state_district || 'Ranchi';
+        const rawPin = addr.postcode || '835222';
+        const cleanPin = rawPin.replace(/\D/g, '').slice(0, 6) || '835222';
+        const state = addr.state || 'Jharkhand';
+
+        locationDetails = {
+          area,
+          town,
+          city: city.includes('Ranchi') ? 'Ranchi' : city,
+          state,
+          pincode: cleanPin,
+          formatted: `${area}, ${town}, ${city} - ${cleanPin}`
+        };
+      }
+    } catch (geoErr) {
+      console.warn('Reverse Geocoding Notice:', geoErr.message);
+      locationDetails.formatted = distanceKm <= 5.0 ? 'Dandai Phutaltoli, Ratu, Ranchi - 835222' : 'Outside 5 KM Delivery Zone';
+    }
+
+    return res.json({
+      success: true,
+      lat,
+      lng,
+      distanceKm,
+      isDeliverable,
+      maxRadiusKm: STORE_COORDS.maxRadiusKm,
+      storeName: STORE_COORDS.name,
+      address: locationDetails
+    });
+  } catch (err) {
+    console.error('Reverse Geocode Error:', err.message);
+    res.status(500).json({ success: false, message: 'Failed to reverse geocode location.' });
+  }
+});
+
 // ================= PASSWORDLESS OTP LOGIN & GEOFENCE AUTH ROUTES ================= //
 
 // A. Request Login OTP (by Phone Number OR Email)
