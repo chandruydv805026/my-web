@@ -36,7 +36,7 @@ export default function AdminSettings() {
     tagline: storeSettings.tagline || "India Ka Fashion Capital",
     freeShippingThreshold: storeSettings.freeShippingThreshold || 499,
     deliveryCharge: storeSettings.deliveryCharge || 40,
-    supportPhone: storeSettings.supportPhone || "080-4547-RATU",
+    supportPhone: storeSettings.supportPhone || "+91 99550 54109",
     supportEmail: storeSettings.supportEmail || "support@ratumart.com",
     enableCod: storeSettings.enableCod !== undefined ? storeSettings.enableCod : true,
     maintenanceMode: storeSettings.maintenanceMode || false

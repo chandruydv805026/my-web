@@ -61,10 +61,10 @@ export default function Footer() {
           <div className="border-t md:border-t-0 md:border-l border-slate-700/80 md:pl-6 pt-6 md:pt-0">
             <h5 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Mail Us:</h5>
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              RatuMart Fashion Internet Private Limited,<br />
-              Buildings Alyssa, Begonia &amp; Clove Embassy Tech Village,<br />
-              Outer Ring Road, Bengaluru, 560103,<br />
-              Karnataka, India
+              RatuMart Fashion Hub Private Limited,<br />
+              Dandai Phutaltoli, Ratu,<br />
+              Ranchi - 835222,<br />
+              Jharkhand, India
             </p>
           </div>
 
@@ -76,7 +76,7 @@ export default function Footer() {
               Dandai Phutaltoli, Ratu,<br />
               Ranchi - 835222, Jharkhand, India<br />
               CIN: U51109JH2026PTC04921<br />
-              Telephone: <a href="tel:18002029898" className="text-blue-400 hover:underline">080-4547-RATU</a>
+              Telephone: <a href="tel:+919955054109" className="text-blue-400 hover:underline">+91 99550 54109</a>
             </p>
           </div>
 

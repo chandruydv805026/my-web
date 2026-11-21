@@ -1555,6 +1555,115 @@ app.delete('/api/coupons/:code', async (req, res) => {
   }
 });
 
+// ================= REAL CUSTOMERS DIRECTORY (MONGODB) ================= //
+
+app.get('/api/customers', async (req, res) => {
+  try {
+    const users = await User.find({ role: { $ne: 'admin' } }, '-password').sort({ createdAt: -1 });
+    const allOrders = await Order.find({}, 'customerName customerPhone customerEmail shippingAddress totalAmount createdAt');
+
+    const registeredPhones = new Set();
+    const registeredEmails = new Set();
+
+    const customerList = users.map((u) => {
+      const uPhoneDigits = (u.phone || '').replace(/\D/g, '').slice(-10);
+      const uEmail = (u.email || '').toLowerCase().trim();
+
+      if (uPhoneDigits) registeredPhones.add(uPhoneDigits);
+      if (uEmail) registeredEmails.add(uEmail);
+
+      const customerOrders = allOrders.filter(o => {
+        const oPhone = (o.customerPhone || '').replace(/\D/g, '').slice(-10);
+        const oEmail = (o.customerEmail || '').toLowerCase().trim();
+        return (uPhoneDigits && oPhone === uPhoneDigits) || (uEmail && oEmail === uEmail);
+      });
+
+      const totalSpent = customerOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
+      const addr = u.address || (u.addresses && u.addresses[0]) || {};
+      const city = addr.city ? `${addr.city}, Jharkhand` : (addr.street ? addr.street : 'Ratu, Ranchi');
+
+      const dateStr = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      }) : 'Recently';
+
+      return {
+        id: u._id.toString(),
+        name: u.name,
+        phone: u.phone.startsWith('+91') ? u.phone : `+91 ${u.phone}`,
+        email: u.email,
+        totalOrders: customerOrders.length,
+        totalSpent,
+        city: city || 'Ratu, Ranchi',
+        address: addr.street ? `${addr.street}, ${addr.city || 'Ranchi'}` : '',
+        joined: dateStr,
+        status: customerOrders.length >= 3 ? 'VIP' : 'Active'
+      };
+    });
+
+    // Also include buyers from Orders who ordered via COD but haven't created a login account
+    for (const ord of allOrders) {
+      const oPhoneDigits = (ord.customerPhone || '').replace(/\D/g, '').slice(-10);
+      const oEmail = (ord.customerEmail || '').toLowerCase().trim();
+
+      if (oPhoneDigits && !registeredPhones.has(oPhoneDigits)) {
+        registeredPhones.add(oPhoneDigits);
+        if (oEmail) registeredEmails.add(oEmail);
+
+        const customerOrders = allOrders.filter(o => {
+          const p = (o.customerPhone || '').replace(/\D/g, '').slice(-10);
+          return p === oPhoneDigits;
+        });
+
+        const totalSpent = customerOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+        const addr = ord.shippingAddress || {};
+        const city = addr.city ? `${addr.city}, Jharkhand` : (addr.street ? addr.street : 'Ratu, Ranchi');
+        const dateStr = ord.createdAt ? new Date(ord.createdAt).toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }) : 'Recently';
+
+        customerList.push({
+          id: ord._id.toString(),
+          name: ord.customerName || 'COD Customer',
+          phone: ord.customerPhone.startsWith('+91') ? ord.customerPhone : `+91 ${ord.customerPhone}`,
+          email: ord.customerEmail || 'Guest Shopper',
+          totalOrders: customerOrders.length,
+          totalSpent,
+          city: city || 'Ratu, Ranchi',
+          address: addr.street ? `${addr.street}, ${addr.city || 'Ranchi'}` : '',
+          joined: dateStr,
+          status: customerOrders.length >= 3 ? 'VIP' : 'Active'
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      count: customerList.length,
+      customers: customerList
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// DELETE /api/customers/:id
+app.delete('/api/customers/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      await User.findByIdAndDelete(id);
+    }
+    res.json({ success: true, message: 'Customer removed' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ================= DASHBOARD STATS ================= //
 
 app.get('/api/stats', async (req, res) => {

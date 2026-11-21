@@ -64,19 +64,15 @@ export const ShopProvider = ({ children }) => {
     tagline: "India's Premium Fashion Destination for Kids, Men & Women",
     freeShippingThreshold: 499,
     deliveryCharge: 40,
-    supportPhone: "080-4547-RATU",
+    supportPhone: "+91 99550 54109",
     supportEmail: "support@ratumart.com",
     dealTimerHours: 4,
     enableCod: true,
     maintenanceMode: false
   });
 
-  // Customers List
-  const [customers, setCustomers] = useState([
-    { id: 1, name: "Pooja Verma", phone: "+91 98112 33445", email: "pooja.v@example.com", totalOrders: 2, city: "Ratu, Ranchi", joined: "24 Oct 2026", status: "Active" },
-    { id: 2, name: "Vikram Singhal", phone: "+91 97722 88990", email: "vikram.s@example.com", totalOrders: 5, city: "Ranchi", joined: "02 Nov 2026", status: "Active" },
-    { id: 3, name: "Ananya Deshmukh", phone: "+91 99201 44556", email: "ananya.d@example.com", totalOrders: 1, city: "Ranchi", joined: "15 Nov 2026", status: "Active" }
-  ]);
+  // Customers List (Synced with /api/customers from MongoDB)
+  const [customers, setCustomers] = useState([]);
 
   // One-time purge of old demo data (Rahul Sharma demo cart & wishlist)
   try {
@@ -406,6 +402,15 @@ export const ShopProvider = ({ children }) => {
         const coupData = await coupRes.json();
         if (coupData.success && coupData.coupons.length > 0) {
           setCoupons(coupData.coupons);
+        }
+      }
+
+      // 4. Fetch Real Customers (MongoDB)
+      const custRes = await fetch('/api/customers');
+      if (custRes.ok) {
+        const custData = await custRes.json();
+        if (custData.success && Array.isArray(custData.customers)) {
+          setCustomers(custData.customers);
         }
       }
     } catch (err) {

@@ -65,7 +65,7 @@ export default function AdminDashboard({ onNavigate }) {
               <span className="text-2xl font-black text-slate-900">₹{totalRevenue.toLocaleString('en-IN')}</span>
             </div>
             <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1 mt-1">
-              <TrendingUp className="w-3.5 h-3.5" /> +18.4% from last week
+              <TrendingUp className="w-3.5 h-3.5" /> 100% Cash on Delivery
             </span>
           </div>
           <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
@@ -116,7 +116,7 @@ export default function AdminDashboard({ onNavigate }) {
               <span className="text-xs text-slate-400 font-medium">registered</span>
             </div>
             <span className="text-[11px] text-purple-600 font-bold flex items-center gap-1 mt-1">
-              <ShieldCheck className="w-3.5 h-3.5" /> 100% verified KYC
+              <ShieldCheck className="w-3.5 h-3.5" /> Real Verified Shoppers
             </span>
           </div>
           <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
